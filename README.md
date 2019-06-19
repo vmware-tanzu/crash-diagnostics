@@ -1,6 +1,6 @@
-# CRE Bundle Tool
+# Flare
 
-Tool to collect machine environment data from a Kubernetes cluster.
+A too to collect machine environment data to investigate issues with a Kubernetes cluster.
 
 ## Pre-requisites
  * Linux
@@ -9,9 +9,9 @@ Tool to collect machine environment data from a Kubernetes cluster.
 ## Usage
 
 ```shell
-bundle help
+flare help
 
-Usage: bundle <command>
+Usage: flare <command>
 
 Commands:
   collect    Collects state and environment data from local machine.
@@ -20,7 +20,7 @@ Commands:
 
 ### bundle collect
 ```shell
-bundle help collect 
+flare help collect 
 
 Usage: bundle collect <options>
 Collects state and environment data from local machine.
