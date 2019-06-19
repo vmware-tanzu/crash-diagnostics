@@ -22,7 +22,7 @@ Commands:
 ```shell
 flare help collect 
 
-Usage: bundle collect <options>
+Usage: flare collect <options>
 Collects state and environment data from local machine.
 
 options:
@@ -34,14 +34,14 @@ options:
 
 ### bundle show
 ```shell
-bundle help view
+flare help view
 
-Usage: bundle view
+Usage: flare view
 Displays a summary of Kubnernetes and infrastructure information from local machine.
 ```
 
 ### Example
 
 ```shell
-$> bundle collect --all --output /tmp/node01.gzip
+$> flare collect --all --output /tmp/node01.gzip
 ```
