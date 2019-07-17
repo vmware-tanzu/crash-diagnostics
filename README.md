@@ -1,47 +1,88 @@
 # Flare
+A tool that collects server data for troubleshooting.
 
-A too to collect machine environment data to investigate issues with a Kubernetes cluster.
+A human operator would run flare directly on a running server to take a snapshot of the current state of the server for analysis.  Flare can collect data from different data sources specified at runtime.  The collected data is packaged and compressed in a tar bundle.
+
 
 ## Pre-requisites
- * Linux
- * Access to cluster nodes
+ * Assumes Linux/Unix
 
-## Usage
 
-```shell
-flare help
+## Flare.file
+Flare uses a file (usually named `flare.file`) that contains a simple dialect to declartively specify where and how data is collected from the running server.  The following example uses default `./flare.file` if one exist on the current directory. If one is not found, flare uses sensible default to gather machine state data from known data sources:
 
-Usage: flare <command>
+ ```
+ flare -o flare.tar.gz
+ ```
 
-Commands:
-  collect    Collects state and environment data from local machine.
-  show       Display summary view of state and environment data from local machine
+A flare file can be specified using `-f`:
+
+```
+flare -f flare.file.name -o out.tar.gz
 ```
 
-### bundle collect
-```shell
-flare help collect 
+### Flare.file Format
+Flare uses a simple format for the command file
+(similar to Dockerfile) as shown below:
 
-Usage: flare collect <options>
-Collects state and environment data from local machine.
-
-options:
-  --all        Collect all state and environment data from machine
-  --k8s-info   Collects Kubernetes related data including infrastructure and logs
-  --node-info  Collects machine related infrastructure and logs.
-  --output     Specifies the location of generated tarball.
+```
+COMMAND [arguments]
 ```
 
-### bundle show
-```shell
-flare help view
-
-Usage: flare view
-Displays a summary of Kubnernetes and infrastructure information from local machine.
+Currently, flare supports the following commands:
+```
+AS
+CAPTURE
+COPY
+ENV
+FROM
+WORKDIR
 ```
 
-### Example
+### AS
+Specifies the group id and the user id to  use when running flare commands.
+```
+AS <userid>[:<groupid>]
+```
 
-```shell
-$> flare collect --all --output /tmp/node01.gzip
+### CAPTURE
+Executes a shell command and captures the output as a data source that is copied
+into the built archive bundle.
+
+```
+CAPTURE [<shell command>]
+```
+
+### COPY
+Specifies one or more files (or directories) as data sources that are copied
+into the arhive bundle.
+
+```
+COPY <file or directory list>
+```
+
+### ENV
+Can be used to set up environment variables that are then exposed to commands
+executed by the CAPTURE command.
+
+```
+ENV key=value
+```
+
+### FROM
+Specifies the machine to use as the source of the data collected.  Currently
+only value `local` is supported.
+
+```
+FROM local
+```
+
+### WORKDIR
+Specifies the working directory used when building the archive bundle.  The
+directory is  used as temporary location to store data from all data sources
+specified in the file.  When the tar is built, the content of that directory
+is removed.
+
+```
+WORKDIR <relative or absolute path>
 ```
