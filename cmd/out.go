@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"bytes"
 	"io"
 	"os"
-	"strings"
+
+	"gitlab.eng.vmware.com/vivienv/flare/archiver"
 
 	"github.com/sirupsen/logrus"
 
@@ -45,19 +47,27 @@ func runOut(flag *outFlags, args []string) error {
 	file, err := os.Open(flag.file)
 	if err != nil {
 		logrus.Warnf("Unable find %s, using sensible defaults", flag.file)
-		ff = strings.NewReader(flarefile)
+		ff = bytes.NewReader([]byte(flarefile))
+	} else {
+		ff = file
 	}
-	ff = file
 
-	script, err := script.Parse(ff)
+	flare, err := script.Parse(ff)
 	if err != nil {
 		return err
 	}
 
-	exe := exec.New(script)
+	exe := exec.New(flare)
 	if err := exe.Execute(); err != nil {
 		return err
 	}
+
+	workdir := flare.Preambles[script.CmdWorkDir].Args[0]
+	if err := archiver.Tar(flag.output, workdir); err != nil {
+		return err
+	}
+	logrus.Infof("Created archive %s", flag.output)
+	logrus.Info("Output done")
 
 	return nil
 }

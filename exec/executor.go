@@ -51,12 +51,14 @@ func (e *Executor) Execute() error {
 		switch cmd.Name {
 		case script.CmdCopy:
 			if len(cmd.Args) < script.Cmds[script.CmdCopy].MinArgs {
-				return fmt.Errorf("%s missing argument", cmd.Name)
+				logrus.Errorf("%s missing argument, skipping", cmd.Name)
+				continue
 			}
 			// walk each arg and copy to workdir
 			for _, path := range cmd.Args {
 				if relPath, err := filepath.Rel(workdir, path); err == nil && !strings.HasPrefix(relPath, "..") {
-					return fmt.Errorf("%s path %s cannot be relative to workdir %s", cmd.Name, path, workdir)
+					logrus.Errorf("%s path %s cannot be relative to workdir %s", cmd.Name, path, workdir)
+					continue
 				}
 				logrus.Debugf("Copying content from %s", path)
 
@@ -100,31 +102,34 @@ func (e *Executor) Execute() error {
 					default:
 						return fmt.Errorf("%s unknown file type for %s", cmd.Name, file)
 					}
-
 					return nil
 				})
+
 				if err != nil {
-					return err
+					logrus.Error(err)
 				}
 			}
 		case script.CmdCapture:
 			if len(cmd.Args) < script.Cmds[script.CmdCopy].MinArgs {
-				return fmt.Errorf("%s missing argument", cmd.Name)
+				logrus.Errorf("%s missing argument", cmd.Name)
+				continue
 			}
 
 			// capture command output
-			logrus.Debugf("Parsing CLI command %v", cmd.Args)
-			cliCmd, cliArgs := CliParse(strings.Join(cmd.Args, " "))
+			cmdStr := strings.Join(cmd.Args, " ")
+			logrus.Debugf("Parsing CLI command %v", cmdStr)
+			cliCmd, cliArgs := CliParse(cmdStr)
 			if cliCmd == "" {
+				logrus.Debug("Skipping empty command")
 				continue
 			}
 			cmdReader, err := CliRun(cliCmd, cliArgs...)
 			if err != nil {
 				return err
 			}
-			fileName := fmt.Sprintf("%s.txt", flatCmd(cliCmd))
+			fileName := fmt.Sprintf("%s.txt", flatCmd(cmdStr))
 			filePath := filepath.Join(workdir, fileName)
-			logrus.Debugf("Capturing command result in file %s", filePath)
+			logrus.Debugf("Capturing command out: [%s] -> %s", cmdStr, filePath)
 			if err := writeFile(cmdReader, filePath); err != nil {
 				return err
 			}

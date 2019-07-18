@@ -37,17 +37,15 @@ func Parse(reader io.Reader) (*Script, error) {
 		cmd := Command{Index: line, Name: cmdName, Args: tokens[1:]}
 		switch cmdName {
 		case CmdAs, CmdFrom, CmdWorkDir:
-			logrus.Debugf("Preamble encountered: %s", cmdName)
 			script.Preambles[cmdName] = &cmd
 		case CmdCopy:
-			logrus.Debug("COPY action encountered")
 			script.Actions = append(script.Actions, cmd)
 		case CmdCapture:
-			logrus.Debug("CAPTURE action encountered")
 			script.Actions = append(script.Actions, cmd)
 		default:
 			return nil, fmt.Errorf("%s not supported", cmdName)
 		}
+		logrus.Debugf("%s parsed OK", cmdName)
 		line++
 	}
 	logrus.Debug("Done parsing")
