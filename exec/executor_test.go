@@ -1,4 +1,4 @@
-package main
+package exec
 
 import (
 	"io"
@@ -6,20 +6,22 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"gitlab.eng.vmware.com/vivienv/flare/script"
 )
 
 func TestExecutor_New(t *testing.T) {
 	tests := []struct {
 		name   string
-		script *script
+		script *script.Script
 	}{
-		{name: "simple script", script: &script{}},
+		{name: "simple script", script: &script.Script{}},
 		{name: "nil script"},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			s := newExecutor(test.script)
+			s := New(test.script)
 			if s.script != test.script {
 				t.Error("unexpected script value")
 			}
@@ -30,31 +32,31 @@ func TestExecutor_New(t *testing.T) {
 func TestExecutor_Exec_Preambles(t *testing.T) {
 	tests := []struct {
 		name       string
-		script     func() *script
-		exec       func(*script) error
+		script     func() *script.Script
+		exec       func(*script.Script) error
 		shouldFail bool
 	}{
 		{
 			name: "unsupported FROM",
-			script: func() *script {
-				s, _ := parse(strings.NewReader("FROM foo"))
+			script: func() *script.Script {
+				s, _ := script.Parse(strings.NewReader("FROM foo"))
 				return s
 			},
-			exec: func(s *script) error {
-				e := newExecutor(s)
-				return e.exec()
+			exec: func(s *script.Script) error {
+				e := New(s)
+				return e.Execute()
 			},
 			shouldFail: true,
 		},
 		{
 			name: "setup default workdir",
-			script: func() *script {
-				s, _ := parse(strings.NewReader("FROM local"))
+			script: func() *script.Script {
+				s, _ := script.Parse(strings.NewReader("FROM local"))
 				return s
 			},
-			exec: func(s *script) error {
-				e := newExecutor(s)
-				if err := e.exec(); err != nil {
+			exec: func(s *script.Script) error {
+				e := New(s)
+				if err := e.Execute(); err != nil {
 					return err
 				}
 				if _, err := os.Stat("/tmp/flareout"); err != nil {
@@ -68,13 +70,13 @@ func TestExecutor_Exec_Preambles(t *testing.T) {
 		},
 		{
 			name: "setup workdir /tmp/flarewd",
-			script: func() *script {
-				s, _ := parse(strings.NewReader("FROM local\nWORKDIR /tmp/flarewd"))
+			script: func() *script.Script {
+				s, _ := script.Parse(strings.NewReader("FROM local\nWORKDIR /tmp/flarewd"))
 				return s
 			},
-			exec: func(s *script) error {
-				e := newExecutor(s)
-				if err := e.exec(); err != nil {
+			exec: func(s *script.Script) error {
+				e := New(s)
+				if err := e.Execute(); err != nil {
 					return err
 				}
 				if _, err := os.Stat("/tmp/flarewd"); err != nil {
@@ -106,22 +108,22 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 	tests := []struct {
 		name       string
 		script     string
-		exec       func(*script) error
+		exec       func(*script.Script) error
 		shouldFail bool
 	}{
 		{
 			name:   "copy command with single file",
 			script: "FROM local\nCOPY /tmp/flare-foo.txt",
-			exec: func(s *script) error {
+			exec: func(s *script.Script) error {
 				workdir := "/tmp/flareout"
-				srcFile := s.actions[0].args[0]
+				srcFile := s.Actions[0].Args[0]
 				if err := makeTestFakeFile(t, srcFile, "HelloFoo"); err != nil {
 					return err
 				}
 				defer os.Remove(srcFile)
 
-				e := newExecutor(s)
-				if err := e.exec(); err != nil {
+				e := New(s)
+				if err := e.Execute(); err != nil {
 					return err
 				}
 
@@ -138,10 +140,10 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 		{
 			name:   "copy command with multiple files",
 			script: "FROM local\nCOPY /tmp/flare-foo.txt /tmp/flare-bar.txt",
-			exec: func(s *script) error {
+			exec: func(s *script.Script) error {
 				workdir := "/tmp/flareout"
-				srcFile0 := s.actions[0].args[0]
-				srcFile1 := s.actions[0].args[1]
+				srcFile0 := s.Actions[0].Args[0]
+				srcFile1 := s.Actions[0].Args[1]
 				if err := makeTestFakeFile(t, srcFile0, "HelloFoo"); err != nil {
 					return err
 				}
@@ -152,8 +154,8 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 				}
 				defer os.Remove(srcFile1)
 
-				e := newExecutor(s)
-				if err := e.exec(); err != nil {
+				e := New(s)
+				if err := e.Execute(); err != nil {
 					return err
 				}
 
@@ -174,10 +176,10 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 		{
 			name:   "copy command with multiple COPYs",
 			script: "FROM local\nCOPY /tmp/flare-foo.txt\nCOPY /tmp/flare-bar.txt",
-			exec: func(s *script) error {
+			exec: func(s *script.Script) error {
 				workdir := "/tmp/flareout"
-				srcFile0 := s.actions[0].args[0]
-				srcFile1 := s.actions[1].args[0]
+				srcFile0 := s.Actions[0].Args[0]
+				srcFile1 := s.Actions[1].Args[0]
 				if err := makeTestFakeFile(t, srcFile0, "HelloFoo"); err != nil {
 					return err
 				}
@@ -188,8 +190,8 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 				}
 				defer os.Remove(srcFile1)
 
-				e := newExecutor(s)
-				if err := e.exec(); err != nil {
+				e := New(s)
+				if err := e.Execute(); err != nil {
 					return err
 				}
 
@@ -210,9 +212,9 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 		{
 			name:   "copy command with a directory source",
 			script: "FROM local\nCOPY /tmp/flare-src",
-			exec: func(s *script) error {
+			exec: func(s *script.Script) error {
 				workdir := "/tmp/flareout"
-				srcDir0 := s.actions[0].args[0]
+				srcDir0 := s.Actions[0].Args[0]
 				if err := makeTestDir(t, srcDir0); err != nil {
 					return err
 				}
@@ -228,8 +230,8 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 				}
 				defer os.Remove(srcFile1)
 
-				e := newExecutor(s)
-				if err := e.exec(); err != nil {
+				e := New(s)
+				if err := e.Execute(); err != nil {
 					return err
 				}
 
@@ -250,16 +252,16 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 		{
 			name:   "copy command with a directory source and a file",
 			script: "FROM local\nCOPY /tmp/flare-src /tmp/baz.txt",
-			exec: func(s *script) error {
+			exec: func(s *script.Script) error {
 				workdir := "/tmp/flareout"
-				srcDir0 := s.actions[0].args[0]
+				srcDir0 := s.Actions[0].Args[0]
 				if err := makeTestDir(t, srcDir0); err != nil {
 					return err
 				}
 				defer os.RemoveAll(srcDir0)
 				srcFile0 := filepath.Join(srcDir0, "foo.txt")
 				srcFile1 := filepath.Join(srcDir0, "bar.txt")
-				srcFile2 := s.actions[0].args[1]
+				srcFile2 := s.Actions[0].Args[1]
 				if err := makeTestFakeFile(t, srcFile0, "HelloFoo"); err != nil {
 					return err
 				}
@@ -273,8 +275,8 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 				}
 				defer os.Remove(srcFile2)
 
-				e := newExecutor(s)
-				if err := e.exec(); err != nil {
+				e := New(s)
+				if err := e.Execute(); err != nil {
 					return err
 				}
 
@@ -300,7 +302,7 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			script, err := parse(strings.NewReader(test.script))
+			script, err := script.Parse(strings.NewReader(test.script))
 			if err != nil {
 				t.Fatal(err)
 			}

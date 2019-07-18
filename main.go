@@ -1,10 +1,15 @@
 package main
 
 import (
-	"fmt"
+	"os"
+
+	"github.com/sirupsen/logrus"
+	"gitlab.eng.vmware.com/vivienv/flare/cmd"
 )
 
 func main() {
-
-	fmt.Println("Hello World")
+	if err := cmd.Run(); err != nil {
+		logrus.Error(err)
+		os.Exit(1)
+	}
 }

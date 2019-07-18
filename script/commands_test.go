@@ -1,4 +1,4 @@
-package main
+package script
 
 import (
 	"strings"
@@ -9,25 +9,25 @@ func TestCommands_Parse(t *testing.T) {
 	tests := []struct {
 		name       string
 		commands   string
-		preambles  map[string]command
-		actions    []command
+		preambles  map[string]Command
+		actions    []Command
 		shouldFail bool
 	}{
 		{
 			name:      "single preamble",
 			commands:  "FROM default",
-			preambles: map[string]command{"FROM": command{index: 1, name: "FROM", args: []string{"default"}}},
+			preambles: map[string]Command{"FROM": Command{Index: 1, Name: "FROM", Args: []string{"default"}}},
 		},
 		{
 			name:     "single action",
 			commands: "COPY a",
-			actions:  []command{{index: 1, name: "COPY", args: []string{"a"}}},
+			actions:  []Command{{Index: 1, Name: "COPY", Args: []string{"a"}}},
 		},
 		{
 			name:      "multiple commands",
 			commands:  "FROM default\nCOPY a",
-			preambles: map[string]command{"FROM": command{index: 1, name: "FROM", args: []string{"default"}}},
-			actions:   []command{{index: 2, name: "COPY", args: []string{"a"}}},
+			preambles: map[string]Command{"FROM": Command{Index: 1, Name: "FROM", Args: []string{"default"}}},
+			actions:   []Command{{Index: 2, Name: "COPY", Args: []string{"a"}}},
 		},
 		{
 			name:       "single unsupported command",
@@ -53,7 +53,7 @@ func TestCommands_Parse(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			script, err := parse(strings.NewReader(test.commands))
+			script, err := Parse(strings.NewReader(test.commands))
 			if err != nil {
 				if !test.shouldFail {
 					t.Fatal(err)
@@ -61,8 +61,8 @@ func TestCommands_Parse(t *testing.T) {
 				t.Log(err)
 				return
 			}
-			preambles := script.preambles
-			actions := script.actions
+			preambles := script.Preambles
+			actions := script.Actions
 			if len(test.preambles) != len(preambles) {
 				t.Fatalf("expecting %d preambles, got %d", len(test.preambles), len(preambles))
 			}
@@ -70,11 +70,11 @@ func TestCommands_Parse(t *testing.T) {
 				if preambles[name] == nil {
 					t.Errorf("missing expected preamble %s", name)
 				}
-				if cmd.index != preambles[name].index {
-					t.Errorf("%s preamble index mismatched: %d != %d", name, cmd.index, preambles[name].index)
+				if cmd.Index != preambles[name].Index {
+					t.Errorf("%s preamble index mismatched: %d != %d", name, cmd.Index, preambles[name].Index)
 				}
-				if len(cmd.args) != len(preambles[name].args) {
-					t.Errorf("%s preamble args mismatched: %d != %d", name, len(cmd.args), len(preambles[name].args))
+				if len(cmd.Args) != len(preambles[name].Args) {
+					t.Errorf("%s preamble args mismatched: %d != %d", name, len(cmd.Args), len(preambles[name].Args))
 				}
 			}
 
@@ -83,14 +83,14 @@ func TestCommands_Parse(t *testing.T) {
 			}
 
 			for i := range test.actions {
-				if test.actions[i].index != actions[i].index {
-					t.Errorf("expecting command index: %v, got: %v", test.actions[i].index, actions[i].index)
+				if test.actions[i].Index != actions[i].Index {
+					t.Errorf("expecting command index: %v, got: %v", test.actions[i].Index, actions[i].Index)
 				}
-				if test.actions[i].name != actions[i].name {
-					t.Errorf("expecting name: %v, got: %v", test.actions[i].name, actions[i].name)
+				if test.actions[i].Name != actions[i].Name {
+					t.Errorf("expecting name: %v, got: %v", test.actions[i].Name, actions[i].Name)
 				}
-				if len(test.actions[i].args) != len(actions[i].args) {
-					t.Errorf("expecting args count: %d, got: %d", len(test.actions[i].args), len(actions[i].args))
+				if len(test.actions[i].Args) != len(actions[i].Args) {
+					t.Errorf("expecting args count: %d, got: %d", len(test.actions[i].Args), len(actions[i].Args))
 				}
 			}
 		})

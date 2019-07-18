@@ -1,0 +1,10 @@
+FROM local
+WORKDIR /tmp/flareout
+
+COPY /var/log/system.log
+CAPTURE df -h
+CAPTURE df -i
+CAPTURE netstat -an
+CAPTURE ps -ef
+CAPTURE lsof -i 
+
