@@ -5,6 +5,7 @@ import (
 	"io"
 	"os/exec"
 	"regexp"
+	"syscall"
 )
 
 var (
@@ -13,15 +14,23 @@ var (
 )
 
 func CliRun(cmd string, args ...string) (io.Reader, error) {
-	output := new(bytes.Buffer)
-
-	command := exec.Command(cmd, args...)
-	command.Stdout = output
-	command.Stderr = output
+	command, output := prepareCmd(cmd, args...)
 
 	if err := command.Run(); err != nil {
 		return nil, err
 	}
+
+	return output, nil
+}
+
+func CliRunAs(uid, gid uint32, cmd string, args ...string) (io.Reader, error) {
+	command, output := prepareCmd(cmd, args...)
+	command.SysProcAttr.Credential = &syscall.Credential{Uid: uid, Gid: gid}
+
+	if err := command.Run(); err != nil {
+		return nil, err
+	}
+
 	return output, nil
 }
 
@@ -38,6 +47,14 @@ func CliParse(cmdStr string) (cmd string, args []string) {
 	cmd = parts[0]
 	args = parts[1:]
 	return
+}
+
+func prepareCmd(cmd string, args ...string) (*exec.Cmd, io.Reader) {
+	output := new(bytes.Buffer)
+	command := exec.Command(cmd, args...)
+	command.Stdout = output
+	command.Stderr = output
+	return command, output
 }
 
 func flatCmd(cmd string) string {

@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -33,7 +34,27 @@ func (e *Executor) Execute() error {
 	}
 	logrus.Debugf("Collecting data from machine %s", fromArg)
 
-	// TODO setup guid / uid
+	// setup guid / uid preamble
+	// expecting `AS <userid>[:<guid>]`
+	asCmd := e.script.Preambles[script.CmdAs]
+	var asUid, asGid int
+	if asCmd != nil && len(asCmd.Args) > 0 {
+		asParts := strings.Split(asCmd.Args[0], ":")
+
+		if len(asParts) > 1 {
+			if id, err := strconv.Atoi(asParts[1]); err != nil {
+				asGid = -1
+			} else {
+				asGid = id
+			}
+		}
+
+		if id, err := strconv.Atoi(asParts[0]); err != nil {
+			asUid = -1
+		} else {
+			asUid = id
+		}
+	}
 
 	// setup WORKDIR
 	workdir := "/tmp/flareout"
@@ -54,6 +75,11 @@ func (e *Executor) Execute() error {
 				logrus.Errorf("%s missing argument, skipping", cmd.Name)
 				continue
 			}
+
+			// TODO - COPY uses a go implementation which means uid/guid
+			// for the COPY cmd cannot be applied using the flare file.
+			// This may need to be changed to a os/cmd external call
+
 			// walk each arg and copy to workdir
 			for _, path := range cmd.Args {
 				if relPath, err := filepath.Rel(workdir, path); err == nil && !strings.HasPrefix(relPath, "..") {
@@ -123,7 +149,13 @@ func (e *Executor) Execute() error {
 				logrus.Debug("Skipping empty command")
 				continue
 			}
-			cmdReader, err := CliRun(cliCmd, cliArgs...)
+			var cmdReader io.Reader
+			var err error
+			if asUid > -1 {
+				cmdReader, err = CliRunAs(uint32(asUid), uint32(asGid), cliCmd, cliArgs...)
+			} else {
+				cmdReader, err = CliRun(cliCmd, cliArgs...)
+			}
 			if err != nil {
 				return err
 			}
