@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -307,6 +308,93 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 				t.Fatal(err)
 			}
 			if err := test.exec(script); err != nil {
+				if !test.shouldFail {
+					t.Fatal(err)
+				}
+				t.Log(err)
+				return
+			}
+
+		})
+	}
+}
+
+func TestExecutor_Exec_CAPTURE(t *testing.T) {
+	tests := []struct {
+		name       string
+		script     func() string
+		shouldFail bool
+	}{
+		{
+			name: "capture as default user and usergroup",
+			script: func() string {
+				return "FROM local\nCAPTURE echo 'helloFoo'"
+			},
+		},
+		{
+			name: "capture as specified user only",
+			script: func() string {
+				uid := os.Getuid()
+				return fmt.Sprintf("FROM local\n AS %d\nCAPTURE echo 'hello Bar'", uid)
+			},
+		},
+		{
+			name: "capture as specified user and specified group",
+			script: func() string {
+				uid := os.Getuid()
+				gid := os.Getgid()
+				return fmt.Sprintf("FROM local\nAS %d:%d\nCAPTURE echo 'hello Bar'", uid, gid)
+			},
+		},
+		{
+			name: "capture with badly formatted uid",
+			script: func() string {
+				return fmt.Sprintf("FROM local\n AS %s\nCAPTURE echo 'hello Bar'", "foo")
+			},
+			shouldFail: true,
+		},
+		{
+			name: "capture with badly formatted gid",
+			script: func() string {
+				uid := os.Getuid()
+				return fmt.Sprintf("FROM local\n AS %d:%s\nCAPTURE echo 'hello Bar'", uid, "foo")
+			},
+			shouldFail: true,
+		},
+		{
+			name: "capture with bad permission",
+			script: func() string {
+				uid := -1
+				return fmt.Sprintf("FROM local\n AS %d\nCAPTURE echo 'hello Bar'", uid)
+			},
+			shouldFail: true,
+		},
+	}
+
+	exec := func(s *script.Script) error {
+		workdir := "/tmp/flareout"
+		defer os.RemoveAll(workdir)
+
+		cmdStr := s.Actions[0].Args[0]
+		e := New(s)
+		if err := e.Execute(); err != nil {
+			return err
+		}
+
+		fileName := filepath.Join(workdir, fmt.Sprintf("%s.txt", flatCmd(cmdStr)))
+		if _, err := os.Stat(fileName); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			script, err := script.Parse(strings.NewReader(test.script()))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := exec(script); err != nil {
 				if !test.shouldFail {
 					t.Fatal(err)
 				}

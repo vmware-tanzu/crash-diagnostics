@@ -37,23 +37,25 @@ func (e *Executor) Execute() error {
 	// setup guid / uid preamble
 	// expecting `AS <userid>[:<guid>]`
 	asCmd := e.script.Preambles[script.CmdAs]
-	var asUid, asGid int
+	asUid := os.Getuid()
+	asGid := os.Getgid()
+
 	if asCmd != nil && len(asCmd.Args) > 0 {
 		asParts := strings.Split(asCmd.Args[0], ":")
 
 		if len(asParts) > 1 {
-			if id, err := strconv.Atoi(asParts[1]); err != nil {
-				asGid = -1
-			} else {
-				asGid = id
+			id, err := strconv.Atoi(asParts[1])
+			if err != nil {
+				return fmt.Errorf("Invalid groupid %s", asParts[1])
 			}
+			asGid = id
 		}
 
-		if id, err := strconv.Atoi(asParts[0]); err != nil {
-			asUid = -1
-		} else {
-			asUid = id
+		id, err := strconv.Atoi(asParts[0])
+		if err != nil {
+			return fmt.Errorf("Invalid userid %s", asParts[0])
 		}
+		asUid = id
 	}
 
 	// setup WORKDIR
@@ -142,20 +144,14 @@ func (e *Executor) Execute() error {
 			}
 
 			// capture command output
-			cmdStr := strings.Join(cmd.Args, " ")
+			cmdStr := cmd.Args[0]
 			logrus.Debugf("Parsing CLI command %v", cmdStr)
 			cliCmd, cliArgs := CliParse(cmdStr)
 			if cliCmd == "" {
 				logrus.Debug("Skipping empty command")
 				continue
 			}
-			var cmdReader io.Reader
-			var err error
-			if asUid > -1 {
-				cmdReader, err = CliRunAs(uint32(asUid), uint32(asGid), cliCmd, cliArgs...)
-			} else {
-				cmdReader, err = CliRun(cliCmd, cliArgs...)
-			}
+			cmdReader, err := CliRunAs(uint32(asUid), uint32(asGid), cliCmd, cliArgs...)
 			if err != nil {
 				return err
 			}

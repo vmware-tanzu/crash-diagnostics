@@ -34,14 +34,17 @@ func Parse(reader io.Reader) (*Script, error) {
 		// TODO additional validation needed:
 		// 1) validate preambles and args
 		// 2) validate each action and args
-		cmd := Command{Index: line, Name: cmdName, Args: tokens[1:]}
 		switch cmdName {
 		case CmdAs, CmdFrom, CmdWorkDir:
+			cmd := Command{Index: line, Name: cmdName, Args: tokens[1:]}
 			script.Preambles[cmdName] = &cmd
 		case CmdCopy:
+			cmd := Command{Index: line, Name: cmdName, Args: tokens[1:]}
 			script.Actions = append(script.Actions, cmd)
 		case CmdCapture:
-			script.Actions = append(script.Actions, cmd)
+			cmdStr := strings.Join(tokens[1:], " ")
+			command := Command{Index: line, Name: cmdName, Args: []string{cmdStr}}
+			script.Actions = append(script.Actions, command)
 		default:
 			return nil, fmt.Errorf("%s not supported", cmdName)
 		}

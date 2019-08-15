@@ -25,7 +25,9 @@ func CliRun(cmd string, args ...string) (io.Reader, error) {
 
 func CliRunAs(uid, gid uint32, cmd string, args ...string) (io.Reader, error) {
 	command, output := prepareCmd(cmd, args...)
-	command.SysProcAttr.Credential = &syscall.Credential{Uid: uid, Gid: gid}
+	command.SysProcAttr = &syscall.SysProcAttr{
+		Credential: &syscall.Credential{Uid: uid, Gid: gid, NoSetGroups: true},
+	}
 
 	if err := command.Run(); err != nil {
 		return nil, err
