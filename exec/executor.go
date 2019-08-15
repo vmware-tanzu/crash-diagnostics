@@ -26,6 +26,7 @@ func (e *Executor) Execute() error {
 	// setup FROM
 	fromArg := script.Defaults.FromValue
 	from := e.script.Preambles[script.CmdFrom]
+
 	if from != nil && len(from.Args) > 0 {
 		fromArg = from.Args[0]
 	}

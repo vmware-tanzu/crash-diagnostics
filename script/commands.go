@@ -40,6 +40,6 @@ type Command struct {
 }
 
 type Script struct {
-	Preambles map[string]*Command
+	Preambles map[string][]Command
 	Actions   []Command
 }

@@ -17,7 +17,7 @@ func Parse(reader io.Reader) (*Script, error) {
 	lineScanner := bufio.NewScanner(reader)
 	lineScanner.Split(bufio.ScanLines)
 	var script Script
-	script.Preambles = make(map[string]*Command)
+	script.Preambles = make(map[string][]Command)
 	line := 1
 	for lineScanner.Scan() {
 		text := strings.TrimSpace(lineScanner.Text())
@@ -35,9 +35,9 @@ func Parse(reader io.Reader) (*Script, error) {
 		// 1) validate preambles and args
 		// 2) validate each action and args
 		switch cmdName {
-		case CmdAs, CmdFrom, CmdWorkDir:
+		case CmdAs, CmdFrom, CmdWorkDir, CmdEnv:
 			cmd := Command{Index: line, Name: cmdName, Args: tokens[1:]}
-			script.Preambles[cmdName] = &cmd
+			script.Preambles[cmdName] = append(script.Preambles[cmdName], cmd)
 		case CmdCopy:
 			cmd := Command{Index: line, Name: cmdName, Args: tokens[1:]}
 			script.Actions = append(script.Actions, cmd)
