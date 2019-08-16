@@ -21,7 +21,7 @@ func Parse(reader io.Reader) (*Script, error) {
 	line := 1
 	for lineScanner.Scan() {
 		text := strings.TrimSpace(lineScanner.Text())
-		if text == "" {
+		if text == "" || text[0] == '#' {
 			line++
 			continue
 		}

@@ -62,7 +62,8 @@ func runOut(flag *outFlags, args []string) error {
 		return err
 	}
 
-	workdir := flare.Preambles[script.CmdWorkDir].Args[0]
+	workdirs := flare.Preambles[script.CmdWorkDir]
+	workdir := workdirs[len(workdirs)-1].Args[0]
 	if err := archiver.Tar(flag.output, workdir); err != nil {
 		return err
 	}

@@ -3,9 +3,12 @@ package exec
 import (
 	"bytes"
 	"io"
+	"os"
 	"os/exec"
 	"regexp"
 	"syscall"
+
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -13,22 +16,16 @@ var (
 	quoteSet = regexp.MustCompile(`[\"\']`)
 )
 
-func CliRun(cmd string, args ...string) (io.Reader, error) {
-	command, output := prepareCmd(cmd, args...)
-
-	if err := command.Run(); err != nil {
-		return nil, err
-	}
-
-	return output, nil
-}
-
-func CliRunAs(uid, gid uint32, cmd string, args ...string) (io.Reader, error) {
+func CliRun(uid, gid uint32, envs []string, cmd string, args ...string) (io.Reader, error) {
 	command, output := prepareCmd(cmd, args...)
 	command.SysProcAttr = &syscall.SysProcAttr{
 		Credential: &syscall.Credential{Uid: uid, Gid: gid, NoSetGroups: true},
 	}
+	if len(envs) > 0 {
+		command.Env = append(os.Environ(), envs...)
+	}
 
+	logrus.Debugf("Running command %v", command)
 	if err := command.Run(); err != nil {
 		return nil, err
 	}

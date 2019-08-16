@@ -10,9 +10,11 @@ var (
 	CmdWorkDir     = "WORKDIR"
 
 	Defaults = struct {
-		FromValue string
+		FromValue    string
+		WorkdirValue string
 	}{
-		FromValue: "local",
+		FromValue:    "local",
+		WorkdirValue: "/tmp/flareout",
 	}
 )
 

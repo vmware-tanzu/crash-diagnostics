@@ -25,8 +25,11 @@ func (e *Executor) Execute() error {
 	logrus.Info("Executing flare file")
 	// setup FROM
 	fromArg := script.Defaults.FromValue
-	from := e.script.Preambles[script.CmdFrom]
-
+	var from *script.Command
+	froms := e.script.Preambles[script.CmdFrom]
+	if len(froms) > 0 {
+		from = &froms[len(froms)-1] // ignore all other FROM instructions
+	}
 	if from != nil && len(from.Args) > 0 {
 		fromArg = from.Args[0]
 	}
@@ -37,7 +40,12 @@ func (e *Executor) Execute() error {
 
 	// setup guid / uid preamble
 	// expecting `AS <userid>[:<guid>]`
-	asCmd := e.script.Preambles[script.CmdAs]
+	var asCmd *script.Command
+	asCmds := e.script.Preambles[script.CmdAs]
+	if len(asCmds) > 0 {
+		asCmd = &asCmds[len(asCmds)-1] // ignore all other AS instructions
+	}
+
 	asUid := os.Getuid()
 	asGid := os.Getgid()
 
@@ -60,8 +68,13 @@ func (e *Executor) Execute() error {
 	}
 
 	// setup WORKDIR
-	workdir := "/tmp/flareout"
-	dir := e.script.Preambles[script.CmdWorkDir]
+	workdir := script.Defaults.WorkdirValue
+	var dir *script.Command
+	dirs := e.script.Preambles[script.CmdWorkDir]
+	if len(dirs) > 0 {
+		dir = &dirs[len(dirs)-1] // ignore other WORKDIR
+	}
+
 	if dir != nil && len(dir.Args) > 0 {
 		workdir = dir.Args[0]
 	}
@@ -69,6 +82,17 @@ func (e *Executor) Execute() error {
 		return err
 	}
 	logrus.Debugf("Using workdir %s", workdir)
+
+	// setup ENV
+	var envPairs []string
+	envs := e.script.Preambles[script.CmdEnv]
+	for _, env := range envs {
+		if len(env.Args) > 0 {
+			for _, arg := range env.Args {
+				envPairs = append(envPairs, arg)
+			}
+		}
+	}
 
 	// process actions
 	for _, cmd := range e.script.Actions {
@@ -152,7 +176,7 @@ func (e *Executor) Execute() error {
 				logrus.Debug("Skipping empty command")
 				continue
 			}
-			cmdReader, err := CliRunAs(uint32(asUid), uint32(asGid), cliCmd, cliArgs...)
+			cmdReader, err := CliRun(uint32(asUid), uint32(asGid), envPairs, cliCmd, cliArgs...)
 			if err != nil {
 				return err
 			}

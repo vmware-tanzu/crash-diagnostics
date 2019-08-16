@@ -18,37 +18,55 @@ func TestCommands_Parse(t *testing.T) {
 			commands:  "FROM default",
 			preambles: map[string][]Command{"FROM": {{Index: 1, Name: "FROM", Args: []string{"default"}}}},
 		},
-		// {
-		// 	name:     "single action",
-		// 	commands: "COPY a",
-		// 	actions:  []Command{{Index: 1, Name: "COPY", Args: []string{"a"}}},
-		// },
-		// {
-		// 	name:      "multiple commands",
-		// 	commands:  "FROM default\nCOPY a",
-		// 	preambles: map[string]Command{"FROM": Command{Index: 1, Name: "FROM", Args: []string{"default"}}},
-		// 	actions:   []Command{{Index: 2, Name: "COPY", Args: []string{"a"}}},
-		// },
-		// {
-		// 	name:       "single unsupported command",
-		// 	commands:   "FOO default",
-		// 	shouldFail: true,
-		// },
-		// {
-		// 	name:       "multiple with unsupported command",
-		// 	commands:   "FOO default\nCOPY /abc /edf",
-		// 	shouldFail: true,
-		// },
-		// {
-		// 	name:       "single low case command",
-		// 	commands:   "foo default",
-		// 	shouldFail: true,
-		// },
-		// {
-		// 	name:       "multiple with low case command",
-		// 	commands:   "From default\nCOPY /abc /edf",
-		// 	shouldFail: true,
-		// },
+		{
+			name:     "single action",
+			commands: "COPY a",
+			actions:  []Command{{Index: 1, Name: "COPY", Args: []string{"a"}}},
+		},
+		{
+			name:      "multiple commands",
+			commands:  "FROM default\nCOPY a",
+			preambles: map[string][]Command{"FROM": {{Index: 1, Name: "FROM", Args: []string{"default"}}}},
+			actions:   []Command{{Index: 2, Name: "COPY", Args: []string{"a"}}},
+		},
+		{
+			name:       "single unsupported command",
+			commands:   "FOO default",
+			shouldFail: true,
+		},
+		{
+			name:       "multiple with unsupported command",
+			commands:   "FOO default\nCOPY /abc /edf",
+			shouldFail: true,
+		},
+		{
+			name:       "single low case command",
+			commands:   "foo default",
+			shouldFail: true,
+		},
+		{
+			name:       "multiple with low case command",
+			commands:   "From default\nCOPY /abc /edf",
+			shouldFail: true,
+		},
+		{
+			name:      "multiple commands with comment",
+			commands:  "FROM default\n# Ignore this line\nCOPY a",
+			preambles: map[string][]Command{"FROM": {{Index: 1, Name: "FROM", Args: []string{"default"}}}},
+			actions:   []Command{{Index: 3, Name: "COPY", Args: []string{"a"}}},
+		},
+		{
+			name:      "multiple commands with multiple comments",
+			commands:  "# Ignore this line\n# Ignore this line\nFROM default\n# Ignore this line\nCOPY a",
+			preambles: map[string][]Command{"FROM": {{Index: 3, Name: "FROM", Args: []string{"default"}}}},
+			actions:   []Command{{Index: 5, Name: "COPY", Args: []string{"a"}}},
+		},
+		{
+			name:      "all comments",
+			commands:  "# Ignore this line\n# Ignore this line\n# Ignore this line",
+			preambles: make(map[string][]Command),
+			actions:   make([]Command, 0),
+		},
 	}
 
 	for _, test := range tests {

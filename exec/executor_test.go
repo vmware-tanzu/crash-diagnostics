@@ -3,6 +3,7 @@ package exec
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -44,6 +45,7 @@ func TestExecutor_Exec_Preambles(t *testing.T) {
 				return s
 			},
 			exec: func(s *script.Script) error {
+				defer os.RemoveAll("/tmp/flareout")
 				e := New(s)
 				return e.Execute()
 			},
@@ -56,14 +58,12 @@ func TestExecutor_Exec_Preambles(t *testing.T) {
 				return s
 			},
 			exec: func(s *script.Script) error {
+				defer os.RemoveAll("/tmp/flareout")
 				e := New(s)
 				if err := e.Execute(); err != nil {
 					return err
 				}
 				if _, err := os.Stat("/tmp/flareout"); err != nil {
-					return err
-				}
-				if err := os.RemoveAll("/tmp/flarout"); err != nil {
 					return err
 				}
 				return nil
@@ -76,6 +76,7 @@ func TestExecutor_Exec_Preambles(t *testing.T) {
 				return s
 			},
 			exec: func(s *script.Script) error {
+				defer os.RemoveAll("/tmp/flarewd")
 				e := New(s)
 				if err := e.Execute(); err != nil {
 					return err
@@ -83,9 +84,49 @@ func TestExecutor_Exec_Preambles(t *testing.T) {
 				if _, err := os.Stat("/tmp/flarewd"); err != nil {
 					return err
 				}
-				if err := os.RemoveAll("/tmp/flarewd"); err != nil {
+				return nil
+			},
+		},
+		{
+			name: "setup ENV",
+			script: func() *script.Script {
+				src := "FROM local\nWORKDIR /tmp/flarewd\nENV MSG1=HELLO\nENV MSG2=WORLD MSG3=!\nCAPTURE ./flarec"
+				s, _ := script.Parse(strings.NewReader(src))
+				return s
+			},
+			exec: func(s *script.Script) error {
+				workdir := s.Preambles[script.CmdWorkDir][0].Args[0]
+				defer os.RemoveAll(workdir)
+				// create a executable script to apply ENV
+				fname := "flarec"
+				execFile, err := os.OpenFile(fname, os.O_CREATE|os.O_RDWR, 0755)
+				if err != nil {
 					return err
 				}
+				t.Logf("Creating test exec file %s", fname)
+				_, err = io.Copy(execFile, strings.NewReader("#!/bin/sh\necho $MSG1 $MSG2 $MSG3"))
+				if err := execFile.Close(); err != nil {
+					return err
+				}
+				defer os.Remove(fname)
+
+				// test
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+				if _, err := os.Stat(workdir); err != nil {
+					return err
+				}
+				fileName := filepath.Join(workdir, fmt.Sprintf("%s.txt", flatCmd("./flarec")))
+				file, err := ioutil.ReadFile(fileName)
+				if err != nil {
+					return err
+				}
+				if strings.TrimSpace(string(file)) != "HELLO WORLD !" {
+					return fmt.Errorf("ENV value not applied during CAPATURE")
+				}
+
 				return nil
 			},
 		},
@@ -117,6 +158,8 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 			script: "FROM local\nCOPY /tmp/flare-foo.txt",
 			exec: func(s *script.Script) error {
 				workdir := "/tmp/flareout"
+				defer os.RemoveAll(workdir)
+
 				srcFile := s.Actions[0].Args[0]
 				if err := makeTestFakeFile(t, srcFile, "HelloFoo"); err != nil {
 					return err
@@ -132,9 +175,6 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 				if _, err := os.Stat(copiedFile); err != nil {
 					return err
 				}
-				if err := os.RemoveAll(workdir); err != nil {
-					return err
-				}
 				return nil
 			},
 		},
@@ -143,6 +183,8 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 			script: "FROM local\nCOPY /tmp/flare-foo.txt /tmp/flare-bar.txt",
 			exec: func(s *script.Script) error {
 				workdir := "/tmp/flareout"
+				defer os.RemoveAll(workdir)
+
 				srcFile0 := s.Actions[0].Args[0]
 				srcFile1 := s.Actions[0].Args[1]
 				if err := makeTestFakeFile(t, srcFile0, "HelloFoo"); err != nil {
@@ -168,9 +210,6 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 				if _, err := os.Stat(cpFile1); err != nil {
 					return err
 				}
-				if err := os.RemoveAll(workdir); err != nil {
-					return err
-				}
 				return nil
 			},
 		},
@@ -179,6 +218,8 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 			script: "FROM local\nCOPY /tmp/flare-foo.txt\nCOPY /tmp/flare-bar.txt",
 			exec: func(s *script.Script) error {
 				workdir := "/tmp/flareout"
+				defer os.RemoveAll(workdir)
+
 				srcFile0 := s.Actions[0].Args[0]
 				srcFile1 := s.Actions[1].Args[0]
 				if err := makeTestFakeFile(t, srcFile0, "HelloFoo"); err != nil {
@@ -204,9 +245,6 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 				if _, err := os.Stat(cpFile1); err != nil {
 					return err
 				}
-				if err := os.RemoveAll(workdir); err != nil {
-					return err
-				}
 				return nil
 			},
 		},
@@ -215,6 +253,8 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 			script: "FROM local\nCOPY /tmp/flare-src",
 			exec: func(s *script.Script) error {
 				workdir := "/tmp/flareout"
+				defer os.RemoveAll(workdir)
+
 				srcDir0 := s.Actions[0].Args[0]
 				if err := makeTestDir(t, srcDir0); err != nil {
 					return err
@@ -244,9 +284,6 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 				if _, err := os.Stat(cpFile1); err != nil {
 					return err
 				}
-				if err := os.RemoveAll(workdir); err != nil {
-					return err
-				}
 				return nil
 			},
 		},
@@ -255,6 +292,8 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 			script: "FROM local\nCOPY /tmp/flare-src /tmp/baz.txt",
 			exec: func(s *script.Script) error {
 				workdir := "/tmp/flareout"
+				defer os.RemoveAll(workdir)
+
 				srcDir0 := s.Actions[0].Args[0]
 				if err := makeTestDir(t, srcDir0); err != nil {
 					return err
@@ -291,9 +330,6 @@ func TestExecutor_Exec_COPY(t *testing.T) {
 					return err
 				}
 				if _, err := os.Stat(cpFile2); err != nil {
-					return err
-				}
-				if err := os.RemoveAll(workdir); err != nil {
 					return err
 				}
 				return nil
@@ -382,6 +418,7 @@ func TestExecutor_Exec_CAPTURE(t *testing.T) {
 		}
 
 		fileName := filepath.Join(workdir, fmt.Sprintf("%s.txt", flatCmd(cmdStr)))
+		t.Logf("CAPTURE %s -> %s", cmdStr, fileName)
 		if _, err := os.Stat(fileName); err != nil {
 			return err
 		}
