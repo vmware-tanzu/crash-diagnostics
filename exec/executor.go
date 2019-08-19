@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -24,173 +23,131 @@ func New(src *script.Script) *Executor {
 func (e *Executor) Execute() error {
 	logrus.Info("Executing flare file")
 	// setup FROM
-	fromArg := script.Defaults.FromValue
-	var from *script.Command
-	froms := e.script.Preambles[script.CmdFrom]
-	if len(froms) > 0 {
-		from = &froms[len(froms)-1] // ignore all other FROM instructions
+	fromCmds, ok := e.script.Preambles[script.CmdFrom]
+	if !ok {
+		return fmt.Errorf("Script missing valid %s", script.CmdFrom)
 	}
-	if from != nil && len(from.Args) > 0 {
-		fromArg = from.Args[0]
+	fromCmd := fromCmds[0].(*script.FromCommand)
+
+	// setup AS instruction
+	asCmds, ok := e.script.Preambles[script.CmdAs]
+	if !ok {
+		return fmt.Errorf("Script missing valid %s", script.CmdAs)
 	}
-	if fromArg != script.Defaults.FromValue {
-		return fmt.Errorf("%s only supports %s", script.CmdFrom, script.Defaults.FromValue)
-	}
-	logrus.Debugf("Collecting data from machine %s", fromArg)
-
-	// setup guid / uid preamble
-	// expecting `AS <userid>[:<guid>]`
-	var asCmd *script.Command
-	asCmds := e.script.Preambles[script.CmdAs]
-	if len(asCmds) > 0 {
-		asCmd = &asCmds[len(asCmds)-1] // ignore all other AS instructions
-	}
-
-	asUid := os.Getuid()
-	asGid := os.Getgid()
-
-	if asCmd != nil && len(asCmd.Args) > 0 {
-		asParts := strings.Split(asCmd.Args[0], ":")
-
-		if len(asParts) > 1 {
-			id, err := strconv.Atoi(asParts[1])
-			if err != nil {
-				return fmt.Errorf("Invalid groupid %s", asParts[1])
-			}
-			asGid = id
-		}
-
-		id, err := strconv.Atoi(asParts[0])
-		if err != nil {
-			return fmt.Errorf("Invalid userid %s", asParts[0])
-		}
-		asUid = id
+	asCmd := asCmds[0].(*script.AsCommand)
+	asUid, asGid, err := asCmd.GetCredentials()
+	if err != nil {
+		return err
 	}
 
 	// setup WORKDIR
-	workdir := script.Defaults.WorkdirValue
-	var dir *script.Command
-	dirs := e.script.Preambles[script.CmdWorkDir]
-	if len(dirs) > 0 {
-		dir = &dirs[len(dirs)-1] // ignore other WORKDIR
+	dirs, ok := e.script.Preambles[script.CmdWorkDir]
+	if !ok {
+		return fmt.Errorf("Script missing valid %s", script.CmdWorkDir)
 	}
-
-	if dir != nil && len(dir.Args) > 0 {
-		workdir = dir.Args[0]
-	}
-	if err := os.MkdirAll(workdir, 0744); err != nil && !os.IsExist(err) {
+	workdir := dirs[0].(*script.WorkdirCommand)
+	if err := os.MkdirAll(workdir.Dir(), 0744); err != nil && !os.IsExist(err) {
 		return err
 	}
-	logrus.Debugf("Using workdir %s", workdir)
+	logrus.Debugf("Using workdir %s", workdir.Dir())
 
 	// setup ENV
 	var envPairs []string
-	envs := e.script.Preambles[script.CmdEnv]
-	for _, env := range envs {
-		if len(env.Args) > 0 {
-			for _, arg := range env.Args {
+	envCmds := e.script.Preambles[script.CmdEnv]
+	for _, envCmd := range envCmds {
+		env := envCmd.(*script.EnvCommand)
+		if len(env.Envs()) > 0 {
+			for _, arg := range env.Envs() {
 				envPairs = append(envPairs, arg)
 			}
 		}
 	}
 
-	// process actions
-	for _, cmd := range e.script.Actions {
-		switch cmd.Name {
-		case script.CmdCopy:
-			if len(cmd.Args) < script.Cmds[script.CmdCopy].MinArgs {
-				logrus.Errorf("%s missing argument, skipping", cmd.Name)
-				continue
-			}
+	// process action for each FROM source
 
-			// TODO - COPY uses a go implementation which means uid/guid
-			// for the COPY cmd cannot be applied using the flare file.
-			// This may need to be changed to a os/cmd external call
+	for _, fromSrc := range fromCmd.Sources() {
 
-			// walk each arg and copy to workdir
-			for _, path := range cmd.Args {
-				if relPath, err := filepath.Rel(workdir, path); err == nil && !strings.HasPrefix(relPath, "..") {
-					logrus.Errorf("%s path %s cannot be relative to workdir %s", cmd.Name, path, workdir)
-					continue
-				}
-				logrus.Debugf("Copying content from %s", path)
+		for _, action := range e.script.Actions {
+			switch cmd := action.(type) {
+			case *script.CopyCommand:
+				// TODO - COPY uses a go implementation which means uid/guid
+				// for the COPY cmd cannot be applied using the flare file.
+				// This may need to be changed to a os/cmd external call
 
-				err := filepath.Walk(path, func(file string, finfo os.FileInfo, err error) error {
-					if err != nil {
-						return err
+				// walk each arg and copy to workdir
+				for _, path := range cmd.Args() {
+					if relPath, err := filepath.Rel(workdir.Dir(), path); err == nil && !strings.HasPrefix(relPath, "..") {
+						logrus.Errorf("%s path %s cannot be relative to workdir %s", cmd.Name(), path, workdir.Dir())
+						continue
 					}
-					//TODO subpath calculation flattens the file source, that's wrong.
-					// subpath should include full path of file, not just the base.
-					subpath := filepath.Join(workdir, filepath.Base(file))
-					switch {
-					case finfo.Mode().IsDir():
-						if err := os.MkdirAll(subpath, 0744); err != nil && !os.IsExist(err) {
+					logrus.Debugf("Copying content from %s", path)
+
+					err := filepath.Walk(path, func(file string, finfo os.FileInfo, err error) error {
+						if err != nil {
 							return err
 						}
-						logrus.Debugf("Created subpath %s", subpath)
+						//TODO subpath calculation flattens the file source, that's wrong.
+						// subpath should include full path of file, not just the base.
+						subpath := filepath.Join(workdir.Dir(), filepath.Base(file))
+						switch {
+						case finfo.Mode().IsDir():
+							if err := os.MkdirAll(subpath, 0744); err != nil && !os.IsExist(err) {
+								return err
+							}
+							logrus.Debugf("Created subpath %s", subpath)
+							return nil
+						case finfo.Mode().IsRegular():
+							logrus.Debugf("Copying %s -> %s", file, subpath)
+							srcFile, err := os.Open(file)
+							if err != nil {
+								return err
+							}
+							defer srcFile.Close()
+
+							desFile, err := os.Create(subpath)
+							if err != nil {
+								return err
+							}
+							n, err := io.Copy(desFile, srcFile)
+							if closeErr := desFile.Close(); closeErr != nil {
+								return closeErr
+							}
+							if err != nil {
+								return err
+							}
+
+							if n != finfo.Size() {
+								return fmt.Errorf("%s did not complet for %s", cmd.Name, file)
+							}
+						default:
+							return fmt.Errorf("%s unknown file type for %s", cmd.Name, file)
+						}
 						return nil
-					case finfo.Mode().IsRegular():
-						logrus.Debugf("Copying %s -> %s", file, subpath)
-						srcFile, err := os.Open(file)
-						if err != nil {
-							return err
-						}
-						defer srcFile.Close()
+					})
 
-						desFile, err := os.Create(subpath)
-						if err != nil {
-							return err
-						}
-						n, err := io.Copy(desFile, srcFile)
-						if closeErr := desFile.Close(); closeErr != nil {
-							return closeErr
-						}
-						if err != nil {
-							return err
-						}
-
-						if n != finfo.Size() {
-							return fmt.Errorf("%s did not complet for %s", cmd.Name, file)
-						}
-					default:
-						return fmt.Errorf("%s unknown file type for %s", cmd.Name, file)
+					if err != nil {
+						logrus.Error(err)
 					}
-					return nil
-				})
-
-				if err != nil {
-					logrus.Error(err)
 				}
+			case *script.CaptureCommand:
+				// capture command output
+				cmdStr := cmd.GetCliString()
+				logrus.Debugf("Parsing CLI command %v", cmdStr)
+				cliCmd, cliArgs := cmd.GetParsedCli()
+				cmdReader, err := CliRun(uint32(asUid), uint32(asGid), envPairs, cliCmd, cliArgs...)
+				if err != nil {
+					return err
+				}
+				fileName := fmt.Sprintf("%s.txt", flatCmd(cmdStr))
+				filePath := filepath.Join(workdir.Dir(), fileName)
+				logrus.Debugf("Capturing command out: [%s] -> %s", cmdStr, filePath)
+				if err := writeFile(cmdReader, filePath); err != nil {
+					return err
+				}
+			default:
 			}
-		case script.CmdCapture:
-			if len(cmd.Args) < script.Cmds[script.CmdCopy].MinArgs {
-				logrus.Errorf("%s missing argument", cmd.Name)
-				continue
-			}
-
-			// capture command output
-			cmdStr := cmd.Args[0]
-			logrus.Debugf("Parsing CLI command %v", cmdStr)
-			cliCmd, cliArgs := CliParse(cmdStr)
-			if cliCmd == "" {
-				logrus.Debug("Skipping empty command")
-				continue
-			}
-			cmdReader, err := CliRun(uint32(asUid), uint32(asGid), envPairs, cliCmd, cliArgs...)
-			if err != nil {
-				return err
-			}
-			fileName := fmt.Sprintf("%s.txt", flatCmd(cmdStr))
-			filePath := filepath.Join(workdir, fileName)
-			logrus.Debugf("Capturing command out: [%s] -> %s", cmdStr, filePath)
-			if err := writeFile(cmdReader, filePath); err != nil {
-				return err
-			}
-
-		default:
 		}
 	}
-
 	return nil
 }
 

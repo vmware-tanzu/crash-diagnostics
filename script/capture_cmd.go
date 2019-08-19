@@ -1,0 +1,50 @@
+package script
+
+import (
+	"os/exec"
+)
+
+type CaptureCommand struct {
+	cmd
+	cliCmdName string
+	cliCmdArgs []string
+}
+
+func NewCaptureCommand(index int, args []string) (*CaptureCommand, error) {
+	cmd := &CaptureCommand{cmd: cmd{index: index, name: CmdCapture, args: args}}
+
+	if err := validateCmdArgs(CmdCapture, args); err != nil {
+		return nil, err
+	}
+
+	cmdName, cmdArgs := cliParse(cmd.args[0])
+	cmd.cliCmdName = cmdName
+	cmd.cliCmdArgs = cmdArgs
+
+	_, err := exec.LookPath(cmdName)
+	if err != nil {
+		return nil, err
+	}
+
+	return cmd, nil
+}
+
+func (c *CaptureCommand) Index() int {
+	return c.cmd.index
+}
+
+func (c *CaptureCommand) Name() string {
+	return c.cmd.name
+}
+
+func (c *CaptureCommand) Args() []string {
+	return c.cmd.args
+}
+
+func (c *CaptureCommand) GetCliString() string {
+	return c.args[0]
+}
+
+func (c *CaptureCommand) GetParsedCli() (string, []string) {
+	return c.cliCmdName, c.cliCmdArgs
+}
