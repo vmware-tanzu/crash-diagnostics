@@ -5,6 +5,15 @@ import (
 	"strings"
 )
 
+// Machine represents a source machine
+type Machine struct {
+	Address string
+}
+
+func (m Machine) String() string {
+	return m.Address
+}
+
 // FromCommand represents instruction
 // FROM <source>
 // Where source can be:
@@ -13,14 +22,14 @@ import (
 // 3. cluster: uses Kuberentes cluster information to get list
 type FromCommand struct {
 	cmd
-	sources []string
+	machines []Machine
 }
 
 // NewFromCommand creates a value of type FromCommand
-func NewFromCommand(index int, name string, args []string) (*FromCommand, error) {
-	cmd := &FromCommand{cmd: cmd{index: index, name: name, args: args}}
+func NewFromCommand(index int, args []string) (*FromCommand, error) {
+	cmd := &FromCommand{cmd: cmd{index: index, name: CmdFrom, args: args}}
 
-	if err := validateCmdArgs(name, args); err != nil {
+	if err := validateCmdArgs(CmdFrom, args); err != nil {
 		return nil, err
 	}
 
@@ -28,7 +37,7 @@ func NewFromCommand(index int, name string, args []string) (*FromCommand, error)
 		if arg != Defaults.FromValue {
 			return nil, fmt.Errorf("%s only supports %s", CmdFrom, Defaults.FromValue)
 		}
-		cmd.sources = append(cmd.sources, strings.TrimSpace(arg))
+		cmd.machines = append(cmd.machines, Machine{Address: strings.TrimSpace(arg)})
 		break // ignoring everything else. TODO fix.
 	}
 
@@ -47,6 +56,6 @@ func (c *FromCommand) Args() []string {
 	return c.cmd.args
 }
 
-func (c *FromCommand) Sources() []string {
-	return c.sources
+func (c *FromCommand) Machines() []Machine {
+	return c.machines
 }

@@ -1,9 +1,5 @@
 package script
 
-import (
-	"os/exec"
-)
-
 type CaptureCommand struct {
 	cmd
 	cliCmdName string
@@ -20,11 +16,6 @@ func NewCaptureCommand(index int, args []string) (*CaptureCommand, error) {
 	cmdName, cmdArgs := cliParse(cmd.args[0])
 	cmd.cliCmdName = cmdName
 	cmd.cliCmdArgs = cmdArgs
-
-	_, err := exec.LookPath(cmdName)
-	if err != nil {
-		return nil, err
-	}
 
 	return cmd, nil
 }

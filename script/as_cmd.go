@@ -48,6 +48,14 @@ func (c *AsCommand) Args() []string {
 	return c.cmd.args
 }
 
+func (c *AsCommand) GetUserId() string {
+	return c.userid
+}
+
+func (c *AsCommand) GetGroupId() string {
+	return c.groupid
+}
+
 func (c *AsCommand) GetCredentials() (uid, gid int, err error) {
 	if c.user != nil {
 		return getUserIds(c.user)

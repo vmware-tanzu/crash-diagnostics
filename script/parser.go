@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"os"
 	"regexp"
 	"strings"
 
@@ -52,7 +53,7 @@ func Parse(reader io.Reader) (*Script, error) {
 			}
 			script.Preambles[CmdEnv] = append(script.Preambles[CmdEnv], cmd)
 		case CmdFrom:
-			cmd, err := NewFromCommand(line, CmdFrom, tokens[1:])
+			cmd, err := NewFromCommand(line, tokens[1:])
 			if err != nil {
 				return nil, err
 			}
@@ -124,7 +125,7 @@ func cliParse(cmdStr string) (cmd string, args []string) {
 // enforceDefaults adds missing defaults to the script
 func enforceDefaults(script *Script) (*Script, error) {
 	if _, ok := script.Preambles[CmdAs]; !ok {
-		cmd, err := NewAsCommand(0, nil)
+		cmd, err := NewAsCommand(0, []string{fmt.Sprintf("%d:%d", os.Getuid(), os.Getgid())})
 		if err != nil {
 			return script, err
 		}
@@ -132,7 +133,7 @@ func enforceDefaults(script *Script) (*Script, error) {
 	}
 
 	if _, ok := script.Preambles[CmdFrom]; !ok {
-		cmd, err := NewFromCommand(0, CmdFrom, []string{Defaults.FromValue})
+		cmd, err := NewFromCommand(0, []string{Defaults.FromValue})
 		if err != nil {
 			return nil, err
 		}

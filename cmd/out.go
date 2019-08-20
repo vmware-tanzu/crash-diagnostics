@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 
@@ -62,9 +63,12 @@ func runOut(flag *outFlags, args []string) error {
 		return err
 	}
 
-	workdirs := flare.Preambles[script.CmdWorkDir]
-	workdir := workdirs[len(workdirs)-1].Args[0]
-	if err := archiver.Tar(flag.output, workdir); err != nil {
+	workdirs, ok := flare.Preambles[script.CmdWorkDir]
+	if !ok {
+		return fmt.Errorf("Script missing %s", script.CmdWorkDir)
+	}
+	workdir := workdirs[0].(*script.WorkdirCommand)
+	if err := archiver.Tar(flag.output, workdir.Dir()); err != nil {
 		return err
 	}
 	logrus.Infof("Created archive %s", flag.output)

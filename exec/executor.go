@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -65,8 +66,11 @@ func (e *Executor) Execute() error {
 
 	// process action for each FROM source
 
-	for _, fromSrc := range fromCmd.Sources() {
-
+	for _, fromMachine := range fromCmd.Machines() {
+		machine := fromMachine.Address
+		if machine != script.Defaults.FromValue {
+			return fmt.Errorf("FROM only support 'local'")
+		}
 		for _, action := range e.script.Actions {
 			switch cmd := action.(type) {
 			case *script.CopyCommand:
@@ -76,7 +80,7 @@ func (e *Executor) Execute() error {
 
 				// walk each arg and copy to workdir
 				for _, path := range cmd.Args() {
-					if relPath, err := filepath.Rel(workdir.Dir(), path); err == nil && !strings.HasPrefix(relPath, "..") {
+					if relPath, err := filepath.Rel(filepath.Join(workdir.Dir(), machine), path); err == nil && !strings.HasPrefix(relPath, "..") {
 						logrus.Errorf("%s path %s cannot be relative to workdir %s", cmd.Name(), path, workdir.Dir())
 						continue
 					}
@@ -88,7 +92,7 @@ func (e *Executor) Execute() error {
 						}
 						//TODO subpath calculation flattens the file source, that's wrong.
 						// subpath should include full path of file, not just the base.
-						subpath := filepath.Join(workdir.Dir(), filepath.Base(file))
+						subpath := filepath.Join(workdir.Dir(), machine, filepath.Base(file))
 						switch {
 						case finfo.Mode().IsDir():
 							if err := os.MkdirAll(subpath, 0744); err != nil && !os.IsExist(err) {
@@ -117,10 +121,10 @@ func (e *Executor) Execute() error {
 							}
 
 							if n != finfo.Size() {
-								return fmt.Errorf("%s did not complet for %s", cmd.Name, file)
+								return fmt.Errorf("%s did not complet for %s", cmd.Name(), file)
 							}
 						default:
-							return fmt.Errorf("%s unknown file type for %s", cmd.Name, file)
+							return fmt.Errorf("%s unknown file type for %s", cmd.Name(), file)
 						}
 						return nil
 					})
@@ -134,6 +138,11 @@ func (e *Executor) Execute() error {
 				cmdStr := cmd.GetCliString()
 				logrus.Debugf("Parsing CLI command %v", cmdStr)
 				cliCmd, cliArgs := cmd.GetParsedCli()
+
+				if _, err := exec.LookPath(cliCmd); err != nil {
+					return err
+				}
+
 				cmdReader, err := CliRun(uint32(asUid), uint32(asGid), envPairs, cliCmd, cliArgs...)
 				if err != nil {
 					return err
