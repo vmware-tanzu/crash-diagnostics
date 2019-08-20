@@ -1,6 +1,7 @@
 package script
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -28,117 +29,140 @@ func runCommandTest(t *testing.T, test commandTest) {
 		t.Log(err)
 	}
 }
-func TestCommands_Parse(t *testing.T) {
-	// tests := []struct {
-	// 	name       string
-	// 	commands   string
-	// 	preambles  map[string][]Command
-	// 	actions    []Command
-	// 	shouldFail bool
-	// }{
-	// 	{
-	// 		name:      "single preamble",
-	// 		commands:  "FROM default",
-	// 		preambles: map[string][]Command{"FROM": NewFromCommand(1, []string{"default"})},
-	// 	},
-	// 	{
-	// 		name:     "single action",
-	// 		commands: "COPY a",
-	// 		actions:  []Command{{Index: 1, Name: "COPY", Args: []string{"a"}}},
-	// 	},
-	// 	{
-	// 		name:      "multiple commands",
-	// 		commands:  "FROM default\nCOPY a",
-	// 		preambles: map[string][]Command{"FROM": {{Index: 1, Name: "FROM", Args: []string{"default"}}}},
-	// 		actions:   []Command{{Index: 2, Name: "COPY", Args: []string{"a"}}},
-	// 	},
-	// 	{
-	// 		name:       "single unsupported command",
-	// 		commands:   "FOO default",
-	// 		shouldFail: true,
-	// 	},
-	// 	{
-	// 		name:       "multiple with unsupported command",
-	// 		commands:   "FOO default\nCOPY /abc /edf",
-	// 		shouldFail: true,
-	// 	},
-	// 	{
-	// 		name:       "single low case command",
-	// 		commands:   "foo default",
-	// 		shouldFail: true,
-	// 	},
-	// 	{
-	// 		name:       "multiple with low case command",
-	// 		commands:   "From default\nCOPY /abc /edf",
-	// 		shouldFail: true,
-	// 	},
-	// 	{
-	// 		name:      "multiple commands with comment",
-	// 		commands:  "FROM default\n# Ignore this line\nCOPY a",
-	// 		preambles: map[string][]Command{"FROM": {{Index: 1, Name: "FROM", Args: []string{"default"}}}},
-	// 		actions:   []Command{{Index: 3, Name: "COPY", Args: []string{"a"}}},
-	// 	},
-	// 	{
-	// 		name:      "multiple commands with multiple comments",
-	// 		commands:  "# Ignore this line\n# Ignore this line\nFROM default\n# Ignore this line\nCOPY a",
-	// 		preambles: map[string][]Command{"FROM": {{Index: 3, Name: "FROM", Args: []string{"default"}}}},
-	// 		actions:   []Command{{Index: 5, Name: "COPY", Args: []string{"a"}}},
-	// 	},
-	// 	{
-	// 		name:      "all comments",
-	// 		commands:  "# Ignore this line\n# Ignore this line\n# Ignore this line",
-	// 		preambles: make(map[string][]Command),
-	// 		actions:   make([]Command, 0),
-	// 	},
-	// }
+func TestCommandParse(t *testing.T) {
+	tests := []commandTest{
+		{
+			name: "Preambles only",
+			source: func() string {
+				return "FROM local \n WORKDIR /a/b/c \n ENV a=b \n ENV c=d"
+			},
+			script: func(s *Script) error {
+				fromCmds := s.Preambles[CmdFrom]
+				if len(fromCmds) != 1 {
+					return fmt.Errorf("Script has unexpected preamble %s", CmdFrom)
+				}
+				wdCmds := s.Preambles[CmdWorkDir]
+				if len(wdCmds) != 1 {
+					return fmt.Errorf("Script has  unexpected preamble %s", CmdWorkDir)
+				}
+				envCmds := s.Preambles[CmdEnv]
+				if len(envCmds) != 2 {
+					return fmt.Errorf("Script has unexpected preamble %s", envCmds)
+				}
+				asCmds := s.Preambles[CmdAs]
+				if len(asCmds) != 1 {
+					return fmt.Errorf("Script missing default preamble %s", CmdAs)
+				}
+				return nil
+			},
+		},
+		{
+			name: "Actions only",
+			source: func() string {
+				return "CAPTURE /a/b c d\n CAPTURE e f\n COPY f/g h/i/k"
+			},
+			script: func(s *Script) error {
+				fromCmds := s.Preambles[CmdFrom]
+				if len(fromCmds) != 1 {
+					return fmt.Errorf("Script missing default preamble %s", CmdFrom)
+				}
+				wdCmds := s.Preambles[CmdWorkDir]
+				if len(wdCmds) != 1 {
+					return fmt.Errorf("Script missing default preamble %s", CmdWorkDir)
+				}
+				asCmds := s.Preambles[CmdAs]
+				if len(asCmds) != 1 {
+					return fmt.Errorf("Script missing preamble %s", asCmds)
+				}
+				actions := s.Actions
+				if len(actions) != 3 {
+					return fmt.Errorf("Script has unexpected number of actions %d", len(actions))
+				}
+				return nil
+			},
+		},
+		{
+			name: "Preambles and actions",
+			source: func() string {
+				return "CAPTURE /a/b c d\n CAPTURE e f\n COPY f/g h/i/k\nWORKDIR l/m/n"
+			},
+			script: func(s *Script) error {
+				fromCmds := s.Preambles[CmdFrom]
+				if len(fromCmds) != 1 {
+					return fmt.Errorf("Script missing default preamble %s", CmdFrom)
+				}
+				wdCmds := s.Preambles[CmdWorkDir]
+				if len(wdCmds) != 1 {
+					return fmt.Errorf("Script missing default preamble %s", CmdWorkDir)
+				}
+				dir := wdCmds[0].(*WorkdirCommand).Dir()
+				if dir != "l/m/n" {
+					return fmt.Errorf("Script instruction WORKDIR has unexpected Dir %s", dir)
+				}
+				asCmds := s.Preambles[CmdAs]
+				if len(asCmds) != 1 {
+					return fmt.Errorf("Script missing preamble %s", asCmds)
+				}
+				actions := s.Actions
+				if len(actions) != 3 {
+					return fmt.Errorf("Script has unexpected number of actions %d", len(actions))
+				}
+				return nil
+			},
+		},
+		{
+			name: "Script with comments",
+			source: func() string {
+				return "CAPTURE /a/b c d\n#this is a comment\n COPY f/g h/i/k\nWORKDIR l/m/n"
+			},
+			script: func(s *Script) error {
+				actions := s.Actions
+				if len(actions) != 2 {
+					return fmt.Errorf("Script has unexpected number of actions %d", len(actions))
+				}
+				cpCmd := s.Actions[1].(*CopyCommand)
+				if len(cpCmd.Args()) != 2 {
+					return fmt.Errorf("Unexpected arg count %d for COPY in script with comment", len(cpCmd.Args()))
+				}
+				return nil
+			},
+		},
+		{
+			name: "Script with only comments",
+			source: func() string {
+				return "#Comment line 1\n#this is a comment line 2\n # Comment line 3"
+			},
+			script: func(s *Script) error {
+				actions := s.Actions
+				if len(actions) != 0 {
+					return fmt.Errorf("Script has unexpected number of actions %d", len(actions))
+				}
+				preambles := s.Preambles
+				if len(preambles) != 3 {
+					return fmt.Errorf("Script has unexpected number of preambles %d", len(preambles))
+				}
+				return nil
+			},
+		},
+		{
+			name: "Script with bad preamble",
+			source: func() string {
+				return "CAPTURE /a/b c d\n CAPTURE e f\n COPY f/g h/i/k\nENV a|b"
+			},
+			shouldFail: true,
+		},
+		{
+			name: "Script with bad action",
+			source: func() string {
+				return "CAPTURE\n CAPTURE e f\n COPY f/g h/i/k\nENV a|b"
+			},
+			shouldFail: true,
+		},
+	}
 
-	// for _, test := range tests {
-	// 	t.Run(test.name, func(t *testing.T) {
-	// 		script, err := Parse(strings.NewReader(test.commands))
-	// 		if err != nil {
-	// 			if !test.shouldFail {
-	// 				t.Fatal(err)
-	// 			}
-	// 			t.Log(err)
-	// 			return
-	// 		}
-	// 		preambles := script.Preambles
-	// 		actions := script.Actions
-	// 		if len(test.preambles) != len(preambles) {
-	// 			t.Fatalf("expecting %d preambles, got %d", len(test.preambles), len(preambles))
-	// 		}
-	// 		for name, cmds := range test.preambles {
-	// 			if preambles[name] == nil {
-	// 				t.Errorf("missing expected preamble %s", name)
-	// 			}
-	// 			if len(cmds) != len(preambles[name]) {
-	// 				t.Errorf("unexpected number directives for preamble %s: expecting %d got %d", name, len(preambles[name]), len(cmds))
-	// 			}
-	// 			for i, cmd := range cmds {
-	// 				if cmd.Index != preambles[name][i].Index {
-	// 					t.Errorf("%s preamble index mismatched: %d != %d", name, cmd.Index, preambles[name][i].Index)
-	// 				}
-	// 				if len(cmd.Args) != len(preambles[name][i].Args) {
-	// 					t.Errorf("%s preamble args mismatched: %d != %d", name, len(cmd.Args), len(preambles[name][i].Args))
-	// 				}
-	// 			}
-	// 		}
-
-	// 		if len(test.actions) != len(actions) {
-	// 			t.Fatalf("expecting %d actions, got %d", len(test.actions), len(actions))
-	// 		}
-
-	// 		for i := range test.actions {
-	// 			if test.actions[i].Index != actions[i].Index {
-	// 				t.Errorf("expecting command index: %v, got: %v", test.actions[i].Index, actions[i].Index)
-	// 			}
-	// 			if test.actions[i].Name != actions[i].Name {
-	// 				t.Errorf("expecting name: %v, got: %v", test.actions[i].Name, actions[i].Name)
-	// 			}
-	// 			if len(test.actions[i].Args) != len(actions[i].Args) {
-	// 				t.Errorf("expecting args count: %d, got: %d", len(test.actions[i].Args), len(actions[i].Args))
-	// 			}
-	// 		}
-	// 	})
-	// }
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			runCommandTest(t, test)
+		})
+	}
 }
