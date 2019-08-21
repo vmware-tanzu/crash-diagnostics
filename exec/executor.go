@@ -22,7 +22,7 @@ func New(src *script.Script) *Executor {
 }
 
 func (e *Executor) Execute() error {
-	logrus.Info("Executing flare file")
+	logrus.Info("Executing script file")
 	// setup FROM
 	fromCmds, ok := e.script.Preambles[script.CmdFrom]
 	if !ok {
@@ -40,6 +40,7 @@ func (e *Executor) Execute() error {
 	if err != nil {
 		return err
 	}
+	logrus.Debugf("Executing as user %s:%s", asCmd.GetUserId(), asCmd.GetGroupId())
 
 	// setup WORKDIR
 	dirs, ok := e.script.Preambles[script.CmdWorkDir]
@@ -67,10 +68,15 @@ func (e *Executor) Execute() error {
 	// process action for each FROM source
 
 	for _, fromMachine := range fromCmd.Machines() {
-		machine := fromMachine.Address
-		if machine != script.Defaults.FromValue {
+		machineAddr := fromMachine.Address
+		if machineAddr != script.Defaults.FromValue {
 			return fmt.Errorf("FROM only support 'local'")
 		}
+		machineWorkdir := filepath.Join(workdir.Dir(), machineAddr)
+		if err := os.MkdirAll(machineWorkdir, 0744); err != nil && !os.IsExist(err) {
+			return err
+		}
+
 		for _, action := range e.script.Actions {
 			switch cmd := action.(type) {
 			case *script.CopyCommand:
@@ -80,8 +86,8 @@ func (e *Executor) Execute() error {
 
 				// walk each arg and copy to workdir
 				for _, path := range cmd.Args() {
-					if relPath, err := filepath.Rel(filepath.Join(workdir.Dir(), machine), path); err == nil && !strings.HasPrefix(relPath, "..") {
-						logrus.Errorf("%s path %s cannot be relative to workdir %s", cmd.Name(), path, workdir.Dir())
+					if relPath, err := filepath.Rel(machineWorkdir, path); err == nil && !strings.HasPrefix(relPath, "..") {
+						logrus.Errorf("%s path %s cannot be relative to workdir %s", cmd.Name(), path, machineWorkdir)
 						continue
 					}
 					logrus.Debugf("Copying content from %s", path)
@@ -92,7 +98,7 @@ func (e *Executor) Execute() error {
 						}
 						//TODO subpath calculation flattens the file source, that's wrong.
 						// subpath should include full path of file, not just the base.
-						subpath := filepath.Join(workdir.Dir(), machine, filepath.Base(file))
+						subpath := filepath.Join(machineWorkdir, filepath.Base(file))
 						switch {
 						case finfo.Mode().IsDir():
 							if err := os.MkdirAll(subpath, 0744); err != nil && !os.IsExist(err) {
@@ -136,7 +142,7 @@ func (e *Executor) Execute() error {
 			case *script.CaptureCommand:
 				// capture command output
 				cmdStr := cmd.GetCliString()
-				logrus.Debugf("Parsing CLI command %v", cmdStr)
+				logrus.Debugf("Capturing CLI command %v", cmdStr)
 				cliCmd, cliArgs := cmd.GetParsedCli()
 
 				if _, err := exec.LookPath(cliCmd); err != nil {
@@ -147,9 +153,10 @@ func (e *Executor) Execute() error {
 				if err != nil {
 					return err
 				}
+
 				fileName := fmt.Sprintf("%s.txt", flatCmd(cmdStr))
-				filePath := filepath.Join(workdir.Dir(), fileName)
-				logrus.Debugf("Capturing command out: [%s] -> %s", cmdStr, filePath)
+				filePath := filepath.Join(machineWorkdir, fileName)
+				logrus.Debugf("Capturing output of [%s] -into-> %s", cmdStr, filePath)
 				if err := writeFile(cmdReader, filePath); err != nil {
 					return err
 				}
@@ -169,5 +176,7 @@ func writeFile(source io.Reader, filePath string) error {
 	if _, err := io.Copy(file, source); err != nil {
 		return err
 	}
+	logrus.Debugf("Wrote file %s", filePath)
+
 	return nil
 }

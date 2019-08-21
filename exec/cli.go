@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	spaceSep = regexp.MustCompile(`\s`)
-	quoteSet = regexp.MustCompile(`[\"\']`)
+	spaceSep   = regexp.MustCompile(`\s`)
+	cmdFlatten = regexp.MustCompile(`[\s\"\'/\.]`)
 )
 
 func CliRun(uid, gid uint32, envs []string, cmd string, args ...string) (io.Reader, error) {
@@ -25,7 +25,7 @@ func CliRun(uid, gid uint32, envs []string, cmd string, args ...string) (io.Read
 		command.Env = append(os.Environ(), envs...)
 	}
 
-	logrus.Debugf("Running command %v", command)
+	logrus.Debugf("Running command %s", cmd)
 	if err := command.Run(); err != nil {
 		return nil, err
 	}
@@ -57,6 +57,5 @@ func prepareCmd(cmd string, args ...string) (*exec.Cmd, io.Reader) {
 }
 
 func flatCmd(cmd string) string {
-	str := quoteSet.ReplaceAllString(cmd, "")
-	return spaceSep.ReplaceAllString(str, "_")
+	return cmdFlatten.ReplaceAllString(cmd, "_")
 }

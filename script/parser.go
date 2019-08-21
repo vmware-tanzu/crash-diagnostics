@@ -18,7 +18,7 @@ var (
 )
 
 func Parse(reader io.Reader) (*Script, error) {
-	logrus.Debugln("Parsing flare script")
+	logrus.Info("Parsing script file")
 	lineScanner := bufio.NewScanner(reader)
 	lineScanner.Split(bufio.ScanLines)
 	var script Script
