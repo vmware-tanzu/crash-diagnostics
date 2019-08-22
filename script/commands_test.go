@@ -1,98 +1,168 @@
 package script
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
 
-func TestCommands_Parse(t *testing.T) {
-	tests := []struct {
-		name       string
-		commands   string
-		preambles  map[string]Command
-		actions    []Command
-		shouldFail bool
-	}{
+type commandTest struct {
+	name       string
+	source     func() string
+	script     func(*Script) error
+	shouldFail bool
+}
+
+func runCommandTest(t *testing.T, test commandTest) {
+	script, err := Parse(strings.NewReader(test.source()))
+	if err != nil {
+		if !test.shouldFail {
+			t.Fatal(err)
+		}
+		t.Log(err)
+		return
+	}
+	if err := test.script(script); err != nil {
+		if !test.shouldFail {
+			t.Fatal(err)
+		}
+		t.Log(err)
+	}
+}
+func TestCommandParse(t *testing.T) {
+	tests := []commandTest{
 		{
-			name:      "single preamble",
-			commands:  "FROM default",
-			preambles: map[string]Command{"FROM": Command{Index: 1, Name: "FROM", Args: []string{"default"}}},
+			name: "Preambles only",
+			source: func() string {
+				return "FROM local \n WORKDIR /a/b/c \n ENV a=b \n ENV c=d"
+			},
+			script: func(s *Script) error {
+				fromCmds := s.Preambles[CmdFrom]
+				if len(fromCmds) != 1 {
+					return fmt.Errorf("Script has unexpected preamble %s", CmdFrom)
+				}
+				wdCmds := s.Preambles[CmdWorkDir]
+				if len(wdCmds) != 1 {
+					return fmt.Errorf("Script has  unexpected preamble %s", CmdWorkDir)
+				}
+				envCmds := s.Preambles[CmdEnv]
+				if len(envCmds) != 2 {
+					return fmt.Errorf("Script has unexpected preamble %s", envCmds)
+				}
+				asCmds := s.Preambles[CmdAs]
+				if len(asCmds) != 1 {
+					return fmt.Errorf("Script missing default preamble %s", CmdAs)
+				}
+				return nil
+			},
 		},
 		{
-			name:     "single action",
-			commands: "COPY a",
-			actions:  []Command{{Index: 1, Name: "COPY", Args: []string{"a"}}},
+			name: "Actions only",
+			source: func() string {
+				return "CAPTURE /a/b c d\n CAPTURE e f\n COPY f/g h/i/k"
+			},
+			script: func(s *Script) error {
+				fromCmds := s.Preambles[CmdFrom]
+				if len(fromCmds) != 1 {
+					return fmt.Errorf("Script missing default preamble %s", CmdFrom)
+				}
+				wdCmds := s.Preambles[CmdWorkDir]
+				if len(wdCmds) != 1 {
+					return fmt.Errorf("Script missing default preamble %s", CmdWorkDir)
+				}
+				asCmds := s.Preambles[CmdAs]
+				if len(asCmds) != 1 {
+					return fmt.Errorf("Script missing preamble %s", asCmds)
+				}
+				actions := s.Actions
+				if len(actions) != 3 {
+					return fmt.Errorf("Script has unexpected number of actions %d", len(actions))
+				}
+				return nil
+			},
 		},
 		{
-			name:      "multiple commands",
-			commands:  "FROM default\nCOPY a",
-			preambles: map[string]Command{"FROM": Command{Index: 1, Name: "FROM", Args: []string{"default"}}},
-			actions:   []Command{{Index: 2, Name: "COPY", Args: []string{"a"}}},
+			name: "Preambles and actions",
+			source: func() string {
+				return "CAPTURE /a/b c d\n CAPTURE e f\n COPY f/g h/i/k\nWORKDIR l/m/n"
+			},
+			script: func(s *Script) error {
+				fromCmds := s.Preambles[CmdFrom]
+				if len(fromCmds) != 1 {
+					return fmt.Errorf("Script missing default preamble %s", CmdFrom)
+				}
+				wdCmds := s.Preambles[CmdWorkDir]
+				if len(wdCmds) != 1 {
+					return fmt.Errorf("Script missing default preamble %s", CmdWorkDir)
+				}
+				dir := wdCmds[0].(*WorkdirCommand).Dir()
+				if dir != "l/m/n" {
+					return fmt.Errorf("Script instruction WORKDIR has unexpected Dir %s", dir)
+				}
+				asCmds := s.Preambles[CmdAs]
+				if len(asCmds) != 1 {
+					return fmt.Errorf("Script missing preamble %s", asCmds)
+				}
+				actions := s.Actions
+				if len(actions) != 3 {
+					return fmt.Errorf("Script has unexpected number of actions %d", len(actions))
+				}
+				return nil
+			},
 		},
 		{
-			name:       "single unsupported command",
-			commands:   "FOO default",
+			name: "Script with comments",
+			source: func() string {
+				return "CAPTURE /a/b c d\n#this is a comment\n COPY f/g h/i/k\nWORKDIR l/m/n"
+			},
+			script: func(s *Script) error {
+				actions := s.Actions
+				if len(actions) != 2 {
+					return fmt.Errorf("Script has unexpected number of actions %d", len(actions))
+				}
+				cpCmd := s.Actions[1].(*CopyCommand)
+				if len(cpCmd.Args()) != 2 {
+					return fmt.Errorf("Unexpected arg count %d for COPY in script with comment", len(cpCmd.Args()))
+				}
+				return nil
+			},
+		},
+		{
+			name: "Script with only comments",
+			source: func() string {
+				return "#Comment line 1\n#this is a comment line 2\n # Comment line 3"
+			},
+			script: func(s *Script) error {
+				actions := s.Actions
+				if len(actions) != 0 {
+					return fmt.Errorf("Script has unexpected number of actions %d", len(actions))
+				}
+				preambles := s.Preambles
+				if len(preambles) != 3 {
+					return fmt.Errorf("Script has unexpected number of preambles %d", len(preambles))
+				}
+				return nil
+			},
+		},
+		{
+			name: "Script with bad preamble",
+			source: func() string {
+				return "CAPTURE /a/b c d\n CAPTURE e f\n COPY f/g h/i/k\nENV a|b"
+			},
 			shouldFail: true,
 		},
 		{
-			name:       "multiple with unsupported command",
-			commands:   "FOO default\nCOPY /abc /edf",
-			shouldFail: true,
-		},
-		{
-			name:       "single low case command",
-			commands:   "foo default",
-			shouldFail: true,
-		},
-		{
-			name:       "multiple with low case command",
-			commands:   "From default\nCOPY /abc /edf",
+			name: "Script with bad action",
+			source: func() string {
+				return "CAPTURE\n CAPTURE e f\n COPY f/g h/i/k\nENV a|b"
+			},
 			shouldFail: true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			script, err := Parse(strings.NewReader(test.commands))
-			if err != nil {
-				if !test.shouldFail {
-					t.Fatal(err)
-				}
-				t.Log(err)
-				return
-			}
-			preambles := script.Preambles
-			actions := script.Actions
-			if len(test.preambles) != len(preambles) {
-				t.Fatalf("expecting %d preambles, got %d", len(test.preambles), len(preambles))
-			}
-			for name, cmd := range test.preambles {
-				if preambles[name] == nil {
-					t.Errorf("missing expected preamble %s", name)
-				}
-				if cmd.Index != preambles[name].Index {
-					t.Errorf("%s preamble index mismatched: %d != %d", name, cmd.Index, preambles[name].Index)
-				}
-				if len(cmd.Args) != len(preambles[name].Args) {
-					t.Errorf("%s preamble args mismatched: %d != %d", name, len(cmd.Args), len(preambles[name].Args))
-				}
-			}
-
-			if len(test.actions) != len(actions) {
-				t.Fatalf("expecting %d actions, got %d", len(test.actions), len(actions))
-			}
-
-			for i := range test.actions {
-				if test.actions[i].Index != actions[i].Index {
-					t.Errorf("expecting command index: %v, got: %v", test.actions[i].Index, actions[i].Index)
-				}
-				if test.actions[i].Name != actions[i].Name {
-					t.Errorf("expecting name: %v, got: %v", test.actions[i].Name, actions[i].Name)
-				}
-				if len(test.actions[i].Args) != len(actions[i].Args) {
-					t.Errorf("expecting args count: %d, got: %d", len(test.actions[i].Args), len(actions[i].Args))
-				}
-			}
+			runCommandTest(t, test)
 		})
 	}
 }

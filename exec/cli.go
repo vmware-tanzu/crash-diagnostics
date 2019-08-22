@@ -3,25 +3,33 @@ package exec
 import (
 	"bytes"
 	"io"
+	"os"
 	"os/exec"
 	"regexp"
+	"syscall"
+
+	"github.com/sirupsen/logrus"
 )
 
 var (
-	spaceSep = regexp.MustCompile(`\s`)
-	quoteSet = regexp.MustCompile(`[\"\']`)
+	spaceSep   = regexp.MustCompile(`\s`)
+	cmdFlatten = regexp.MustCompile(`[\s\"\'/\.]`)
 )
 
-func CliRun(cmd string, args ...string) (io.Reader, error) {
-	output := new(bytes.Buffer)
+func CliRun(uid, gid uint32, envs []string, cmd string, args ...string) (io.Reader, error) {
+	command, output := prepareCmd(cmd, args...)
+	command.SysProcAttr = &syscall.SysProcAttr{
+		Credential: &syscall.Credential{Uid: uid, Gid: gid, NoSetGroups: true},
+	}
+	if len(envs) > 0 {
+		command.Env = append(os.Environ(), envs...)
+	}
 
-	command := exec.Command(cmd, args...)
-	command.Stdout = output
-	command.Stderr = output
-
+	logrus.Debugf("Running command %s", cmd)
 	if err := command.Run(); err != nil {
 		return nil, err
 	}
+
 	return output, nil
 }
 
@@ -40,7 +48,14 @@ func CliParse(cmdStr string) (cmd string, args []string) {
 	return
 }
 
+func prepareCmd(cmd string, args ...string) (*exec.Cmd, io.Reader) {
+	output := new(bytes.Buffer)
+	command := exec.Command(cmd, args...)
+	command.Stdout = output
+	command.Stderr = output
+	return command, output
+}
+
 func flatCmd(cmd string) string {
-	str := quoteSet.ReplaceAllString(cmd, "")
-	return spaceSep.ReplaceAllString(str, "_")
+	return cmdFlatten.ReplaceAllString(cmd, "_")
 }
