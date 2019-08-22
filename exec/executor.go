@@ -96,9 +96,24 @@ func (e *Executor) Execute() error {
 						if err != nil {
 							return err
 						}
-						//TODO subpath calculation flattens the file source, that's wrong.
-						// subpath should include full path of file, not just the base.
-						subpath := filepath.Join(machineWorkdir, filepath.Base(file))
+						relPath := file
+						if filepath.IsAbs(file) {
+							relPath, err = filepath.Rel("/", file)
+							if err != nil {
+								return err
+							}
+						}
+
+						// setup subpath where source is copied to
+						subpath := filepath.Join(machineWorkdir, relPath)
+						subpathDir := filepath.Dir(subpath)
+						if _, err := os.Stat(subpathDir); err != nil && os.IsNotExist(err) {
+							if err := os.MkdirAll(subpathDir, 0744); err != nil && !os.IsExist(err) {
+								return err
+							}
+							logrus.Debugf("Created parent dir %s", subpathDir)
+						}
+
 						switch {
 						case finfo.Mode().IsDir():
 							if err := os.MkdirAll(subpath, 0744); err != nil && !os.IsExist(err) {

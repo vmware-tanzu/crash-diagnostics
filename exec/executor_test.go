@@ -2,8 +2,11 @@ package exec
 
 import (
 	"flag"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -97,211 +100,105 @@ func TestExecutor_New(t *testing.T) {
 	}
 }
 
-// func TestExecutor_Exec_COPY(t *testing.T) {
-// 	tests := []struct {
-// 		name       string
-// 		script     string
-// 		exec       func(*script.Script) error
-// 		shouldFail bool
-// 	}{
-// 		{
-// 			name:   "copy command with single file",
-// 			script: "FROM local\nCOPY /tmp/flare-foo.txt",
-// 			exec: func(s *script.Script) error {
-// 				workdir := "/tmp/flareout"
-// 				defer os.RemoveAll(workdir)
+func TestExecutor(t *testing.T) {
+	tests := []execTest{
+		{
+			name: "Executing all commands",
+			source: func() string {
+				var src strings.Builder
+				src.WriteString("# This is a sample comment\n")
+				src.WriteString("#### START\n")
+				src.WriteString("FROM local\n")
+				src.WriteString("WORKDIR /tmp/foo\n")
+				src.WriteString("CAPTURE /bin/echo HELLO\n")
+				src.WriteString("COPY /tmp/buzz.txt\n")
+				src.WriteString("ENV MSG0=HELLO MSG1=WORLD\n")
+				src.WriteString("CAPTURE ./bar.sh\n")
+				src.WriteString("COPY /tmp/foodir /tmp/bardir /tmp/buzz.txt\n")
+				src.WriteString("##### END")
+				return src.String()
+			},
+			exec: func(s *script.Script) error {
+				// create an executable script to apply ENV
+				scriptName := "bar.sh"
+				sh := "#!/bin/sh\necho $MSG1 $MSG2"
+				msgExpected := "HELLO WORLD"
+				if err := createTestShellScript(t, scriptName, sh); err != nil {
+					return err
+				}
+				defer os.RemoveAll(scriptName)
 
-// 				srcFile := s.Actions[0].Args[0]
-// 				if err := makeTestFakeFile(t, srcFile, "HelloFoo"); err != nil {
-// 					return err
-// 				}
-// 				defer os.Remove(srcFile)
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address
+				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
+				defer os.RemoveAll(workdir.Dir())
 
-// 				e := New(s)
-// 				if err := e.Execute(); err != nil {
-// 					return err
-// 				}
+				// create fake files and dirs to copy
+				var srcPaths []string
+				for _, cmd := range []script.Command{s.Actions[1], s.Actions[3]} {
+					cpCmd := cmd.(*script.CopyCommand)
+					for i, path := range cpCmd.Args() {
+						srcPaths = append(srcPaths, path)
+						if strings.HasSuffix(path, "dir") { // create dir/file
+							if err := makeTestDir(t, path); err != nil {
+								return err
+							}
+							file := filepath.Join(path, fmt.Sprintf("file-%d.txt", i))
+							if err := makeTestFakeFile(t, file, fmt.Sprintf("HelloFoo-%d", i)); err != nil {
+								return err
+							}
+						} else { // create just file
+							if err := makeTestFakeFile(t, path, "HelloFoo"); err != nil {
+								return err
+							}
+						}
+						defer os.RemoveAll(path)
+					}
+				}
 
-// 				copiedFile := filepath.Join(workdir, filepath.Base(srcFile))
-// 				if _, err := os.Stat(copiedFile); err != nil {
-// 					return err
-// 				}
-// 				return nil
-// 			},
-// 		},
-// 		{
-// 			name:   "copy command with multiple files",
-// 			script: "FROM local\nCOPY /tmp/flare-foo.txt /tmp/flare-bar.txt",
-// 			exec: func(s *script.Script) error {
-// 				workdir := "/tmp/flareout"
-// 				defer os.RemoveAll(workdir)
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
 
-// 				srcFile0 := s.Actions[0].Args[0]
-// 				srcFile1 := s.Actions[0].Args[1]
-// 				if err := makeTestFakeFile(t, srcFile0, "HelloFoo"); err != nil {
-// 					return err
-// 				}
-// 				defer os.Remove(srcFile0)
+				// validate cap cmds
+				for _, cmd := range []script.Command{s.Actions[0], s.Actions[2]} {
+					capCmd := cmd.(*script.CaptureCommand)
+					fileName := filepath.Join(workdir.Dir(), machine, fmt.Sprintf("%s.txt", flatCmd(capCmd.GetCliString())))
+					if _, err := os.Stat(fileName); err != nil {
+						return err
+					}
 
-// 				if err := makeTestFakeFile(t, srcFile1, "HelloBar"); err != nil {
-// 					return err
-// 				}
-// 				defer os.Remove(srcFile1)
+					if strings.HasSuffix(fileName, ".sh") {
+						file, err := ioutil.ReadFile(fileName)
+						if err != nil {
+							return err
+						}
+						if strings.TrimSpace(string(file)) != msgExpected {
+							return fmt.Errorf("CAPTURE ./bar.sh generated unexpected content")
+						}
+					}
+				}
 
-// 				e := New(s)
-// 				if err := e.Execute(); err != nil {
-// 					return err
-// 				}
+				// validate cp cmds
+				for _, path := range srcPaths {
+					relPath, err := filepath.Rel("/", path)
+					if err != nil {
+						return err
+					}
+					fileName := filepath.Join(workdir.Dir(), machine, relPath)
+					if _, err := os.Stat(fileName); err != nil {
+						return err
+					}
+				}
 
-// 				cpFile0 := filepath.Join(workdir, filepath.Base(srcFile0))
-// 				cpFile1 := filepath.Join(workdir, filepath.Base(srcFile1))
-// 				if _, err := os.Stat(cpFile0); err != nil {
-// 					return err
-// 				}
-// 				if _, err := os.Stat(cpFile1); err != nil {
-// 					return err
-// 				}
-// 				return nil
-// 			},
-// 		},
-// 		{
-// 			name:   "copy command with multiple COPYs",
-// 			script: "FROM local\nCOPY /tmp/flare-foo.txt\nCOPY /tmp/flare-bar.txt",
-// 			exec: func(s *script.Script) error {
-// 				workdir := "/tmp/flareout"
-// 				defer os.RemoveAll(workdir)
+				return nil
+			},
+		},
+	}
 
-// 				srcFile0 := s.Actions[0].Args[0]
-// 				srcFile1 := s.Actions[1].Args[0]
-// 				if err := makeTestFakeFile(t, srcFile0, "HelloFoo"); err != nil {
-// 					return err
-// 				}
-// 				defer os.Remove(srcFile0)
-
-// 				if err := makeTestFakeFile(t, srcFile1, "HelloBar"); err != nil {
-// 					return err
-// 				}
-// 				defer os.Remove(srcFile1)
-
-// 				e := New(s)
-// 				if err := e.Execute(); err != nil {
-// 					return err
-// 				}
-
-// 				cpFile0 := filepath.Join(workdir, filepath.Base(srcFile0))
-// 				cpFile1 := filepath.Join(workdir, filepath.Base(srcFile1))
-// 				if _, err := os.Stat(cpFile0); err != nil {
-// 					return err
-// 				}
-// 				if _, err := os.Stat(cpFile1); err != nil {
-// 					return err
-// 				}
-// 				return nil
-// 			},
-// 		},
-// 		{
-// 			name:   "copy command with a directory source",
-// 			script: "FROM local\nCOPY /tmp/flare-src",
-// 			exec: func(s *script.Script) error {
-// 				workdir := "/tmp/flareout"
-// 				defer os.RemoveAll(workdir)
-
-// 				srcDir0 := s.Actions[0].Args[0]
-// 				if err := makeTestDir(t, srcDir0); err != nil {
-// 					return err
-// 				}
-// 				defer os.RemoveAll(srcDir0)
-// 				srcFile0 := filepath.Join(srcDir0, "foo.txt")
-// 				srcFile1 := filepath.Join(srcDir0, "bar.txt")
-// 				if err := makeTestFakeFile(t, srcFile0, "HelloFoo"); err != nil {
-// 					return err
-// 				}
-// 				defer os.Remove(srcFile0)
-// 				if err := makeTestFakeFile(t, srcFile1, "HelloBar"); err != nil {
-// 					return err
-// 				}
-// 				defer os.Remove(srcFile1)
-
-// 				e := New(s)
-// 				if err := e.Execute(); err != nil {
-// 					return err
-// 				}
-
-// 				cpFile0 := filepath.Join(workdir, filepath.Base(srcFile0))
-// 				cpFile1 := filepath.Join(workdir, filepath.Base(srcFile1))
-// 				if _, err := os.Stat(cpFile0); err != nil {
-// 					return err
-// 				}
-// 				if _, err := os.Stat(cpFile1); err != nil {
-// 					return err
-// 				}
-// 				return nil
-// 			},
-// 		},
-// 		{
-// 			name:   "copy command with a directory source and a file",
-// 			script: "FROM local\nCOPY /tmp/flare-src /tmp/baz.txt",
-// 			exec: func(s *script.Script) error {
-// 				workdir := "/tmp/flareout"
-// 				defer os.RemoveAll(workdir)
-
-// 				srcDir0 := s.Actions[0].Args[0]
-// 				if err := makeTestDir(t, srcDir0); err != nil {
-// 					return err
-// 				}
-// 				defer os.RemoveAll(srcDir0)
-// 				srcFile0 := filepath.Join(srcDir0, "foo.txt")
-// 				srcFile1 := filepath.Join(srcDir0, "bar.txt")
-// 				srcFile2 := s.Actions[0].Args[1]
-// 				if err := makeTestFakeFile(t, srcFile0, "HelloFoo"); err != nil {
-// 					return err
-// 				}
-// 				defer os.Remove(srcFile0)
-// 				if err := makeTestFakeFile(t, srcFile1, "HelloBar"); err != nil {
-// 					return err
-// 				}
-// 				defer os.Remove(srcFile1)
-// 				if err := makeTestFakeFile(t, srcFile2, "HelloBaz"); err != nil {
-// 					return err
-// 				}
-// 				defer os.Remove(srcFile2)
-
-// 				e := New(s)
-// 				if err := e.Execute(); err != nil {
-// 					return err
-// 				}
-
-// 				cpFile0 := filepath.Join(workdir, filepath.Base(srcFile0))
-// 				cpFile1 := filepath.Join(workdir, filepath.Base(srcFile1))
-// 				cpFile2 := filepath.Join(workdir, filepath.Base(srcFile2))
-// 				if _, err := os.Stat(cpFile0); err != nil {
-// 					return err
-// 				}
-// 				if _, err := os.Stat(cpFile1); err != nil {
-// 					return err
-// 				}
-// 				if _, err := os.Stat(cpFile2); err != nil {
-// 					return err
-// 				}
-// 				return nil
-// 			},
-// 		},
-// 	}
-
-// 	for _, test := range tests {
-// 		t.Run(test.name, func(t *testing.T) {
-// 			script, err := script.Parse(strings.NewReader(test.script))
-// 			if err != nil {
-// 				t.Fatal(err)
-// 			}
-// 			if err := test.exec(script); err != nil {
-// 				if !test.shouldFail {
-// 					t.Fatal(err)
-// 				}
-// 				t.Log(err)
-// 				return
-// 			}
-
-// 		})
-// 	}
-// }
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			runExecutorTest(t, test)
+		})
+	}
+}
