@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-
 	"gitlab.eng.vmware.com/vivienv/flare/script"
 )
 
@@ -65,8 +64,22 @@ func (e *Executor) Execute() error {
 		}
 	}
 
-	// process action for each FROM source
+	// retrieve KUBECONFIG and setup client connection
+	cfgs, ok := e.script.Preambles[script.CmdKubeConfig]
+	if !ok {
+		return fmt.Errorf("Script missing valid %s", script.CmdKubeConfig)
+	}
+	cfgCmd := cfgs[0].(*script.KubeConfigCommand)
+	k8sClient, err := getK8sClient(cfgCmd.Config())
+	if err != nil {
+		logrus.Errorf("Failed to create Kubernetes API server client: %s", err)
+	} else {
+		if err := dumpClusterInfo(k8sClient, filepath.Join(workdir.Dir(), "cluster-dump.json")); err != nil {
+			logrus.Errorf("Failed to retrieve cluster information: %s", err)
+		}
+	}
 
+	// process actions for each cluster resource specified in FROM
 	for _, fromMachine := range fromCmd.Machines() {
 		machineAddr := fromMachine.Address
 		if machineAddr != script.Defaults.FromValue {

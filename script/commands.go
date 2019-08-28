@@ -1,5 +1,10 @@
 package script
 
+import (
+	"os"
+	"path/filepath"
+)
+
 type CmdName string
 
 var (
@@ -8,15 +13,24 @@ var (
 	CmdCopy        = "COPY"
 	CmdEnv         = "ENV"
 	CmdFrom        = "FROM"
+	CmdKubeConfig  = "KUBECONFIG"
 	CmdFromDefault = "local"
 	CmdWorkDir     = "WORKDIR"
 
 	Defaults = struct {
-		FromValue    string
-		WorkdirValue string
+		FromValue       string
+		WorkdirValue    string
+		KubeConfigValue string
 	}{
 		FromValue:    "local",
 		WorkdirValue: "/tmp/flareout",
+		KubeConfigValue: func() string {
+			kubecfg := os.Getenv("KUBECONFIG")
+			if kubecfg == "" {
+				kubecfg = filepath.Join(os.Getenv("HOME"), ".kube", "config")
+			}
+			return kubecfg
+		}(),
 	}
 )
 
@@ -34,12 +48,13 @@ type CommandMeta struct {
 
 var (
 	Cmds = map[string]CommandMeta{
-		CmdAs:      CommandMeta{Name: CmdAs, MinArgs: 1, MaxArgs: 1, Supported: true},
-		CmdCapture: CommandMeta{Name: CmdCapture, MinArgs: 1, MaxArgs: 1, Supported: true},
-		CmdCopy:    CommandMeta{Name: CmdCopy, MinArgs: 1, MaxArgs: -1, Supported: true},
-		CmdEnv:     CommandMeta{Name: CmdEnv, MinArgs: 1, MaxArgs: -1, Supported: true},
-		CmdFrom:    CommandMeta{Name: CmdFrom, MinArgs: 1, MaxArgs: 1, Supported: true},
-		CmdWorkDir: CommandMeta{Name: CmdWorkDir, MinArgs: 1, MaxArgs: 1, Supported: true},
+		CmdAs:         CommandMeta{Name: CmdAs, MinArgs: 1, MaxArgs: 1, Supported: true},
+		CmdCapture:    CommandMeta{Name: CmdCapture, MinArgs: 1, MaxArgs: 1, Supported: true},
+		CmdCopy:       CommandMeta{Name: CmdCopy, MinArgs: 1, MaxArgs: -1, Supported: true},
+		CmdEnv:        CommandMeta{Name: CmdEnv, MinArgs: 1, MaxArgs: -1, Supported: true},
+		CmdFrom:       CommandMeta{Name: CmdFrom, MinArgs: 1, MaxArgs: 1, Supported: true},
+		CmdKubeConfig: CommandMeta{Name: CmdKubeConfig, MinArgs: 1, MaxArgs: 1, Supported: true},
+		CmdWorkDir:    CommandMeta{Name: CmdWorkDir, MinArgs: 1, MaxArgs: 1, Supported: true},
 	}
 )
 

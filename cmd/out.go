@@ -52,6 +52,7 @@ func runOut(flag *outFlags, args []string) error {
 	} else {
 		ff = file
 	}
+	defer file.Close()
 
 	flare, err := script.Parse(ff)
 	if err != nil {

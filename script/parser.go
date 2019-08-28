@@ -58,6 +58,12 @@ func Parse(reader io.Reader) (*Script, error) {
 				return nil, err
 			}
 			script.Preambles[CmdFrom] = []Command{cmd}
+		case CmdKubeConfig:
+			cmd, err := NewKubeConfigCommand(line, tokens[1:])
+			if err != nil {
+				return nil, err
+			}
+			script.Preambles[CmdKubeConfig] = []Command{cmd}
 		case CmdWorkDir:
 			cmd, err := NewWorkdirCommand(line, tokens[1:])
 			if err != nil {
@@ -148,5 +154,12 @@ func enforceDefaults(script *Script) (*Script, error) {
 		script.Preambles[CmdWorkDir] = []Command{cmd}
 	}
 
+	if _, ok := script.Preambles[CmdKubeConfig]; !ok {
+		cmd, err := NewKubeConfigCommand(0, []string{Defaults.KubeConfigValue})
+		if err != nil {
+			return nil, err
+		}
+		script.Preambles[CmdKubeConfig] = []Command{cmd}
+	}
 	return script, nil
 }
