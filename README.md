@@ -98,6 +98,22 @@ only value `local` is supported.
 FROM local
 ```
 
+### KUBECONFIG
+Specifies the fully qualified path of the Kubernetes client configuration file. The
+tool uses this value to communicate with the API server to retrieve vital information. If
+the API server is slow or unresponsive, the tool will give up retrieving cluster information
+from the server.
+
+```
+KUBECONFIG /path/to/kube/config
+```
+If this is not specified, the tool will attempt to search for: 
+- Environment variable `$KUBECONFIG`
+- If KUBECONFIG is not set, path `$HOME/.kube/config` will be used
+
+If a Kubernetes configuration file is not found, the tool will not attempt to retrieve information from
+the server at all.
+
 ### WORKDIR
 Specifies the working directory used when building the archive bundle.  The
 directory is  used as temporary location to store data from all data sources

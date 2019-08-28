@@ -1,6 +1,18 @@
+# FROM specifies sources to collect from
+# Currently only supports local
 FROM local
+
+# WORKDIR specifies a location on disk
+# where the tool collects information
 WORKDIR /tmp/flareout
 
+# Path to local kubeconfig file
+# If not provided, the tool will attempt to get
+# the config file from env $KUBECONFIG or 
+# $HOME/.kube/config
+# KUBECONFIG /path/to/local/kube/config
+
+# Sample commands
 COPY /var/log/system.log
 CAPTURE df -h
 CAPTURE df -i
