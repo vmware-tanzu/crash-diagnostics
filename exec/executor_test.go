@@ -109,7 +109,7 @@ func TestExecutor(t *testing.T) {
 				src.WriteString("# This is a sample comment\n")
 				src.WriteString("#### START\n")
 				src.WriteString("FROM local\n")
-				src.WriteString("WORKDIR /tmp/foo\n")
+				src.WriteString("WORKDIR /tmp/{{.Username}}\n")
 				src.WriteString("CAPTURE /bin/echo HELLO\n")
 				src.WriteString("COPY /tmp/buzz.txt\n")
 				src.WriteString("ENV MSG0=HELLO MSG1=WORLD\n")
