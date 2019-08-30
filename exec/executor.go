@@ -70,13 +70,18 @@ func (e *Executor) Execute() error {
 		return fmt.Errorf("Script missing valid %s", script.CmdKubeConfig)
 	}
 	cfgCmd := cfgs[0].(*script.KubeConfigCommand)
-	k8sClient, err := getK8sClient(cfgCmd.Config())
-	if err != nil {
-		logrus.Errorf("Failed to create Kubernetes API server client: %s", err)
-	} else {
-		if err := dumpClusterInfo(k8sClient, filepath.Join(workdir.Dir(), "cluster-dump.json")); err != nil {
-			logrus.Errorf("Failed to retrieve cluster information: %s", err)
+	if _, err := os.Stat(cfgCmd.Config()); err == nil {
+		logrus.Debugf("Using KUBECONFIG %s", cfgCmd.Config())
+		k8sClient, err := getK8sClient(cfgCmd.Config())
+		if err != nil {
+			logrus.Errorf("Failed to create Kubernetes API server client: %s", err)
+		} else {
+			if err := dumpClusterInfo(k8sClient, filepath.Join(workdir.Dir(), "cluster-dump.json")); err != nil {
+				logrus.Errorf("Failed to retrieve cluster information: %s", err)
+			}
 		}
+	} else {
+		logrus.Errorf("Skipping cluster info retrieval, unable to load KUBECONFIG %s: %s", cfgCmd.Config(), err)
 	}
 
 	// process actions for each cluster resource specified in FROM

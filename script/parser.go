@@ -2,8 +2,10 @@ package script
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
@@ -19,6 +21,11 @@ var (
 
 func Parse(reader io.Reader) (*Script, error) {
 	logrus.Info("Parsing script file")
+	reader, err := parseTemplate(reader)
+	if err != nil {
+		return nil, err
+	}
+
 	lineScanner := bufio.NewScanner(reader)
 	lineScanner.Split(bufio.ScanLines)
 	var script Script
@@ -130,11 +137,13 @@ func cliParse(cmdStr string) (cmd string, args []string) {
 
 // enforceDefaults adds missing defaults to the script
 func enforceDefaults(script *Script) (*Script, error) {
+	logrus.Debug("Appling default values")
 	if _, ok := script.Preambles[CmdAs]; !ok {
 		cmd, err := NewAsCommand(0, []string{fmt.Sprintf("%d:%d", os.Getuid(), os.Getgid())})
 		if err != nil {
 			return script, err
 		}
+		logrus.Debugf("AS %s:%s (as default)", cmd.GetUserId(), cmd.GetGroupId())
 		script.Preambles[CmdAs] = []Command{cmd}
 	}
 
@@ -143,6 +152,7 @@ func enforceDefaults(script *Script) (*Script, error) {
 		if err != nil {
 			return nil, err
 		}
+		logrus.Debugf("FROM %s (as default)", cmd.Args()[0])
 		script.Preambles[CmdFrom] = []Command{cmd}
 	}
 
@@ -151,6 +161,7 @@ func enforceDefaults(script *Script) (*Script, error) {
 		if err != nil {
 			return nil, err
 		}
+		logrus.Debugf("FROM %s (as default)", cmd.Args()[0])
 		script.Preambles[CmdWorkDir] = []Command{cmd}
 	}
 
@@ -159,7 +170,23 @@ func enforceDefaults(script *Script) (*Script, error) {
 		if err != nil {
 			return nil, err
 		}
+		logrus.Debugf("KUBECONFIG %s (as default)", cmd.Config())
 		script.Preambles[CmdKubeConfig] = []Command{cmd}
 	}
 	return script, nil
+}
+
+func parseTemplate(reader io.Reader) (io.Reader, error) {
+	logrus.Debug("Binding template parameters")
+	src, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+
+	dest := new(bytes.Buffer)
+	if err := applyTemplate(dest, string(src)); err != nil {
+		return nil, err
+	}
+
+	return dest, nil
 }

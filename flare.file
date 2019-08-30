@@ -10,7 +10,7 @@ WORKDIR /tmp/flareout
 # If not provided, the tool will attempt to get
 # the config file from env $KUBECONFIG or 
 # $HOME/.kube/config
-# KUBECONFIG /path/to/local/kube/config
+KUBECONFIG {{.Home}}/.kube/kind-config-kind
 
 # Sample commands
 COPY /var/log/system.log
