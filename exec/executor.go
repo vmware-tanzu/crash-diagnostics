@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
@@ -21,67 +20,31 @@ func New(src *script.Script) *Executor {
 
 func (e *Executor) Execute() error {
 	logrus.Info("Executing script file")
-	// setup FROM
-	fromCmds, ok := e.script.Preambles[script.CmdFrom]
-	if !ok {
-		return fmt.Errorf("Script missing valid %s", script.CmdFrom)
-	}
-	fromCmd := fromCmds[0].(*script.FromCommand)
-
-	// setup AS instruction
-	asCmds, ok := e.script.Preambles[script.CmdAs]
-	if !ok {
-		return fmt.Errorf("Script missing valid %s", script.CmdAs)
-	}
-	asCmd := asCmds[0].(*script.AsCommand)
-	asUid, asGid, err := asCmd.GetCredentials()
+	// exec FROM
+	fromCmd, err := exeFrom(e.script)
 	if err != nil {
 		return err
 	}
-	logrus.Debugf("Executing as user %s:%s", asCmd.GetUserId(), asCmd.GetGroupId())
 
-	// setup WORKDIR
-	dirs, ok := e.script.Preambles[script.CmdWorkDir]
-	if !ok {
-		return fmt.Errorf("Script missing valid %s", script.CmdWorkDir)
-	}
-	workdir := dirs[0].(*script.WorkdirCommand)
-	if err := os.MkdirAll(workdir.Dir(), 0744); err != nil && !os.IsExist(err) {
+	// exec AS instruction
+	asCmd, err := exeAs(e.script)
+	if err != nil {
 		return err
+	}
+	logrus.Debugf("Commands will be executed as user %s:%s", asCmd.GetUserId(), asCmd.GetGroupId())
+
+	// exec WORKDIR
+	workdir, err := exeWorkdir(e.script)
+	if err != nil {
+		return nil
 	}
 	logrus.Debugf("Using workdir %s", workdir.Dir())
 
 	// setup ENV
-	var envPairs []string
-	envCmds := e.script.Preambles[script.CmdEnv]
-	for _, envCmd := range envCmds {
-		env := envCmd.(*script.EnvCommand)
-		if len(env.Envs()) > 0 {
-			for _, arg := range env.Envs() {
-				envPairs = append(envPairs, arg)
-			}
-		}
-	}
+	envPairs := exeEnvs(e.script)
 
 	// retrieve KUBECONFIG and setup client connection
-	cfgs, ok := e.script.Preambles[script.CmdKubeConfig]
-	if !ok {
-		return fmt.Errorf("Script missing valid %s", script.CmdKubeConfig)
-	}
-	cfgCmd := cfgs[0].(*script.KubeConfigCommand)
-	if _, err := os.Stat(cfgCmd.Config()); err == nil {
-		logrus.Debugf("Using KUBECONFIG %s", cfgCmd.Config())
-		k8sClient, err := getK8sClient(cfgCmd.Config())
-		if err != nil {
-			logrus.Errorf("Failed to create Kubernetes API server client: %s", err)
-		} else {
-			if err := dumpClusterInfo(k8sClient, filepath.Join(workdir.Dir(), "cluster-dump.json")); err != nil {
-				logrus.Errorf("Failed to retrieve cluster information: %s", err)
-			}
-		}
-	} else {
-		logrus.Warnf("Skipping cluster-info, unable to load KUBECONFIG %s: %s", cfgCmd.Config(), err)
-	}
+	exeClusterInfo(filepath.Join(workdir.Dir(), "cluster-dump.json"), e.script)
 
 	// process actions for each cluster resource specified in FROM
 	for _, fromMachine := range fromCmd.Machines() {
@@ -97,31 +60,16 @@ func (e *Executor) Execute() error {
 		for _, action := range e.script.Actions {
 			switch cmd := action.(type) {
 			case *script.CopyCommand:
-				if err := exeCopy(asUid, asGid, machineWorkdir, cmd); err != nil {
+				if err := exeCopy(asCmd, cmd, machineWorkdir); err != nil {
 					return err
 				}
 			case *script.CaptureCommand:
 				// capture command output
-				cmdStr := cmd.GetCliString()
-				logrus.Debugf("Capturing CLI command %v", cmdStr)
-				cliCmd, cliArgs := cmd.GetParsedCli()
-
-				if _, err := exec.LookPath(cliCmd); err != nil {
-					return err
-				}
-
-				cmdReader, err := CliRun(uint32(asUid), uint32(asGid), envPairs, cliCmd, cliArgs...)
-				if err != nil {
-					return err
-				}
-
-				fileName := fmt.Sprintf("%s.txt", flatCmd(cmdStr))
-				filePath := filepath.Join(machineWorkdir, fileName)
-				logrus.Debugf("Capturing output of [%s] -into-> %s", cmdStr, filePath)
-				if err := writeFile(cmdReader, filePath); err != nil {
+				if err := exeCapture(asCmd, cmd, envPairs, machineWorkdir); err != nil {
 					return err
 				}
 			default:
+				logrus.Errorf("Unsupported command %T", cmd)
 			}
 		}
 	}

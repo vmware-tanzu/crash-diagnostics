@@ -1,4 +1,4 @@
-package exec
+package k8s
 
 import (
 	"fmt"
@@ -28,7 +28,7 @@ var (
 	podsResource        = schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
 )
 
-func getK8sClient(kubeconfig string) (dynamic.Interface, error) {
+func GetClient(kubeconfig string) (dynamic.Interface, error) {
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func getK8sClient(kubeconfig string) (dynamic.Interface, error) {
 
 // dumpClusterInfo attempts to retrieve cluster information from API
 // When error is encountered, it simply logs it.
-func dumpClusterInfo(client dynamic.Interface, path string) error {
+func DumpClusterInfo(client dynamic.Interface, path string) error {
 	namespaces, err := getNamespaces(client)
 	if err != nil {
 		return err

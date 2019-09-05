@@ -2,6 +2,17 @@
 # Currently only supports local
 FROM local
 
+# AS specifies a userid:groupid to use when 
+# executing commands on local machine.
+# Remote commands defaults to the specified userid.
+# AS userid[:groupid]
+
+# SSH configures a passwordless SSH connection to machines
+# specified in the FROM declaration above. Each
+# remote connection will use the specified user:public_key 
+# combination. When FROM local is used, this setting is ignored.
+# SSH [<userid>:]/path/to/public_key
+
 # WORKDIR specifies a location on disk
 # where the tool collects information
 WORKDIR /tmp/flareout

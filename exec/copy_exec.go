@@ -15,8 +15,13 @@ var (
 	cliCpArgs = "-Rp"
 )
 
-func exeCopy(uid, gid int, dest string, cmd *script.CopyCommand) error {
+func exeCopy(asCmd *script.AsCommand, cmd *script.CopyCommand, dest string) error {
 	if _, err := exec.LookPath(cliCpName); err != nil {
+		return err
+	}
+
+	asUid, asGid, err := asCmd.GetCredentials()
+	if err != nil {
 		return err
 	}
 
@@ -42,7 +47,7 @@ func exeCopy(uid, gid int, dest string, cmd *script.CopyCommand) error {
 		}
 
 		args := []string{cliCpArgs, path, targetPath}
-		_, err := CliRun(uint32(uid), uint32(gid), nil, cliCpName, args...)
+		_, err := CliRun(uint32(asUid), uint32(asGid), nil, cliCpName, args...)
 		if err != nil {
 			return err
 		}
