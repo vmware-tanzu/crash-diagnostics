@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/sirupsen/logrus"
 	"gitlab.eng.vmware.com/vivienv/flare/script"
@@ -81,7 +80,7 @@ func (e *Executor) Execute() error {
 			}
 		}
 	} else {
-		logrus.Errorf("Skipping cluster info retrieval, unable to load KUBECONFIG %s: %s", cfgCmd.Config(), err)
+		logrus.Warnf("Skipping cluster-info, unable to load KUBECONFIG %s: %s", cfgCmd.Config(), err)
 	}
 
 	// process actions for each cluster resource specified in FROM
@@ -98,79 +97,8 @@ func (e *Executor) Execute() error {
 		for _, action := range e.script.Actions {
 			switch cmd := action.(type) {
 			case *script.CopyCommand:
-				// TODO - COPY uses a go implementation which means uid/guid
-				// for the COPY cmd cannot be applied using the flare file.
-				// This may need to be changed to a os/cmd external call
-
-				// walk each arg and copy to workdir
-				for _, path := range cmd.Args() {
-					if relPath, err := filepath.Rel(machineWorkdir, path); err == nil && !strings.HasPrefix(relPath, "..") {
-						logrus.Errorf("%s path %s cannot be relative to workdir %s", cmd.Name(), path, machineWorkdir)
-						continue
-					}
-					logrus.Debugf("Copying content from %s", path)
-
-					err := filepath.Walk(path, func(file string, finfo os.FileInfo, err error) error {
-						if err != nil {
-							return err
-						}
-						relPath := file
-						if filepath.IsAbs(file) {
-							relPath, err = filepath.Rel("/", file)
-							if err != nil {
-								return err
-							}
-						}
-
-						// setup subpath where source is copied to
-						subpath := filepath.Join(machineWorkdir, relPath)
-						subpathDir := filepath.Dir(subpath)
-						if _, err := os.Stat(subpathDir); err != nil && os.IsNotExist(err) {
-							if err := os.MkdirAll(subpathDir, 0744); err != nil && !os.IsExist(err) {
-								return err
-							}
-							logrus.Debugf("Created parent dir %s", subpathDir)
-						}
-
-						switch {
-						case finfo.Mode().IsDir():
-							if err := os.MkdirAll(subpath, 0744); err != nil && !os.IsExist(err) {
-								return err
-							}
-							logrus.Debugf("Created subpath %s", subpath)
-							return nil
-						case finfo.Mode().IsRegular():
-							logrus.Debugf("Copying %s -> %s", file, subpath)
-							srcFile, err := os.Open(file)
-							if err != nil {
-								return err
-							}
-							defer srcFile.Close()
-
-							desFile, err := os.Create(subpath)
-							if err != nil {
-								return err
-							}
-							n, err := io.Copy(desFile, srcFile)
-							if closeErr := desFile.Close(); closeErr != nil {
-								return closeErr
-							}
-							if err != nil {
-								return err
-							}
-
-							if n != finfo.Size() {
-								return fmt.Errorf("%s did not complet for %s", cmd.Name(), file)
-							}
-						default:
-							return fmt.Errorf("%s unknown file type for %s", cmd.Name(), file)
-						}
-						return nil
-					})
-
-					if err != nil {
-						logrus.Error(err)
-					}
+				if err := exeCopy(asUid, asGid, machineWorkdir, cmd); err != nil {
+					return err
 				}
 			case *script.CaptureCommand:
 				// capture command output
