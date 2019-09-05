@@ -25,7 +25,7 @@ func CliRun(uid, gid uint32, envs []string, cmd string, args ...string) (io.Read
 		command.Env = append(os.Environ(), envs...)
 	}
 
-	logrus.Debugf("Running command %s", cmd)
+	logrus.Debugf("Running %s %v (uid=%d,gid=%d)", cmd, args, uid, gid)
 	if err := command.Run(); err != nil {
 		return nil, err
 	}
