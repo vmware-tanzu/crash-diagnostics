@@ -14,6 +14,7 @@ var (
 	CmdEnv         = "ENV"
 	CmdFrom        = "FROM"
 	CmdKubeConfig  = "KUBECONFIG"
+	CmdSSHConfig   = "SSHCONFIG"
 	CmdFromDefault = "local"
 	CmdWorkDir     = "WORKDIR"
 
@@ -54,6 +55,7 @@ var (
 		CmdEnv:        CommandMeta{Name: CmdEnv, MinArgs: 1, MaxArgs: -1, Supported: true},
 		CmdFrom:       CommandMeta{Name: CmdFrom, MinArgs: 1, MaxArgs: 1, Supported: true},
 		CmdKubeConfig: CommandMeta{Name: CmdKubeConfig, MinArgs: 1, MaxArgs: 1, Supported: true},
+		CmdSSHConfig:  CommandMeta{Name: CmdSSHConfig, MinArgs: 1, MaxArgs: 1, Supported: true},
 		CmdWorkDir:    CommandMeta{Name: CmdWorkDir, MinArgs: 1, MaxArgs: 1, Supported: true},
 	}
 )

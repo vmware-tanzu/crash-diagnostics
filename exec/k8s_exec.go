@@ -8,7 +8,7 @@ import (
 	"gitlab.eng.vmware.com/vivienv/flare/script"
 )
 
-func exeClusterInfo(path string, src *script.Script) {
+func exeClusterInfo(src *script.Script, path string) {
 	cfgs, ok := src.Preambles[script.CmdKubeConfig]
 	if !ok {
 		logrus.Warn("Skipping cluster-info, KUBECONFIG not provided")

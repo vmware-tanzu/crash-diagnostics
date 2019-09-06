@@ -7,11 +7,12 @@ FROM local
 # Remote commands defaults to the specified userid.
 # AS userid[:groupid]
 
-# SSH configures a passwordless SSH connection to machines
+# SSHCONFIG configures a passwordless SSH connection to machines
 # specified in the FROM declaration above. Each
 # remote connection will use the specified user:public_key 
-# combination. When FROM local is used, this setting is ignored.
-# SSH [<userid>:]/path/to/public_key
+# combination. If the user is not provided, the default AS user 
+# will be used. When FROM local is used, this setting is ignored.
+# SSHCONFIG [<userid>:]/path/to/public_key
 
 # WORKDIR specifies a location on disk
 # where the tool collects information

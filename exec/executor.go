@@ -26,13 +26,6 @@ func (e *Executor) Execute() error {
 		return err
 	}
 
-	// exec AS instruction
-	asCmd, err := exeAs(e.script)
-	if err != nil {
-		return err
-	}
-	logrus.Debugf("Commands will be executed as user %s:%s", asCmd.GetUserId(), asCmd.GetGroupId())
-
 	// exec WORKDIR
 	workdir, err := exeWorkdir(e.script)
 	if err != nil {
@@ -40,11 +33,8 @@ func (e *Executor) Execute() error {
 	}
 	logrus.Debugf("Using workdir %s", workdir.Dir())
 
-	// setup ENV
-	envPairs := exeEnvs(e.script)
-
 	// retrieve KUBECONFIG and setup client connection
-	exeClusterInfo(filepath.Join(workdir.Dir(), "cluster-dump.json"), e.script)
+	exeClusterInfo(e.script, filepath.Join(workdir.Dir(), "cluster-dump.json"))
 
 	// process actions for each cluster resource specified in FROM
 	for _, fromMachine := range fromCmd.Machines() {
@@ -57,20 +47,13 @@ func (e *Executor) Execute() error {
 			return err
 		}
 
-		for _, action := range e.script.Actions {
-			switch cmd := action.(type) {
-			case *script.CopyCommand:
-				if err := exeCopy(asCmd, cmd, machineWorkdir); err != nil {
-					return err
-				}
-			case *script.CaptureCommand:
-				// capture command output
-				if err := exeCapture(asCmd, cmd, envPairs, machineWorkdir); err != nil {
-					return err
-				}
-			default:
-				logrus.Errorf("Unsupported command %T", cmd)
+		switch machineAddr {
+		case "local":
+			if err := exeLocally(e.script, machineWorkdir); err != nil {
+				return err
 			}
+		default:
+			// exeRemotely(e.script, machineWorkdir)
 		}
 	}
 	return nil
