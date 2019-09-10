@@ -1,7 +1,6 @@
 package exec
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -38,16 +37,12 @@ func (e *Executor) Execute() error {
 
 	// process actions for each cluster resource specified in FROM
 	for _, fromMachine := range fromCmd.Machines() {
-		machineAddr := fromMachine.Address
-		if machineAddr != script.Defaults.FromValue {
-			return fmt.Errorf("FROM only support 'local'")
-		}
-		machineWorkdir := filepath.Join(workdir.Dir(), machineAddr)
-		if err := os.MkdirAll(machineWorkdir, 0744); err != nil && !os.IsExist(err) {
+		machineWorkdir, err := makeMachineWorkdir(workdir.Dir(), fromMachine)
+		if err != nil {
 			return err
 		}
 
-		switch machineAddr {
+		switch fromMachine.Address() {
 		case "local":
 			if err := exeLocally(e.script, machineWorkdir); err != nil {
 				return err
@@ -71,4 +66,13 @@ func writeFile(source io.Reader, filePath string) error {
 	logrus.Debugf("Wrote file %s", filePath)
 
 	return nil
+}
+
+func makeMachineWorkdir(workdir string, machine script.Machine) (string, error) {
+	machineAddr := machine.Address()
+	machineWorkdir := filepath.Join(workdir, machineAddr)
+	if err := os.MkdirAll(machineWorkdir, 0744); err != nil && !os.IsExist(err) {
+		return "", err
+	}
+	return machineWorkdir, nil
 }

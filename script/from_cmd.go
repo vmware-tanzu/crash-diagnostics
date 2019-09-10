@@ -1,17 +1,20 @@
 package script
 
 import (
-	"fmt"
 	"strings"
 )
 
 // Machine represents a source machine
 type Machine struct {
-	Address string
+	addr string
 }
 
-func (m Machine) String() string {
-	return m.Address
+func NewMachine(addr string) *Machine {
+	return &Machine{addr: addr}
+}
+
+func (m *Machine) Address() string {
+	return m.addr
 }
 
 // FromCommand represents instruction
@@ -34,11 +37,7 @@ func NewFromCommand(index int, args []string) (*FromCommand, error) {
 	}
 
 	for _, arg := range args {
-		if arg != Defaults.FromValue {
-			return nil, fmt.Errorf("%s only supports %s", CmdFrom, Defaults.FromValue)
-		}
-		cmd.machines = append(cmd.machines, Machine{Address: strings.TrimSpace(arg)})
-		break // ignoring everything else. TODO fix.
+		cmd.machines = append(cmd.machines, *NewMachine(strings.TrimSpace(arg)))
 	}
 
 	return cmd, nil

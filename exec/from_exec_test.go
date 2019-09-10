@@ -26,14 +26,13 @@ func TestExecFROM(t *testing.T) {
 			source: func() string {
 				return "FROM local bar"
 			},
-			shouldFail: true,
-		},
-		{
-			name: "unsupported FROM",
-			source: func() string {
-				return "FROM foo"
+			exec: func(s *script.Script) error {
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+				return nil
 			},
-			shouldFail: true,
 		},
 	}
 

@@ -17,7 +17,7 @@ func TestExecCAPTURE(t *testing.T) {
 				return "CAPTURE /bin/echo 'HELLO WORLD'"
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 				capCmd := s.Actions[0].(*script.CaptureCommand)
 
@@ -39,7 +39,7 @@ func TestExecCAPTURE(t *testing.T) {
 				return "CAPTURE /bin/echo 'HELLO WORLD'\nCAPTURE ls ."
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 				cmd0 := s.Actions[0].(*script.CaptureCommand)
 				cmd1 := s.Actions[1].(*script.CaptureCommand)
@@ -67,7 +67,7 @@ func TestExecCAPTURE(t *testing.T) {
 				return fmt.Sprintf("AS %d \nCAPTURE /bin/echo 'HELLO WORLD'", uid)
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 				capCmd := s.Actions[0].(*script.CaptureCommand)
 

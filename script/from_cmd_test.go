@@ -25,7 +25,7 @@ func TestCommandFROM(t *testing.T) {
 					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Machines()))
 				}
 				m := fromCmd.Machines()[0]
-				if m.Address != "local" {
+				if m.Address() != "local" {
 					return fmt.Errorf("FROM has unexpected machine %s", m)
 				}
 				return nil
@@ -34,16 +34,42 @@ func TestCommandFROM(t *testing.T) {
 		{
 			name: "FROM with multiple machines",
 			source: func() string {
-				return "FROM local local"
+				return "FROM local 127.0.0.1"
 			},
-			shouldFail: true,
+			script: func(s *Script) error {
+				froms := s.Preambles[CmdFrom]
+				if len(froms) != 1 {
+					return fmt.Errorf("Script has unexpected number of FROM %d", len(froms))
+				}
+				fromCmd := froms[0].(*FromCommand)
+				if len(fromCmd.Machines()) != 2 {
+					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Machines()))
+				}
+				if fromCmd.Machines()[0].Address() != "local" || fromCmd.Machines()[1].Address() != "127.0.0.1" {
+					return fmt.Errorf("FROM has unexpected machine arguments: %s", fromCmd.Args())
+				}
+				return nil
+			},
 		},
 		{
 			name: "Multiple FROMs",
 			source: func() string {
-				return "FROM local\nFROM local2"
+				return "FROM local\nFROM local.1 local.2"
 			},
-			shouldFail: true,
+			script: func(s *Script) error {
+				froms := s.Preambles[CmdFrom]
+				if len(froms) != 1 {
+					return fmt.Errorf("Script has unexpected number of FROM %d", len(froms))
+				}
+				fromCmd := froms[0].(*FromCommand)
+				if len(fromCmd.Machines()) != 2 {
+					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Machines()))
+				}
+				if fromCmd.Machines()[0].Address() != "local.1" || fromCmd.Machines()[1].Address() != "local.2" {
+					return fmt.Errorf("FROM has unexpected machine arguments: %s", fromCmd.Args())
+				}
+				return nil
+			},
 		},
 	}
 
