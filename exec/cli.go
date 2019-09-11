@@ -12,8 +12,7 @@ import (
 )
 
 var (
-	spaceSep   = regexp.MustCompile(`\s`)
-	cmdFlatten = regexp.MustCompile(`[\s\"\'/\.]`)
+	spaceSep = regexp.MustCompile(`\s`)
 )
 
 func CliRun(uid, gid uint32, envs []string, cmd string, args ...string) (io.Reader, error) {
@@ -54,8 +53,4 @@ func prepareCmd(cmd string, args ...string) (*exec.Cmd, io.Reader) {
 	command.Stdout = output
 	command.Stderr = output
 	return command, output
-}
-
-func flatCmd(cmd string) string {
-	return cmdFlatten.ReplaceAllString(cmd, "_")
 }

@@ -26,7 +26,7 @@ func TestExecWORKDIR(t *testing.T) {
 				if err := e.Execute(); err != nil {
 					return err
 				}
-				fileName := filepath.Join(workdir.Dir(), machine, fmt.Sprintf("%s.txt", flatCmd(capCmd.GetCliString())))
+				fileName := filepath.Join(workdir.Dir(), machine, fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCliString())))
 				if _, err := os.Stat(fileName); err != nil {
 					return err
 				}
@@ -47,7 +47,7 @@ func TestExecWORKDIR(t *testing.T) {
 				if err := e.Execute(); err != nil {
 					return err
 				}
-				fileName := filepath.Join(workdir.Dir(), machine, fmt.Sprintf("%s.txt", flatCmd(capCmd.GetCliString())))
+				fileName := filepath.Join(workdir.Dir(), machine, fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCliString())))
 				if _, err := os.Stat(fileName); err != nil {
 					return err
 				}

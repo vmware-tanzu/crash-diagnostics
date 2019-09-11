@@ -1,7 +1,6 @@
 package exec
 
 import (
-	"io"
 	"os"
 	"path/filepath"
 
@@ -44,33 +43,23 @@ func (e *Executor) Execute() error {
 
 		switch fromMachine.Address() {
 		case "local":
+			logrus.Debug("Executing commands on local machine")
 			if err := exeLocally(e.script, machineWorkdir); err != nil {
 				return err
 			}
 		default:
-			// exeRemotely(e.script, machineWorkdir)
+			logrus.Debug("Executing remote commands at ", fromMachine.Address())
+			if err := exeRemotely(e.script, &fromMachine, machineWorkdir); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-func writeFile(source io.Reader, filePath string) error {
-	file, err := os.Create(filePath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	if _, err := io.Copy(file, source); err != nil {
-		return err
-	}
-	logrus.Debugf("Wrote file %s", filePath)
-
-	return nil
-}
-
 func makeMachineWorkdir(workdir string, machine script.Machine) (string, error) {
 	machineAddr := machine.Address()
-	machineWorkdir := filepath.Join(workdir, machineAddr)
+	machineWorkdir := filepath.Join(workdir, sanitizeStr(machineAddr))
 	if err := os.MkdirAll(machineWorkdir, 0744); err != nil && !os.IsExist(err) {
 		return "", err
 	}

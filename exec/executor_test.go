@@ -163,7 +163,7 @@ func TestExecutor(t *testing.T) {
 				// validate cap cmds
 				for _, cmd := range []script.Command{s.Actions[0], s.Actions[2]} {
 					capCmd := cmd.(*script.CaptureCommand)
-					fileName := filepath.Join(workdir.Dir(), machine, fmt.Sprintf("%s.txt", flatCmd(capCmd.GetCliString())))
+					fileName := filepath.Join(workdir.Dir(), machine, fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCliString())))
 					if _, err := os.Stat(fileName); err != nil {
 						return err
 					}
