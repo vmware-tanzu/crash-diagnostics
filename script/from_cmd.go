@@ -1,20 +1,30 @@
 package script
 
 import (
-	"strings"
+	"fmt"
+	"net"
 )
 
 // Machine represents a source machine
 type Machine struct {
-	addr string
+	host string
+	port string
 }
 
-func NewMachine(addr string) *Machine {
-	return &Machine{addr: addr}
+func NewMachine(host, port string) *Machine {
+	return &Machine{host: host, port: port}
 }
 
 func (m *Machine) Address() string {
-	return m.addr
+	return net.JoinHostPort(m.host, m.port)
+}
+
+func (m *Machine) Host() string {
+	return m.host
+}
+
+func (m *Machine) Port() string {
+	return m.port
 }
 
 // FromCommand represents instruction
@@ -37,7 +47,24 @@ func NewFromCommand(index int, args []string) (*FromCommand, error) {
 	}
 
 	for _, arg := range args {
-		cmd.machines = append(cmd.machines, *NewMachine(strings.TrimSpace(arg)))
+		var host, port string
+		switch {
+		case arg == "local":
+			host = "local"
+		case arg == "cluster":
+			host = "cluster"
+		default:
+			h, p, err := net.SplitHostPort(arg)
+			if err != nil {
+				return nil, fmt.Errorf("FROM command: %s", err)
+			}
+			host = h
+			port = p
+			if p == "" {
+				port = "22"
+			}
+		}
+		cmd.machines = append(cmd.machines, *NewMachine(host, port))
 	}
 
 	return cmd, nil

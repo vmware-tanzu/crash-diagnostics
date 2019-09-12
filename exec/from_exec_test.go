@@ -21,19 +21,6 @@ func TestExecFROM(t *testing.T) {
 				return nil
 			},
 		},
-		{
-			name: "FROM with multi args",
-			source: func() string {
-				return "FROM local bar"
-			},
-			exec: func(s *script.Script) error {
-				e := New(s)
-				if err := e.Execute(); err != nil {
-					return err
-				}
-				return nil
-			},
-		},
 	}
 
 	for _, test := range tests {

@@ -91,11 +91,11 @@ ENV key=value
 ```
 
 ### FROM
-Specifies the machine to use as the source of the data collected.  Currently
-only value `local` is supported.
+Specifies the machine to use as the source of the data collected.  Valid values
+include `local` or host endpoint formatted as `<host-address>:<port>`
 
 ```
-FROM local
+FROM local 127.0.0.1:22
 ```
 
 ### KUBECONFIG
@@ -111,8 +111,26 @@ If this is not specified, the tool will attempt to search for:
 - Environment variable `$KUBECONFIG`
 - If KUBECONFIG is not set, path `$HOME/.kube/config` will be used
 
-If a Kubernetes configuration file is not found, the tool will not attempt to retrieve information from
-the server at all.
+If a Kubernetes configuration file is not found, cluster information will not be retrieved.
+
+### SSHCONFIG
+The tool uses SSH to execute remote commands and copy (via scp) remote files using a 
+passwordless setup.  For this to work, both the machine running the tool and the remote
+machine must be setup with private/public key pair for SSH. This directive takes
+the form of `[<username>:]/path/to/private-key` where the `username` value is optional.
+
+```
+SSHCONFIG {{.Homedir}}/.ssh/id_rsa
+```
+
+Or,
+
+```
+SSHCONFIG vivien:/home/vivien/.ssh/cat_rsa
+```
+
+If the `username` is omitted, at runtime the tool  will attempt to use the current user
+running the process.
 
 ### WORKDIR
 Specifies the working directory used when building the archive bundle.  The
@@ -124,6 +142,20 @@ is removed.
 WORKDIR <relative or absolute path>
 ```
 
+## Example File
+
+```
+FROM local 162.164.10.1:2222 162.164.10.2:2222
+KUBECONFIG {{.Home}}/.kube/kind-config-kind
+SSHCONFIG testuser:/home/testuser/.ssh/id_rsa
+WORKDIR /tmp/output
+
+CAPTURE df -h
+CAPTURE df -i
+CAPTURE netstat -an
+CAPTURE ps -ef
+CAPTURE lsof -i 
+```
 
 ## Compile and Running Flare
 Flare  is written and Go 1.11 or later.  Clone or download the source to your local directory.  From the project's root directory, compile the code with the

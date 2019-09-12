@@ -41,7 +41,7 @@ func (e *Executor) Execute() error {
 			return err
 		}
 
-		switch fromMachine.Address() {
+		switch fromMachine.Host() {
 		case "local":
 			logrus.Debug("Executing commands on local machine")
 			if err := exeLocally(e.script, machineWorkdir); err != nil {
@@ -59,6 +59,9 @@ func (e *Executor) Execute() error {
 
 func makeMachineWorkdir(workdir string, machine script.Machine) (string, error) {
 	machineAddr := machine.Address()
+	if machineAddr == "local:" {
+		machineAddr = machine.Host()
+	}
 	machineWorkdir := filepath.Join(workdir, sanitizeStr(machineAddr))
 	if err := os.MkdirAll(machineWorkdir, 0744); err != nil && !os.IsExist(err) {
 		return "", err
