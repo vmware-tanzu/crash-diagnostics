@@ -39,7 +39,6 @@ func exeLocally(src *script.Script, workdir string) error {
 
 func captureLocally(asCmd *script.AsCommand, cmdCap *script.CaptureCommand, envs []string, workdir string) error {
 	cmdStr := cmdCap.GetCliString()
-	logrus.Debugf("Capturing CLI command %v", cmdStr)
 	cliCmd, cliArgs := cmdCap.GetParsedCli()
 
 	if _, err := exec.LookPath(cliCmd); err != nil {
@@ -51,14 +50,17 @@ func captureLocally(asCmd *script.AsCommand, cmdCap *script.CaptureCommand, envs
 		return err
 	}
 
-	cmdReader, err := CliRun(uint32(asUid), uint32(asGid), envs, cliCmd, cliArgs...)
-	if err != nil {
-		return err
-	}
-
 	fileName := fmt.Sprintf("%s.txt", sanitizeStr(cmdStr))
 	filePath := filepath.Join(workdir, fileName)
-	logrus.Debugf("Capturing output of [%s] -into-> %s", cmdStr, filePath)
+	logrus.Debugf("Capturing local command [%s] -into-> %s", cmdStr, filePath)
+
+	cmdReader, err := CliRun(uint32(asUid), uint32(asGid), envs, cliCmd, cliArgs...)
+	if err != nil {
+		cliErr := fmt.Errorf("local command %s failed: %s", cliCmd, err)
+		logrus.Warn(cliErr)
+		return writeError(cliErr, filePath)
+	}
+
 	if err := writeFile(cmdReader, filePath); err != nil {
 		return err
 	}
@@ -105,7 +107,9 @@ func copyLocally(asCmd *script.AsCommand, cmd *script.CopyCommand, dest string) 
 		args := []string{cliCpArgs, path, targetPath}
 		_, err := CliRun(uint32(asUid), uint32(asGid), nil, cliCpName, args...)
 		if err != nil {
-			return err
+			cliErr := fmt.Errorf("local file copy failed: %s", err)
+			logrus.Warn(cliErr)
+			return writeError(cliErr, targetPath)
 		}
 	}
 

@@ -60,17 +60,19 @@ func captureRemotely(user, privKey, hostAddr string, cmdCap *script.CaptureComma
 	defer sshc.Hangup()
 
 	cmdStr := cmdCap.GetCliString()
-	logrus.Debugf("Capturing remote command command %v", cmdStr)
 	cliCmd, cliArgs := cmdCap.GetParsedCli()
-
-	cmdReader, err := sshc.SSHRun(cliCmd, cliArgs...)
-	if err != nil {
-		return err
-	}
 
 	fileName := fmt.Sprintf("%s.txt", sanitizeStr(cmdStr))
 	filePath := filepath.Join(workdir, fileName)
-	logrus.Debugf("Capturing output of [%s] -into-> %s", cmdStr, filePath)
+	logrus.Debugf("Capturing remote command [%s] -into-> %s", cmdStr, filePath)
+
+	cmdReader, err := sshc.SSHRun(cliCmd, cliArgs...)
+	if err != nil {
+		sshErr := fmt.Errorf("remote command %s failed: %s", cliCmd, err)
+		logrus.Warn(sshErr)
+		return writeError(sshErr, filePath)
+	}
+
 	if err := writeFile(cmdReader, filePath); err != nil {
 		return err
 	}
@@ -100,10 +102,6 @@ func copyRemotely(user, privKey string, machine *script.Machine, asCmd *script.A
 	}
 
 	for _, path := range cmd.Args() {
-		// if relPath, err := filepath.Rel(dest, path); err == nil && !strings.HasPrefix(relPath, "..") {
-		// 	logrus.Errorf("%s path %s cannot be relative to %s", cmd.Name(), path, dest)
-		// 	continue
-		// }
 
 		remotePath := fmt.Sprintf("%s@%s:%s", user, host, path)
 		logrus.Debugf("Copying %s to %s", remotePath, dest)
@@ -124,7 +122,9 @@ func copyRemotely(user, privKey string, machine *script.Machine, asCmd *script.A
 		args := []string{cliScpArgs, "-o StrictHostKeyChecking=no", "-P", port, remotePath, targetPath}
 		_, err := CliRun(uint32(asUid), uint32(asGid), nil, cliScpName, args...)
 		if err != nil {
-			return err
+			cliErr := fmt.Errorf("scp command failed: %s", err)
+			logrus.Warn(cliErr)
+			return writeError(cliErr, targetPath)
 		}
 		logrus.Debug("Remote copy succeeded:", remotePath)
 	}

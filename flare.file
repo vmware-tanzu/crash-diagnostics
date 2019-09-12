@@ -12,7 +12,7 @@ FROM local
 # remote connection will use the specified user:public_key 
 # combination. If the user is not provided, the default AS user 
 # will be used. When FROM local is used, this setting is ignored.
-# SSHCONFIG [<userid>:]/path/to/public_key
+# SSHCONFIG {{.Username}}:{{.Home}}/.ssh/id_rsa
 
 # WORKDIR specifies a location on disk
 # where the tool collects information
@@ -22,13 +22,11 @@ WORKDIR /tmp/flareout
 # If not provided, the tool will attempt to get
 # the config file from env $KUBECONFIG or 
 # $HOME/.kube/config
-KUBECONFIG {{.Home}}/.kube/kind-config-kind
+# KUBECONFIG {{.Home}}/.kube/kind-config-kind
 
 # Sample commands
-COPY /var/log/system.log
-CAPTURE df -h
+COPY /var/log/syslog
 CAPTURE df -i
 CAPTURE netstat -an
 CAPTURE ps -ef
-CAPTURE lsof -i 
-
+CAPTURE lsof -i

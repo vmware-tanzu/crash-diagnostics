@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 )
@@ -28,4 +29,9 @@ func writeFile(source io.Reader, filePath string) error {
 	logrus.Debugf("Wrote file %s", filePath)
 
 	return nil
+}
+
+func writeError(err error, filePath string) error {
+	errReader := strings.NewReader(err.Error())
+	return writeFile(errReader, filePath)
 }
