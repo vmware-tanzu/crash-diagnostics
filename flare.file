@@ -1,5 +1,8 @@
-# FROM specifies sources to collect from
-# Currently only supports local
+# FROM specifies cluster nodes from which to source collected info.
+# FROM supports one or more values separated by spaces where `local` 
+# indicates the current machine running the tool. For remote machines
+# specify the host address and port:
+# FROM local 127.0.0.1:22 remote.host.com:33
 FROM local
 
 # AS specifies a userid:groupid to use when 

@@ -1,3 +1,6 @@
+// Copyright (c) 2019 VMware, Inc. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 package cmd
 
 import (
@@ -6,15 +9,11 @@ import (
 	"io"
 	"os"
 
-	"gitlab.eng.vmware.com/vivienv/flare/archiver"
-
 	"github.com/sirupsen/logrus"
-
-	"gitlab.eng.vmware.com/vivienv/flare/exec"
-
-	"gitlab.eng.vmware.com/vivienv/flare/script"
-
 	"github.com/spf13/cobra"
+	"gitlab.eng.vmware.com/vivienv/flare/archiver"
+	"gitlab.eng.vmware.com/vivienv/flare/exec"
+	"gitlab.eng.vmware.com/vivienv/flare/script"
 )
 
 type outFlags struct {
