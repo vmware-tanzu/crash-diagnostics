@@ -21,6 +21,8 @@ type outFlags struct {
 	output string
 }
 
+// out command executes the script and generate a file
+// that is compressed into a tarball.
 func newOutCommand() *cobra.Command {
 	flags := &outFlags{
 		file:   "flare.file",

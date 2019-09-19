@@ -22,6 +22,7 @@ var (
 	cmdSep   = regexp.MustCompile(`\s`)
 )
 
+// Parse parses the textual script from reader into an *Script representation
 func Parse(reader io.Reader) (*Script, error) {
 	logrus.Info("Parsing script file")
 	reader, err := parseTemplate(reader)

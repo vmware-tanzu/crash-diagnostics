@@ -14,11 +14,12 @@ import (
 const version = "v0.1.0-alpha"
 const defaultLogLevel = logrus.WarnLevel
 
-// Flags for the kind command
+// flareFlags flags for the command
 type flareFlags struct {
 	logLevel string
 }
 
+// flareCommand creates a main cli command
 func flareCommand() *cobra.Command {
 	flags := &flareFlags{logLevel: defaultLogLevel.String()}
 	cmd := &cobra.Command{
@@ -56,6 +57,7 @@ func preRun(flags *flareFlags) error {
 	return nil
 }
 
+// Run satarts the command
 func Run() error {
 	logrus.SetOutput(os.Stdout)
 	return flareCommand().Execute()

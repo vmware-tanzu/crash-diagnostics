@@ -3,13 +3,13 @@
 
 package script
 
-// KubeConfigCommand represents Kubernetes configuration
+// KubeConfigCommand represents a KUBECONFIG directive in the script
 type KubeConfigCommand struct {
 	cmd
 	kubeCfg string
 }
 
-// NewFromCommand creates a value of type FromCommand
+// NewKubeConfigCommand creates a value of type KubeConfigCommand in a script
 func NewKubeConfigCommand(index int, args []string) (*KubeConfigCommand, error) {
 	cmd := &KubeConfigCommand{cmd: cmd{index: index, name: CmdKubeConfig, args: args}}
 
@@ -20,18 +20,22 @@ func NewKubeConfigCommand(index int, args []string) (*KubeConfigCommand, error) 
 	return cmd, nil
 }
 
+// Index is the position of the command in the script
 func (c *KubeConfigCommand) Index() int {
 	return c.cmd.index
 }
 
+// Name represents the name of the command
 func (c *KubeConfigCommand) Name() string {
 	return c.cmd.name
 }
 
+// Args returns a slice of raw command arguments
 func (c *KubeConfigCommand) Args() []string {
 	return c.cmd.args
 }
 
+// Config returns the path to the config file
 func (c *KubeConfigCommand) Config() string {
 	return c.kubeCfg
 }

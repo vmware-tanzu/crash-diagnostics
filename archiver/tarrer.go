@@ -14,6 +14,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Tar compresses the file sources specified by paths into a single
+// tarball specified by tarName.
 func Tar(tarName string, paths ...string) (err error) {
 	logrus.Debugf("Archiving %v in %s", paths, tarName)
 	tarFile, err := os.Create(tarName)

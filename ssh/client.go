@@ -16,6 +16,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// SSHClient represents a client used to connect to an SSH server
 type SSHClient struct {
 	user       string
 	privateKey string
@@ -25,6 +26,7 @@ type SSHClient struct {
 	hostKey    ssh.PublicKey
 }
 
+// New creates uses the user and privateKeyPath to create an *SSHClient
 func New(user string, privateKeyPath string) *SSHClient {
 	client := &SSHClient{
 		user:       user,
@@ -43,6 +45,7 @@ func newInsecure(user string) *SSHClient {
 	return client
 }
 
+// Dial connects a remote SSH host at address addr
 func (c *SSHClient) Dial(addr string) error {
 	logrus.Debug("SSH dialing server", addr)
 
@@ -72,6 +75,7 @@ func (c *SSHClient) Dial(addr string) error {
 	return nil
 }
 
+// SSHRun executes the specified command on a remote host over SSH
 func (c *SSHClient) SSHRun(cmd string, args ...string) (io.Reader, error) {
 	cmdStr := strings.TrimSpace(fmt.Sprintf("%s %s", cmd, strings.Join(args, " ")))
 	logrus.Debug("Running remote command: ", cmdStr)
@@ -92,6 +96,7 @@ func (c *SSHClient) SSHRun(cmd string, args ...string) (io.Reader, error) {
 	return output, nil
 }
 
+// Hangup closes the established SSH connection
 func (c *SSHClient) Hangup() error {
 	return c.sshc.Close()
 }

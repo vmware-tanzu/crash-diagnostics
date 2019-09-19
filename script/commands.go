@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 )
 
-type CmdName string
-
 var (
 	CmdAs          = "AS"
 	CmdCapture     = "CAPTURE"
@@ -38,11 +36,6 @@ var (
 	}
 )
 
-type Script struct {
-	Preambles map[string][]Command
-	Actions   []Command
-}
-
 type CommandMeta struct {
 	Name      string
 	MinArgs   int
@@ -63,12 +56,23 @@ var (
 	}
 )
 
+// Command is an abtract representatio of command in a script
 type Command interface {
+	// Index is the position of the command in the script
 	Index() int
+	// Name represents the name of the command
 	Name() string
+	// Args returns a slice of raw command arguments
 	Args() []string
 }
 
+// Script is a collection of commands
+type Script struct {
+	Preambles map[string][]Command // directive commands in the script
+	Actions   []Command            // action commands
+}
+
+// cmd is the base representation of command
 type cmd struct {
 	index int
 	name  string

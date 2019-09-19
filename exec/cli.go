@@ -18,6 +18,7 @@ var (
 	spaceSep = regexp.MustCompile(`\s`)
 )
 
+// CliRun executes specified command using local CLI interface
 func CliRun(uid, gid uint32, envs []string, cmd string, args ...string) (io.Reader, error) {
 	command, output := prepareCmd(cmd, args...)
 	command.SysProcAttr = &syscall.SysProcAttr{
@@ -35,6 +36,7 @@ func CliRun(uid, gid uint32, envs []string, cmd string, args ...string) (io.Read
 	return output, nil
 }
 
+// CliParse parses the CLI command string into command and arguments
 func CliParse(cmdStr string) (cmd string, args []string) {
 	args = []string{}
 	parts := spaceSep.Split(cmdStr, -1)

@@ -13,11 +13,13 @@ var (
 	envSep = regexp.MustCompile(`=`)
 )
 
+// EnvCommand represents ENV in a script
 type EnvCommand struct {
 	cmd
 	envs []string
 }
 
+// NewEnvCommand returns parses the args as environment variables and returns *EnvCommand
 func NewEnvCommand(index int, args []string) (*EnvCommand, error) {
 	cmd := &EnvCommand{cmd: cmd{index: index, name: CmdEnv, args: args}}
 
@@ -36,18 +38,22 @@ func NewEnvCommand(index int, args []string) (*EnvCommand, error) {
 	return cmd, nil
 }
 
+// Index is the position of the command in the script
 func (c *EnvCommand) Index() int {
 	return c.cmd.index
 }
 
+// Name represents the name of the command
 func (c *EnvCommand) Name() string {
 	return c.cmd.name
 }
 
+// Args returns a slice of raw command arguments
 func (c *EnvCommand) Args() []string {
 	return c.cmd.args
 }
 
+// Envs returns slice of the parsed declared environment variables
 func (c *EnvCommand) Envs() []string {
 	return c.envs
 }

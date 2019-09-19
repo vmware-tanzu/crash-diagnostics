@@ -14,34 +14,33 @@ type Machine struct {
 	port string
 }
 
+// NewMachine returns a new machine
 func NewMachine(host, port string) *Machine {
 	return &Machine{host: host, port: port}
 }
 
+// Address returns the host:port address
 func (m *Machine) Address() string {
 	return net.JoinHostPort(m.host, m.port)
 }
 
+// Host returns the host of the address
 func (m *Machine) Host() string {
 	return m.host
 }
 
+// Port returns the port of the address
 func (m *Machine) Port() string {
 	return m.port
 }
 
-// FromCommand represents instruction
-// FROM <source>
-// Where source can be:
-// 1. Local : the current machine
-// 2. List of machine names/addresses
-// 3. cluster: uses Kuberentes cluster information to get list
+// FromCommand represents FROM directive in a script
 type FromCommand struct {
 	cmd
 	machines []Machine
 }
 
-// NewFromCommand creates a value of type FromCommand
+// NewFromCommand parses the args and returns *FromCommand
 func NewFromCommand(index int, args []string) (*FromCommand, error) {
 	cmd := &FromCommand{cmd: cmd{index: index, name: CmdFrom, args: args}}
 
@@ -73,18 +72,22 @@ func NewFromCommand(index int, args []string) (*FromCommand, error) {
 	return cmd, nil
 }
 
+// Index is the position of the command in the script
 func (c *FromCommand) Index() int {
 	return c.cmd.index
 }
 
+// Name represents the name of the command
 func (c *FromCommand) Name() string {
 	return c.cmd.name
 }
 
+// Args returns a slice of raw command arguments
 func (c *FromCommand) Args() []string {
 	return c.cmd.args
 }
 
+// Machines returns a slice of Machines to which to connect
 func (c *FromCommand) Machines() []Machine {
 	return c.machines
 }

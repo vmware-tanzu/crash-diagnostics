@@ -9,6 +9,7 @@ import (
 	"gitlab.eng.vmware.com/vivienv/flare/script"
 )
 
+//exeSSH retrieves the viable SSH command from script
 func exeSSH(src *script.Script) (*script.SSHConfigCommand, error) {
 	sshCmds, ok := src.Preambles[script.CmdSSHConfig]
 	if !ok {

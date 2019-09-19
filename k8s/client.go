@@ -31,6 +31,7 @@ var (
 	podsResource        = schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
 )
 
+// GetClient returns a dynamic kubernetes client
 func GetClient(kubeconfig string) (dynamic.Interface, error) {
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {

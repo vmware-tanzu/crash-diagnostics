@@ -15,6 +15,7 @@ import (
 	"gitlab.eng.vmware.com/vivienv/flare/script"
 )
 
+// exeRemotely executes script on remote machines
 func exeRemotely(src *script.Script, machine *script.Machine, workdir string) error {
 	asCmd, err := exeAs(src)
 	if err != nil {

@@ -11,14 +11,17 @@ import (
 	"gitlab.eng.vmware.com/vivienv/flare/script"
 )
 
+// Executor represents a type that can execute a script
 type Executor struct {
 	script *script.Script
 }
 
+// New returns an *Executor
 func New(src *script.Script) *Executor {
 	return &Executor{script: src}
 }
 
+// Execute executes the configured script
 func (e *Executor) Execute() error {
 	logrus.Info("Executing script file")
 	// exec FROM

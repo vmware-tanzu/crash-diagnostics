@@ -11,6 +11,7 @@ import (
 	"strings"
 )
 
+// AsCommand represents AS directive in a script
 type AsCommand struct {
 	cmd
 	user    *user.User
@@ -18,6 +19,7 @@ type AsCommand struct {
 	groupid string
 }
 
+// NewAsCommand returns *AsCommand with parsed arguments
 func NewAsCommand(index int, args []string) (*AsCommand, error) {
 	cmd := &AsCommand{cmd: cmd{index: index, name: CmdAs, args: args}}
 
@@ -39,26 +41,32 @@ func NewAsCommand(index int, args []string) (*AsCommand, error) {
 	return cmd, nil
 }
 
+// Index is the position of the command in the script
 func (c *AsCommand) Index() int {
 	return c.cmd.index
 }
 
+// Name represents the name of the command
 func (c *AsCommand) Name() string {
 	return c.cmd.name
 }
 
+// Args returns a slice of raw command arguments
 func (c *AsCommand) Args() []string {
 	return c.cmd.args
 }
 
+// GetUserId returns the userid specified in AS
 func (c *AsCommand) GetUserId() string {
 	return c.userid
 }
 
+// GetGroupId returns the gid specified in AS
 func (c *AsCommand) GetGroupId() string {
 	return c.groupid
 }
 
+// GetCredentials returns the uid and gid value extracted from Args
 func (c *AsCommand) GetCredentials() (uid, gid int, err error) {
 	if c.user != nil {
 		return getUserIds(c.user)

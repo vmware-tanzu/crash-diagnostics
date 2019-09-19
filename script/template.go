@@ -13,6 +13,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// templateVars contains templated values that can be injected in a script
+// using Go template format.
 type templateVars struct {
 	Home     string
 	Username string

@@ -14,6 +14,7 @@ import (
 	"gitlab.eng.vmware.com/vivienv/flare/script"
 )
 
+// exeLocally runs script using locally installed tool
 func exeLocally(src *script.Script, workdir string) error {
 	envPairs := exeEnvs(src)
 	asCmd, err := exeAs(src)

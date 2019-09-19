@@ -9,6 +9,7 @@ import (
 	"gitlab.eng.vmware.com/vivienv/flare/script"
 )
 
+// exeAs extracts viable AS imperative from script
 func exeAs(src *script.Script) (*script.AsCommand, error) {
 	asCmds, ok := src.Preambles[script.CmdAs]
 	if !ok {
