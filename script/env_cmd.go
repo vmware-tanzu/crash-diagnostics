@@ -13,7 +13,7 @@ var (
 	envSep = regexp.MustCompile(`=`)
 )
 
-// EnvCommand represents ENV in a script
+// EnvCommand represents ENV directive in a script
 type EnvCommand struct {
 	cmd
 	envs []string
