@@ -25,7 +25,7 @@ var (
 		KubeConfigValue string
 	}{
 		FromValue:    "local",
-		WorkdirValue: "/tmp/flareout",
+		WorkdirValue: "/tmp/crash-dianotics",
 		KubeConfigValue: func() string {
 			kubecfg := os.Getenv("KUBECONFIG")
 			if kubecfg == "" {

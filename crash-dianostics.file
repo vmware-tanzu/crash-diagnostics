@@ -19,7 +19,7 @@ FROM local
 
 # WORKDIR specifies a location on disk
 # where the tool collects information
-WORKDIR /tmp/flareout
+WORKDIR /tmp/crash-diadnostics
 
 # Path to local kubeconfig file
 # If not provided, the tool will attempt to get

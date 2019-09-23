@@ -4,9 +4,7 @@
 package cmd
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -25,7 +23,7 @@ type outFlags struct {
 // that is compressed into a tarball.
 func newOutCommand() *cobra.Command {
 	flags := &outFlags{
-		file:   "flare.file",
+		file:   "crash-diagnostics.file",
 		output: "out.tar.gz",
 	}
 
@@ -38,34 +36,30 @@ func newOutCommand() *cobra.Command {
 			return runOut(flags, args)
 		},
 	}
-	cmd.Flags().StringVar(&flags.file, "file", flags.file, "the path to the flare.file (default ./flare.file)")
+	cmd.Flags().StringVar(&flags.file, "file", flags.file, "the path to the crash-dianostics script file (default ./crash-dianostics.file)")
 	cmd.Flags().StringVar(&flags.output, "output", flags.output, "the path to the generated archive file (default out.tar.gz)")
 	return cmd
 }
 
 func runOut(flag *outFlags, args []string) error {
-	var ff io.Reader
-
 	file, err := os.Open(flag.file)
 	if err != nil {
-		logrus.Warnf("Unable find %s, using sensible defaults", flag.file)
-		ff = bytes.NewReader([]byte(flarefile))
-	} else {
-		ff = file
+		return fmt.Errorf("Unable find crash-dianostics command file %s", flag.file)
 	}
+
 	defer file.Close()
 
-	flare, err := script.Parse(ff)
+	src, err := script.Parse(file)
 	if err != nil {
 		return err
 	}
 
-	exe := exec.New(flare)
+	exe := exec.New(src)
 	if err := exe.Execute(); err != nil {
 		return err
 	}
 
-	workdirs, ok := flare.Preambles[script.CmdWorkDir]
+	workdirs, ok := src.Preambles[script.CmdWorkDir]
 	if !ok {
 		return fmt.Errorf("Script missing %s", script.CmdWorkDir)
 	}

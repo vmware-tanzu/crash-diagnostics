@@ -11,22 +11,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const version = "v0.1.0-alpha"
+const version = "v0.1.0-alpha.5"
 const defaultLogLevel = logrus.WarnLevel
 
-// flareFlags flags for the command
-type flareFlags struct {
+// globalFlags flags for the command
+type globalFlags struct {
 	logLevel string
 }
 
-// flareCommand creates a main cli command
-func flareCommand() *cobra.Command {
-	flags := &flareFlags{logLevel: defaultLogLevel.String()}
+// crashDianosticsCommand creates a main cli command
+func crashDiagnosticsCommand() *cobra.Command {
+	flags := &globalFlags{logLevel: defaultLogLevel.String()}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
-		Use:   "flare",
-		Short: "flare helps investigate unresponsive kubernetes cluster",
-		Long:  "flare helps collect machine info from multiple data sources to troubleshoot Kubernetes 'nodes'",
+		Use:   "crash-diagnotics",
+		Short: "crash-dianostics helps to investigate an unresponsive kubernetes cluster",
+		Long:  "crash-diagnotics collects and analyzes cluster node info from multiple data sources to troubleshoot unresponsive Kubernetes clusters",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return preRun(flags)
 		},
@@ -45,7 +45,7 @@ func flareCommand() *cobra.Command {
 	return cmd
 }
 
-func preRun(flags *flareFlags) error {
+func preRun(flags *globalFlags) error {
 	level := defaultLogLevel
 	parsed, err := logrus.ParseLevel(flags.logLevel)
 	if err != nil {
@@ -60,5 +60,5 @@ func preRun(flags *flareFlags) error {
 // Run satarts the command
 func Run() error {
 	logrus.SetOutput(os.Stdout)
-	return flareCommand().Execute()
+	return crashDiagnosticsCommand().Execute()
 }
