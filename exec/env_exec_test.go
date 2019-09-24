@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"gitlab.eng.vmware.com/vivienv/flare/script"
+	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
 )
 
 func createTestShellScript(t *testing.T, fname string, content string) error {

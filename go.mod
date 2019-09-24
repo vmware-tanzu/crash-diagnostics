@@ -1,4 +1,4 @@
-module gitlab.eng.vmware.com/vivienv/flare
+module gitlab.eng.vmware.com/vivienv/crash-diagnostics
 
 go 1.12
 

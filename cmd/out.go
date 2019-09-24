@@ -9,9 +9,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"gitlab.eng.vmware.com/vivienv/flare/archiver"
-	"gitlab.eng.vmware.com/vivienv/flare/exec"
-	"gitlab.eng.vmware.com/vivienv/flare/script"
+	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/archiver"
+	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/exec"
+	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
 )
 
 type outFlags struct {
@@ -23,7 +23,7 @@ type outFlags struct {
 // that is compressed into a tarball.
 func newOutCommand() *cobra.Command {
 	flags := &outFlags{
-		file:   "crash-diagnostics.file",
+		file:   "Diagnostics.file",
 		output: "out.tar.gz",
 	}
 
@@ -36,7 +36,7 @@ func newOutCommand() *cobra.Command {
 			return runOut(flags, args)
 		},
 	}
-	cmd.Flags().StringVar(&flags.file, "file", flags.file, "the path to the crash-dianostics script file (default ./crash-dianostics.file)")
+	cmd.Flags().StringVar(&flags.file, "file", flags.file, "the path to the crash-dianostics script file (default ./Dianostics.file)")
 	cmd.Flags().StringVar(&flags.output, "output", flags.output, "the path to the generated archive file (default out.tar.gz)")
 	return cmd
 }
@@ -44,7 +44,7 @@ func newOutCommand() *cobra.Command {
 func runOut(flag *outFlags, args []string) error {
 	file, err := os.Open(flag.file)
 	if err != nil {
-		return fmt.Errorf("Unable find crash-dianostics command file %s", flag.file)
+		return fmt.Errorf("Unable find command script file %s", flag.file)
 	}
 
 	defer file.Close()

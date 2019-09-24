@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"gitlab.eng.vmware.com/vivienv/flare/script"
+	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
 )
 
 // exeWorkdir extract the viable WorkDir command from script, creates

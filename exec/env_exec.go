@@ -3,7 +3,7 @@
 
 package exec
 
-import "gitlab.eng.vmware.com/vivienv/flare/script"
+import "gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
 
 // execEnvs rertrieves all specified environment variables
 // and return as a slice of []string{key=value} pair.

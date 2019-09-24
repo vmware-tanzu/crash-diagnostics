@@ -6,7 +6,7 @@ package exec
 import (
 	"fmt"
 
-	"gitlab.eng.vmware.com/vivienv/flare/script"
+	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
 )
 
 //exeSSH retrieves the viable SSH command from script

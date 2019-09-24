@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"gitlab.eng.vmware.com/vivienv/flare/script"
+	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
 )
 
 func TestExecAS(t *testing.T) {

@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
-	"gitlab.eng.vmware.com/vivienv/flare/k8s"
-	"gitlab.eng.vmware.com/vivienv/flare/script"
+	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/k8s"
+	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
 )
 
 func exeClusterInfo(src *script.Script, path string) {

@@ -16,8 +16,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"gitlab.eng.vmware.com/vivienv/flare/script"
-	"gitlab.eng.vmware.com/vivienv/flare/ssh"
+	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
+	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/ssh"
 )
 
 func TestMain(m *testing.M) {

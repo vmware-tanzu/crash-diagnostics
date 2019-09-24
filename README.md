@@ -1,45 +1,39 @@
-# Flare
-A tool that collects server data for troubleshooting.
+# Crash Recovery and Diagnostics for Kubernetes
+A tool to help collect and analyze node information for troubleshooting unresponsive Kubernetes clusters.
 
-A human operator would run flare directly on a running server to take a snapshot of the current state of the server for analysis.  Flare can collect data from different data sources specified at runtime.  The collected data is packaged and compressed in a tar bundle.
-
+This tool is designed for human operators to run against some or all nodes of a troubled or unresponsive cluster to collect logs, configurations, or any other node resource for analysis to help with troubleshotting of Kubernetes.  
 
 ## Pre-requisites
- * Assumes Linux/Unix
+ * Assumes the Kubernetes cluster is running on Linux
 
-## Flare CLI
-Flare is designed to support multiple commands in the future to help diagnose and troubleshoot cluster machines.
+## `Crash-Diagnostics`
+The tool is compiled into a a single binary known named `crash-dianostics`.  It uses a configuration/command file to script how and what resource to be collected from one or more machines. By default, `crash-diagnostics` searches for script `diagnostics.file` which specifies line-by-line directives and commands that are interpreted into actions to be executed against the nodes in the cluster.  
 
-### flare out
-This command can gather information from multiple data sources running on a machine. Flare out uses the flare.file (see below)
-to specify what and how to collect machine information such as log files and output from commands.  The result is then bundled into an archive 
-file.
-
-The following example uses default `./flare.file` if one exists in the current directory and output the result to file `flare.tar.gz`:
+To collect and bundle information resources from cluster machines into a gizipped tar file, use the `--output` flag to specify the tar file name:
 
 ```
-flare out --output flare.tar.gz
+crash-diagnostics --output small-cluster.tar.gz
 ```
 
-A flare file can be specified using `--file` flag:
+By default, when `crash-diagnostics` runs, it will automatically look for script file `./Diagnostics.file`.  The script file can be specified, however, using the `--file` flag:
 
 ```
-flare out -file flare.file -output out.tar.gz
+crash-diagnostics --file small-cluster.file -output small-cluster.tar.gz
 ```
 
-## Flare.file Format
-Some flare commands, like `flare out` above, use a file (by default named `flare.file`) that contains a simple dialect to declartively specify commands executed by the flare program.  
-
-Flare uses a simple format for the command file (similar to Dockerfile).  Each command uses a single line:
+## Diagnotics.file Format
+`Diagnostics.file` uses a simple line-by-line directive format (à la Dockerfile) to specify how to collect data from cluster servers:
 
 ```
-COMMAND [arguments]
+DIRECTIVE [arguments]
 ```
 
-### Example flare.file
+A directive can either be a `preamble` or a `action`.  Preambles provide runtime configuration settings for the tool while actions can execute a command against the clsuter nodes speficied. 
+
+### Example Diagnostics.file
 ```
-FROM local
-WORKDIR /tmp/flareout
+FROM 127.0.0.1:22 192.168.99.7:22
+WORKDIR /tmp/crashdir
 
 COPY /var/log/system.log
 CAPTURE df -h
@@ -49,10 +43,11 @@ CAPTURE ps -ef
 CAPTURE lsof -i
 ```
 
-### Flare.file Commands
-Currently, flare supports the following commands:
+## Diagnostics.file Directives
+Currently, `crash-dianostics` supports the following directives:
 ```
 AS
+AUTHCONFIG
 CAPTURE
 COPY
 ENV
@@ -61,76 +56,64 @@ WORKDIR
 ```
 
 ### AS
-Specifies the group id and the user id to  use when running flare commands.
+This directive specifies the userid id and optional group id to  use when `crash-diagnostics` execute its commands against the current machine.
 ```
 AS <userid>[:<groupid>]
 ```
 
+### AUTHCONFIG
+Configures the authentication for connections to remote node servers with a username and a private key that is used
+in a keypair configuration for tools such as SSH.
+
+```
+AUTHCONFIG username:<name> private-key:</path/to/private/key>
+```
+
 ### CAPTURE
-Executes a shell command and captures the output as a data source that is copied
-into the built archive bundle.
+Executes a shell command on the specified machines (see FROM) and captures the output in the archived bundle for analysis.
 
 ```
 CAPTURE [<shell command>]
 ```
 
 ### COPY
-Specifies one or more files (or directories) as data sources that are copied
+This action specifies one or more files (and/or directories) as data sources that are copied
 into the arhive bundle.
 
 ```
-COPY <file or directory list>
+COPY <space-separated files or directories>
 ```
 
 ### ENV
-Can be used to set up environment variables that are then exposed to commands
-executed by the CAPTURE command.
+This directive is used to inject environment variables that to be processed by shell commands executed by the CAPTURE action at runtime.
 
 ```
-ENV key=value
+ENV key0=value0
+ENV key1=value1
+ENV keyN=valueN
 ```
 
 ### FROM
-Specifies the machine to use as the source of the data collected.  Valid values
-include `local` or host endpoint formatted as `<host-address>:<port>`
+This specifies a space-separated list of nodes from which data can be collected.  Each 
+machine is specified by an address and a service port as `<host-address>:<port>`. By default
+the tool will use SSH as at runtime to interact with the specified remote hosts.
+
+An address of `local` indicates that the current machine, where the `crash-diagnostics` binary, 
+is running will be used as the source allowing the tool to directly access and execute commands.
 
 ```
-FROM local 127.0.0.1:22
+FROM local 10.10.100.2:22
 ```
 
 ### KUBECONFIG
-Specifies the fully qualified path of the Kubernetes client configuration file. The
-tool uses this value to communicate with the API server to retrieve vital information. If
-the API server is slow or unresponsive, the tool will give up retrieving cluster information
-from the server.
+This directive specifies the fully qualified path of the Kubernetes client configuration file. The
+tool will use this value to communicate with the API server to retrieve vital cluster information 
+if available. If theAPI server is not available or unreponsive, retrieval of cluster information is skipped.
 
 ```
 KUBECONFIG /path/to/kube/config
 ```
-If this is not specified, the tool will attempt to search for: 
-- Environment variable `$KUBECONFIG`
-- If KUBECONFIG is not set, path `$HOME/.kube/config` will be used
 
-If a Kubernetes configuration file is not found, cluster information will not be retrieved.
-
-### SSHCONFIG
-The tool uses SSH to execute remote commands and copy (via scp) remote files using a 
-passwordless setup.  For this to work, both the machine running the tool and the remote
-machine must be setup with private/public key pair for SSH. This directive takes
-the form of `[<username>:]/path/to/private-key` where the `username` value is optional.
-
-```
-SSHCONFIG {{.Homedir}}/.ssh/id_rsa
-```
-
-Or,
-
-```
-SSHCONFIG vivien:/home/vivien/.ssh/cat_rsa
-```
-
-If the `username` is omitted, at runtime the tool  will attempt to use the current user
-running the process.
 
 ### WORKDIR
 Specifies the working directory used when building the archive bundle.  The
@@ -146,8 +129,8 @@ WORKDIR <relative or absolute path>
 
 ```
 FROM local 162.164.10.1:2222 162.164.10.2:2222
-KUBECONFIG {{.Home}}/.kube/kind-config-kind
-SSHCONFIG testuser:/home/testuser/.ssh/id_rsa
+KUBECONFIG /home/username/.kube/kind-config-kind
+AUTHCONFIG username:test private-key:/home/testuser/.ssh/id_rsa
 WORKDIR /tmp/output
 
 CAPTURE df -h
@@ -157,49 +140,65 @@ CAPTURE ps -ef
 CAPTURE lsof -i 
 ```
 
-## Compile and Running Flare
-Flare  is written and Go 1.11 or later.  Clone or download the source to your local directory.  From the project's root directory, compile the code with the
+## Diagnostics.file Templating
+The Diagnostics.file supports templated content to dynamically insert values when the tool loads the scipt file. The file
+uses Go-style templates where attributes are wrapped in double curly braces `{{ <template-attribute> }}`.  Currently, the following
+attributes are supported:
+
+* `{{.Home}}` - emits the home directory of the user running the `crash-diagnostics` binary
+* `{{.Username}}` - emits the current username that runs the `crash-diagnostics` binary
+
+The following shows the previous example using templated values:
+
+```
+FROM local 162.164.10.1:2222 162.164.10.2:2222
+KUBECONFIG {{.Home}}/.kube/kind-config-kind
+AUTHCONFIG username:{{.Username} private-key:{{.Home}}/.ssh/id_rsa
+WORKDIR /tmp/output
+
+CAPTURE df -h
+CAPTURE df -i
+CAPTURE netstat -an
+CAPTURE ps -ef
+CAPTURE lsof -i 
+```
+
+
+## Compile and Run
+`crash-diagnostics` is written in Go and requires version 1.11 or later.  Clone the source from its repo or download it to your local directory.  From the project's root directory, compile the code with the
 following:
 
 ```
 GO111MODULE="on" go install .
 ```
 
-This should place the compiled flare binary in `$(go env GOPATH)/bin`.  You can test this with:
+This should place the compiled `crash-diagnostics` binary in `$(go env GOPATH)/bin`.  You can test this with:
 ```
-flare --help
+crash-dianostics --help
 ```
-If this does not work properly, ensure that your Go environment is setup properly.  Next setup a sample flare.file to test with your environment:
+If this does not work properly, ensure that your Go environment is setup properly.
+
+Next run crash-diagonostics using the sample Diagnostics.file in this directory. Ensure to update it to reflect your
+current environment:
 
 ```
-FROM local
-WORKDIR /tmp/flareout
-
-CAPTURE df -h
-CAPTURE df -i
-CAPTURE netstat -an
-CAPTURE ps -ef
-CAPTURE lsof -i
+crash-diagnostics --output crashd.tar.gzip --loglevel debug
 ```
 
-In the directory where the flare.file is located, run flare to generate output bundle:
+You should see log messages on the screen similar to the following:
 ```
-flare out --loglevel debug
-```
-You should see log messages on the screen showing flare working:
-```
-DEBU[0000] Parsing flare script
+DEBU[0000] Parsing script file
 DEBU[0000] Parsing [1: FROM local]
 DEBU[0000] FROM parsed OK
-DEBU[0000] Parsing [2: WORKDIR /tmp/flareout]
+DEBU[0000] Parsing [2: WORKDIR /tmp/crasdir]
 ...
-DEBU[0002] Archiving [/tmp/flareout] in out.tar.gz
-DEBU[0002] Archived /tmp/flareout/df_-h.txt
-DEBU[0002] Archived /tmp/flareout/df_-i.txt
-DEBU[0002] Archived /tmp/flareout/lsof_-i.txt
-DEBU[0002] Archived /tmp/flareout/netstat_-an.txt
-DEBU[0002] Archived /tmp/flareout/ps_-ef.txt
-DEBU[0002] Archived /tmp/flareout/system.log
+DEBU[0000] Archiving [/tmp/crashdir] in out.tar.gz
+DEBU[0000] Archived /tmp/crashdir/local/df_-i.txt
+DEBU[0000] Archived /tmp/crashdir/local/lsof_-i.txt
+DEBU[0000] Archived /tmp/crashdir/local/netstat_-an.txt
+DEBU[0000] Archived /tmp/crashdir/local/ps_-ef.txt
+DEBU[0000] Archived /tmp/crashdir/local/var/log/syslog
+INFO[0000] Created archive out.tar.gz
 INFO[0002] Created archive out.tar.gz
 INFO[0002] Output done
 ```

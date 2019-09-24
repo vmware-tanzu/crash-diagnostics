@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"gitlab.eng.vmware.com/vivienv/flare/script"
+	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
 )
 
 func TestExecLocalCOPY(t *testing.T) {

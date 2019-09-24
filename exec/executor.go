@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
-	"gitlab.eng.vmware.com/vivienv/flare/script"
+	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
 )
 
 // Executor represents a type that can execute a script
