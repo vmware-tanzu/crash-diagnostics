@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/sirupsen/logrus"
 	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
 )
 
@@ -18,8 +19,11 @@ func exeWorkdir(src *script.Script) (*script.WorkdirCommand, error) {
 		return nil, fmt.Errorf("Script missing valid %s", script.CmdWorkDir)
 	}
 	workdir := dirs[0].(*script.WorkdirCommand)
+	logrus.Debugf("Using workdir %s", workdir.Dir())
+
 	if _, err := os.Stat(workdir.Dir()); err != nil {
 		if os.IsNotExist(err) {
+			logrus.Debugf("Creating  %s", workdir.Dir())
 			if err := os.MkdirAll(workdir.Dir(), 0744); err != nil && !os.IsExist(err) {
 				return nil, err
 			}

@@ -129,14 +129,14 @@ func TestExecLocalCAPTURE(t *testing.T) {
 // If setup properly, comment out t.Skip()
 func TestExecRemoteCAPTURE(t *testing.T) {
 	t.Skip(`Skipping: test requires an ssh daemon running and a
-		passwordless setup using private key specified by SSHCONFIG command`)
+		passwordless setup using private key specified with AUTHCONFIG command`)
 
 	tests := []execTest{
 		{
 			name: "CAPTURE single remote command",
 			source: func() string {
 				src := `FROM 127.0.0.1:22
-				SSHCONFIG {{.Username}}:{{.Home}}/.ssh/id_rsa
+				AUTHCONFIG username:{{.Username}} private-key:{{.Home}}/.ssh/id_rsa
 				CAPTURE /bin/echo 'HELLO WORLD'`
 				return src
 			},
@@ -161,7 +161,7 @@ func TestExecRemoteCAPTURE(t *testing.T) {
 			name: "CAPTURE multiple commands",
 			source: func() string {
 				src := `FROM 127.0.0.1:22
-				SSHCONFIG {{.Username}}:{{.Home}}/.ssh/id_rsa
+				AUTHCONFIG username:{{.Username}} private-key:{{.Home}}/.ssh/id_rsa
 				CAPTURE /bin/echo HELLO!
 				CAPTURE ls /tmp`
 				return src
@@ -193,7 +193,7 @@ func TestExecRemoteCAPTURE(t *testing.T) {
 			source: func() string {
 				src := `FROM 127.0.0.1:22
 				AS {{.Username}}
-				SSHCONFIG {{.Home}}/.ssh/id_rsa
+				AUTHCONFIG private-key:{{.Home}}/.ssh/id_rsa
 				CAPTURE /bin/echo 'HELLO WORLD'`
 				return src
 			},
@@ -219,7 +219,7 @@ func TestExecRemoteCAPTURE(t *testing.T) {
 			source: func() string {
 				src := `FROM 127.0.0.1:22
 				AS foo
-				SSHCONFIG {{.Home}}/.ssh/id_rsa
+				AUTHCONFIG private-key:{{.Home}}/.ssh/id_rsa
 				CAPTURE /bin/echo 'HELLO WORLD'`
 				return src
 			},
@@ -230,10 +230,10 @@ func TestExecRemoteCAPTURE(t *testing.T) {
 			shouldFail: true,
 		},
 		{
-			name: "CAPTURE remote command with bad SSHCONFIG user",
+			name: "CAPTURE remote command with bad AUTHCONFIG user",
 			source: func() string {
 				src := `FROM 127.0.0.1:22
-				SSHCONFIG _foouser:{{.Home}}/.ssh/id_rsa
+				AUTHCONFIG username:_foouser private-key:{{.Home}}/.ssh/id_rsa
 				CAPTURE /bin/echo 'HELLO WORLD'`
 				return src
 			},
@@ -247,7 +247,7 @@ func TestExecRemoteCAPTURE(t *testing.T) {
 			name: "CAPTURE bad remote command",
 			source: func() string {
 				src := `FROM 127.0.0.1:22
-				SSHCONFIG {{.Username}}:{{.Home}}/.ssh/id_rsa
+				AUTHCONFIG username:{{.Username}} private-key:{{.Home}}/.ssh/id_rsa
 				CAPTURE _foo_ _bar_`
 				return src
 			},

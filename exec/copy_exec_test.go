@@ -172,14 +172,14 @@ func TestExecLocalCOPY(t *testing.T) {
 
 func TestExecRemoteCOPY(t *testing.T) {
 	t.Skip(`Skipping: test requires an ssh daemon running and a
-		passwordless setup using private key specified by SSHCONFIG command`)
+		passwordless setup using private key specified with AUTHCONFIG command`)
 
 	tests := []execTest{
 		{
 			name: "COPY single files",
 			source: func() string {
 				src := `FROM 127.0.0.1:22
-				SSHCONFIG {{.Username}}:{{.Home}}/.ssh/id_rsa
+				AUTHCONFIG username:{{.Username}} private-key:{{.Home}}/.ssh/id_rsa
 				COPY foo.txt`
 				return src
 			},
@@ -211,7 +211,7 @@ func TestExecRemoteCOPY(t *testing.T) {
 			name: "COPY multiple files",
 			source: func() string {
 				src := `FROM 127.0.0.1:22
-				SSHCONFIG {{.Username}}:{{.Home}}/.ssh/id_rsa
+				AUTHCONFIG username:{{.Username}} private-key:{{.Home}}/.ssh/id_rsa
 				COPY foo0.txt
 				COPY foo1.txt foo2.txt`
 				return src
@@ -254,7 +254,7 @@ func TestExecRemoteCOPY(t *testing.T) {
 			name: "COPY directories and files",
 			source: func() string {
 				src := `FROM 127.0.0.1:22
-				SSHCONFIG {{.Username}}:{{.Home}}/.ssh/id_rsa
+				AUTHCONFIG username:{{.Username}} private-key:{{.Home}}/.ssh/id_rsa
 				COPY foodir0
 				COPY foodir1 foo2.txt`
 				return src
@@ -305,7 +305,7 @@ func TestExecRemoteCOPY(t *testing.T) {
 			name: "COPY bad source files",
 			source: func() string {
 				src := `FROM 127.0.0.1:22
-				SSHCONFIG {{.Username}}:{{.Home}}/.ssh/id_rsa
+				AUTHCONFIG username:{{.Username}} private-key:{{.Home}}/.ssh/id_rsa
 				COPY foodir0`
 				return src
 			},

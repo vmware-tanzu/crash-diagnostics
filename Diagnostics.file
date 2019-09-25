@@ -2,7 +2,7 @@
 # FROM supports one or more values separated by spaces where `local` 
 # indicates the current machine running the tool. For remote machines
 # specify the host address and port:
-# FROM local 127.0.0.1:22 remote.host.com:33
+# FROM local node0.test-cluster.internal:22 192.168.250.1:2222
 FROM local
 
 # AS specifies a userid:groupid to use when 
@@ -10,12 +10,11 @@ FROM local
 # Remote commands defaults to the specified userid.
 # AS userid[:groupid]
 
-# AUTHCONFIG configures a passwordless SSH connection to machines
-# specified in the FROM declaration above. Each
-# remote connection will use the specified user:public_key 
-# combination. If the user is not provided, the default AS user 
-# will be used. When FROM local is used, this setting is ignored.
-# SSHCONFIG {{.Username}}:{{.Home}}/.ssh/id_rsa
+# AUTHCONFIG configures authentication for remote connection to cluster machines
+# specified in the FROM declaration above. Each remote connection 
+# will use the specified username and private-key.
+# When FROM local is used, this setting is ignored.
+AUTHCONFIG username:{{.Username}} private-key:{{.Home}}/.ssh/id_rsa
 
 # WORKDIR specifies a location on disk
 # where the tool collects information

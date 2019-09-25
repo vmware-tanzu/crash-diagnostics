@@ -9,7 +9,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/archiver"
 	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/exec"
 	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
 )
@@ -44,7 +43,7 @@ func newOutCommand() *cobra.Command {
 func runOut(flag *outFlags, args []string) error {
 	file, err := os.Open(flag.file)
 	if err != nil {
-		return fmt.Errorf("Unable find command script file %s", flag.file)
+		return fmt.Errorf("Unable to find script file %s", flag.file)
 	}
 
 	defer file.Close()
@@ -54,21 +53,20 @@ func runOut(flag *outFlags, args []string) error {
 		return err
 	}
 
+	// insert output
+	if _, ok := src.Preambles[script.CmdOutput]; !ok {
+		cmd, err := script.NewOutputCommand(0, []string{fmt.Sprintf("path:%s", flag.output)})
+		if err != nil {
+			return err
+		}
+		logrus.Debugf("OUTPUT path:%s (as default)", flag.output)
+		src.Preambles[script.CmdOutput] = []script.Command{cmd}
+	}
+
 	exe := exec.New(src)
 	if err := exe.Execute(); err != nil {
 		return err
 	}
-
-	workdirs, ok := src.Preambles[script.CmdWorkDir]
-	if !ok {
-		return fmt.Errorf("Script missing %s", script.CmdWorkDir)
-	}
-	workdir := workdirs[0].(*script.WorkdirCommand)
-	if err := archiver.Tar(flag.output, workdir.Dir()); err != nil {
-		return err
-	}
-	logrus.Infof("Created archive %s", flag.output)
-	logrus.Info("Output done")
 
 	return nil
 }

@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/archiver"
+
 	"github.com/sirupsen/logrus"
 	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
 )
@@ -24,6 +26,7 @@ func New(src *script.Script) *Executor {
 // Execute executes the configured script
 func (e *Executor) Execute() error {
 	logrus.Info("Executing script file")
+
 	// exec FROM
 	fromCmd, err := exeFrom(e.script)
 	if err != nil {
@@ -33,9 +36,14 @@ func (e *Executor) Execute() error {
 	// exec WORKDIR
 	workdir, err := exeWorkdir(e.script)
 	if err != nil {
-		return nil
+		return err
 	}
-	logrus.Debugf("Using workdir %s", workdir.Dir())
+
+	// exec OUTPUT
+	output, err := exeOutput(e.script)
+	if err != nil {
+		return err
+	}
 
 	// retrieve KUBECONFIG and setup client connection
 	exeClusterInfo(e.script, filepath.Join(workdir.Dir(), "cluster-dump.json"))
@@ -60,6 +68,14 @@ func (e *Executor) Execute() error {
 			}
 		}
 	}
+
+	// write result to output
+	if err := archiver.Tar(output.Path(), workdir.Dir()); err != nil {
+		return err
+	}
+	logrus.Infof("Created output at path %s", output.Path())
+	logrus.Info("Done")
+
 	return nil
 }
 

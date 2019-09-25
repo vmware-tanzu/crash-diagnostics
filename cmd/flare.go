@@ -12,7 +12,7 @@ import (
 )
 
 const version = "v0.1.0-alpha.5"
-const defaultLogLevel = logrus.WarnLevel
+const defaultLogLevel = logrus.InfoLevel
 
 // globalFlags flags for the command
 type globalFlags struct {

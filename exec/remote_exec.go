@@ -22,19 +22,19 @@ func exeRemotely(src *script.Script, machine *script.Machine, workdir string) er
 		return err
 	}
 
-	sshCmd, err := exeSSH(src)
+	authCmd, err := exeAuthConfig(src)
 	if err != nil {
 		return err
 	}
 
 	user := asCmd.GetUserId()
-	if sshCmd.GetUserId() != "" {
-		user = sshCmd.GetUserId()
+	if authCmd.GetUsername() != "" {
+		user = authCmd.GetUsername()
 	}
 
-	privKey := sshCmd.GetPrivateKeyPath()
+	privKey := authCmd.GetPrivateKey()
 	if privKey == "" {
-		return fmt.Errorf("Missing private key file")
+		return fmt.Errorf("missing private key file")
 	}
 
 	for _, action := range src.Actions {
@@ -123,7 +123,7 @@ func copyRemotely(user, privKey string, machine *script.Machine, asCmd *script.A
 			}
 		}
 
-		args := []string{cliScpArgs, "-o StrictHostKeyChecking=no", "-P", port, remotePath, targetPath}
+		args := []string{cliScpArgs, "-o StrictHostKeyChecking=no", "-P", port, "-i", privKey, remotePath, targetPath}
 		_, err := CliRun(uint32(asUid), uint32(asGid), nil, cliScpName, args...)
 		if err != nil {
 			cliErr := fmt.Errorf("scp command failed: %s", err)

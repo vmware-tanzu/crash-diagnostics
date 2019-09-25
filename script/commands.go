@@ -9,20 +9,22 @@ import (
 )
 
 var (
-	CmdAs          = "AS"
-	CmdCapture     = "CAPTURE"
-	CmdCopy        = "COPY"
-	CmdEnv         = "ENV"
-	CmdFrom        = "FROM"
-	CmdKubeConfig  = "KUBECONFIG"
-	CmdSSHConfig   = "SSHCONFIG"
-	CmdFromDefault = "local"
-	CmdWorkDir     = "WORKDIR"
+	CmdAs         = "AS"
+	CmdAuthConfig = "AUTHCONFIG"
+	CmdCapture    = "CAPTURE"
+	CmdCopy       = "COPY"
+	CmdEnv        = "ENV"
+	CmdFrom       = "FROM"
+	CmdKubeConfig = "KUBECONFIG"
+	CmdOutput     = "OUTPUT"
+	CmdWorkDir    = "WORKDIR"
 
 	Defaults = struct {
 		FromValue       string
 		WorkdirValue    string
 		KubeConfigValue string
+		AuthPKValue     string
+		OutputValue     string
 	}{
 		FromValue:    "local",
 		WorkdirValue: "/tmp/crashdir",
@@ -33,6 +35,10 @@ var (
 			}
 			return kubecfg
 		}(),
+		AuthPKValue: func() string {
+			return filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa")
+		}(),
+		OutputValue: "out.tar.gz",
 	}
 )
 
@@ -46,12 +52,13 @@ type CommandMeta struct {
 var (
 	Cmds = map[string]CommandMeta{
 		CmdAs:         CommandMeta{Name: CmdAs, MinArgs: 1, MaxArgs: 1, Supported: true},
+		CmdAuthConfig: CommandMeta{Name: CmdAuthConfig, MinArgs: 1, MaxArgs: 3, Supported: true},
 		CmdCapture:    CommandMeta{Name: CmdCapture, MinArgs: 1, MaxArgs: 1, Supported: true},
 		CmdCopy:       CommandMeta{Name: CmdCopy, MinArgs: 1, MaxArgs: -1, Supported: true},
 		CmdEnv:        CommandMeta{Name: CmdEnv, MinArgs: 1, MaxArgs: -1, Supported: true},
 		CmdFrom:       CommandMeta{Name: CmdFrom, MinArgs: 1, MaxArgs: -1, Supported: true},
 		CmdKubeConfig: CommandMeta{Name: CmdKubeConfig, MinArgs: 1, MaxArgs: 1, Supported: true},
-		CmdSSHConfig:  CommandMeta{Name: CmdSSHConfig, MinArgs: 1, MaxArgs: 1, Supported: true},
+		CmdOutput:     CommandMeta{Name: CmdOutput, MinArgs: 1, MaxArgs: 1, Supported: true},
 		CmdWorkDir:    CommandMeta{Name: CmdWorkDir, MinArgs: 1, MaxArgs: 1, Supported: true},
 	}
 )

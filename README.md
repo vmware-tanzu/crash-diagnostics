@@ -12,35 +12,39 @@ The tool is compiled into a a single binary known named `crash-dianostics`.  It 
 To collect and bundle information resources from cluster machines into a gizipped tar file, use the `--output` flag to specify the tar file name:
 
 ```
-crash-diagnostics --output small-cluster.tar.gz
+crash-diagnostics --output test-cluster.tar.gz
 ```
 
-By default, when `crash-diagnostics` runs, it will automatically look for script file `./Diagnostics.file`.  The script file can be specified, however, using the `--file` flag:
+By default, when `crash-diagnostics` runs, it will automatically look for script file `./Diagnostics.file`.  A different script file can be specified, however, using the `--file` flag:
 
 ```
-crash-diagnostics --file small-cluster.file -output small-cluster.tar.gz
+crash-diagnostics --file test-cluster.file -output test-cluster.tar.gz
 ```
 
 ## Diagnotics.file Format
-`Diagnostics.file` uses a simple line-by-line directive format (à la Dockerfile) to specify how to collect data from cluster servers:
+`Diagnostics.file` uses a simple line-by-line format (à la Dockerfile) to specify directives on how to collect data from cluster servers:
 
 ```
 DIRECTIVE [arguments]
 ```
 
-A directive can either be a `preamble` or a `action`.  Preambles provide runtime configuration settings for the tool while actions can execute a command against the clsuter nodes speficied. 
+A directive can either be a `preamble` for runtime configuration or an `action` which can execute a command that runs on each specified node in a cluster. 
 
 ### Example Diagnostics.file
 ```
 FROM 127.0.0.1:22 192.168.99.7:22
 WORKDIR /tmp/crashdir
 
-COPY /var/log/system.log
+COPY /var/log/kube-apiserver.log
 CAPTURE df -h
 CAPTURE df -i
 CAPTURE netstat -an
 CAPTURE ps -ef
 CAPTURE lsof -i
+CAPTURE journalctl -l -u kube-apiserver
+COPY /var/log/kubelet.log
+COPY /var/log/kube-proxy.log
+
 ```
 
 ## Diagnostics.file Directives
@@ -52,6 +56,8 @@ CAPTURE
 COPY
 ENV
 FROM
+KUBECONFIG
+KUBEGET namespace:<namespace> 
 WORKDIR
 ```
 
@@ -108,12 +114,29 @@ FROM local 10.10.100.2:22
 ### KUBECONFIG
 This directive specifies the fully qualified path of the Kubernetes client configuration file. The
 tool will use this value to communicate with the API server to retrieve vital cluster information 
-if available. If theAPI server is not available or unreponsive, retrieval of cluster information is skipped.
+if available.  
 
 ```
 KUBECONFIG /path/to/kube/config
 ```
 
+By default, the following resourcess will be retrieved from the API server:
+
+ * Namespaces
+ * Nodes
+ * Events
+ * Replication Controllers
+ * Services
+ * DaemonSets
+ * Deployments
+ * ReplicaSets
+ * Pods
+
+If `KUBECONFIG` is not specified, the tool will attempt to search for:
+ * Environment variable `KUBECONFIG`
+ * If the `KUBECONFIG` env variable is not set, path $HOME/.kube/config will be used
+
+If a Kubernetes configuration file is not found or the API server is unresponsive, cluster information will be skipped.
 
 ### WORKDIR
 Specifies the working directory used when building the archive bundle.  The
@@ -125,7 +148,7 @@ is removed.
 WORKDIR <relative or absolute path>
 ```
 
-## Example File
+### Example File
 
 ```
 FROM local 162.164.10.1:2222 162.164.10.2:2222
@@ -139,6 +162,9 @@ CAPTURE netstat -an
 CAPTURE ps -ef
 CAPTURE lsof -i 
 ```
+
+### Comments
+Instead of a directive, each line can start with `#` to indicate a comment which is ignored at runtime.
 
 ## Diagnostics.file Templating
 The Diagnostics.file supports templated content to dynamically insert values when the tool loads the scipt file. The file

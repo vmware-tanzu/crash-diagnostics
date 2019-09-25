@@ -75,12 +75,18 @@ func Parse(reader io.Reader) (*Script, error) {
 				return nil, err
 			}
 			script.Preambles[CmdKubeConfig] = []Command{cmd}
-		case CmdSSHConfig:
-			cmd, err := NewSSHConfigCommand(line, tokens[1:])
+		case CmdAuthConfig:
+			cmd, err := NewAuthConfigCommand(line, tokens[1:])
 			if err != nil {
 				return nil, err
 			}
-			script.Preambles[CmdSSHConfig] = []Command{cmd}
+			script.Preambles[CmdAuthConfig] = []Command{cmd}
+		case CmdOutput:
+			cmd, err := NewOutputCommand(line, tokens[1:])
+			if err != nil {
+				return nil, err
+			}
+			script.Preambles[CmdOutput] = []Command{cmd}
 		case CmdWorkDir:
 			cmd, err := NewWorkdirCommand(line, tokens[1:])
 			if err != nil {
