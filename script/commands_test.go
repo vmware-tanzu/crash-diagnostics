@@ -141,7 +141,7 @@ func TestCommandParse(t *testing.T) {
 					return fmt.Errorf("Script has unexpected number of actions %d", len(actions))
 				}
 				preambles := s.Preambles
-				if len(preambles) != 4 {
+				if len(preambles) != 5 {
 					return fmt.Errorf("Script has unexpected number of preambles %d", len(preambles))
 				}
 				return nil

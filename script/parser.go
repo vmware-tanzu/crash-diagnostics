@@ -177,8 +177,17 @@ func enforceDefaults(script *Script) (*Script, error) {
 		if err != nil {
 			return nil, err
 		}
-		logrus.Debugf("FROM %s (as default)", cmd.Args()[0])
+		logrus.Debugf("WORKDIR %s (as default)", cmd.Args()[0])
 		script.Preambles[CmdWorkDir] = []Command{cmd}
+	}
+
+	if _, ok := script.Preambles[CmdOutput]; !ok {
+		cmd, err := NewOutputCommand(0, []string{fmt.Sprintf("path:%s", Defaults.OutputValue)})
+		if err != nil {
+			return nil, err
+		}
+		logrus.Debugf("OUTPUT %s (as default)", cmd.Args()[0])
+		script.Preambles[CmdOutput] = []Command{cmd}
 	}
 
 	if _, ok := script.Preambles[CmdKubeConfig]; !ok {

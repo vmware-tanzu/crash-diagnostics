@@ -7,40 +7,38 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/exec"
 	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
 )
 
-type outFlags struct {
+type runFlags struct {
 	file   string
 	output string
 }
 
-// out command executes the script and generate a file
-// that is compressed into a tarball.
-func newOutCommand() *cobra.Command {
-	flags := &outFlags{
+// newRunCommand creates a command to run the Diaganostics script a file
+func newRunCommand() *cobra.Command {
+	flags := &runFlags{
 		file:   "Diagnostics.file",
 		output: "out.tar.gz",
 	}
 
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
-		Use:   "out",
-		Short: "outputs an archive from collected data",
-		Long:  "outputs an archive from data collected from the specified machine",
+		Use:   "run",
+		Short: "Executes a diagnostics script file",
+		Long:  "Executes a diagnostics script and collects its output as an archive bundle",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runOut(flags, args)
+			return run(flags, args)
 		},
 	}
-	cmd.Flags().StringVar(&flags.file, "file", flags.file, "the path to the crash-dianostics script file (default ./Dianostics.file)")
-	cmd.Flags().StringVar(&flags.output, "output", flags.output, "the path to the generated archive file (default out.tar.gz)")
+	cmd.Flags().StringVar(&flags.file, "file", flags.file, "the path to the dianostics script file to run")
+	cmd.Flags().StringVar(&flags.output, "output", "", "the path of the generated archive file")
 	return cmd
 }
 
-func runOut(flag *outFlags, args []string) error {
+func run(flag *runFlags, args []string) error {
 	file, err := os.Open(flag.file)
 	if err != nil {
 		return fmt.Errorf("Unable to find script file %s", flag.file)
@@ -53,13 +51,12 @@ func runOut(flag *outFlags, args []string) error {
 		return err
 	}
 
-	// insert output
-	if _, ok := src.Preambles[script.CmdOutput]; !ok {
+	// override output if needed
+	if flag.output != "" {
 		cmd, err := script.NewOutputCommand(0, []string{fmt.Sprintf("path:%s", flag.output)})
 		if err != nil {
 			return err
 		}
-		logrus.Debugf("OUTPUT path:%s (as default)", flag.output)
 		src.Preambles[script.CmdOutput] = []script.Command{cmd}
 	}
 

@@ -4,7 +4,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -16,17 +15,17 @@ const defaultLogLevel = logrus.InfoLevel
 
 // globalFlags flags for the command
 type globalFlags struct {
-	logLevel string
+	debug bool
 }
 
 // crashDianosticsCommand creates a main cli command
 func crashDiagnosticsCommand() *cobra.Command {
-	flags := &globalFlags{logLevel: defaultLogLevel.String()}
+	flags := &globalFlags{debug: false}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "crash-diagnotics",
-		Short: "crash-dianostics helps to investigate an unresponsive kubernetes cluster",
-		Long:  "crash-diagnotics collects and analyzes cluster node info from multiple data sources to troubleshoot unresponsive Kubernetes clusters",
+		Short: "crash-dianostics helps to troubleshoot kubernetes cluster",
+		Long:  "crash-diagnotics collects diagnostics from an unresponsive Kubernetes cluster",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return preRun(flags)
 		},
@@ -34,26 +33,24 @@ func crashDiagnosticsCommand() *cobra.Command {
 		Version:      version,
 	}
 
-	cmd.PersistentFlags().StringVar(
-		&flags.logLevel,
-		"loglevel",
-		flags.logLevel,
-		fmt.Sprintf("log level %v", logrus.AllLevels),
+	cmd.PersistentFlags().BoolVar(
+		&flags.debug,
+		"debug",
+		flags.debug,
+		"sets log level to debug",
 	)
 
-	cmd.AddCommand(newOutCommand())
+	cmd.AddCommand(newRunCommand())
 	return cmd
 }
 
 func preRun(flags *globalFlags) error {
 	level := defaultLogLevel
-	parsed, err := logrus.ParseLevel(flags.logLevel)
-	if err != nil {
-		logrus.Warnf("Invalid log level [%s], using [%s]", flags.logLevel, level)
-	} else {
-		level = parsed
+	if flags.debug {
+		level = logrus.DebugLevel
 	}
 	logrus.SetLevel(level)
+
 	return nil
 }
 

@@ -111,7 +111,7 @@ func copyLocally(asCmd *script.AsCommand, cmd *script.CopyCommand, dest string) 
 		args := []string{cliCpArgs, path, targetPath}
 		_, err := CliRun(uint32(asUid), uint32(asGid), nil, cliCpName, args...)
 		if err != nil {
-			cliErr := fmt.Errorf("local file copy failed: %s", err)
+			cliErr := fmt.Errorf("local file copy failed: %s (may not exist): %s", path, err)
 			logrus.Warn(cliErr)
 			return writeError(cliErr, targetPath)
 		}

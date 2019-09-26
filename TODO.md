@@ -2,5 +2,4 @@
 * [x] Rebrand project - rename paths
 * [x] Rebrand project - update docs
 * [x] New command to bundle collected resources from script (OUTPUT)
-* [ ] Collapse/remove sub-command, use flags only
 * [x] Fix exec.exeRemote to use specified private key

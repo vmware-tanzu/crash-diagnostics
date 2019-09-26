@@ -7,15 +7,38 @@ This tool is designed for human operators to run against some or all nodes of a 
  * Assumes the Kubernetes cluster is running on Linux
 
 ## `Crash-Diagnostics`
-The tool is compiled into a a single binary known named `crash-dianostics`.  It uses a configuration/command file to script how and what resource to be collected from one or more machines. By default, `crash-diagnostics` searches for script `diagnostics.file` which specifies line-by-line directives and commands that are interpreted into actions to be executed against the nodes in the cluster.  
-
-To collect and bundle information resources from cluster machines into a gizipped tar file, use the `--output` flag to specify the tar file name:
+The tool is compiled into a a single binary named `crash-dianostics`.  Currently, the binary supports two commands:
 
 ```
-crash-diagnostics --output test-cluster.tar.gz
+Usage:
+  crash-diagnotics [command]
+
+Available Commands:
+  help        Help about any command
+  run         Executes a diagnostics script file
 ```
 
-By default, when `crash-diagnostics` runs, it will automatically look for script file `./Diagnostics.file`.  A different script file can be specified, however, using the `--file` flag:
+Command `run` uses a diagnostics file to script how and what resources to are collected from cluster machines. By default, `crash-diagnostics run` searches for script for `Diagnostics.file` which specifies line-by-line directives and commands that are interpreted into actions to be executed against the nodes in the cluster.
+
+```
+> crash-diagnostics run --help
+
+Usage:
+  crash-diagnotics run [flags]
+
+Flags:
+      --file string     the path to the dianostics script file to run (default "Diagnostics.file")
+      --output string   the path of the generated archive file (default "out.tar.gz")
+```
+
+
+For instance, the following command will execte file `./Diagnostics.file` and store any collected data in file `out.tar.gz`:
+
+```
+crash-diagnostics run
+```
+
+To run a different script file  or specify a different output archive, use the flags shown below: 
 
 ```
 crash-diagnostics --file test-cluster.file -output test-cluster.tar.gz
@@ -45,7 +68,12 @@ CAPTURE journalctl -l -u kube-apiserver
 COPY /var/log/kubelet.log
 COPY /var/log/kube-proxy.log
 
+OUTPUT path:/tmp/crashout/out.tar.gzip
+
 ```
+In the previous example, the tool will collect information from servers `127.0.0.1:22` and `192.168.99.7:22` by executing the COPY and the CAPTURE 
+commands specified in the file.  The colleted information is bundled into archive file `/tmp/crashout/out.tar.gzip` specified by `OUTPUT` (note that 
+the output file can also be specified by flag `--output`).
 
 ## Diagnostics.file Directives
 Currently, `crash-dianostics` supports the following directives:
@@ -57,7 +85,7 @@ COPY
 ENV
 FROM
 KUBECONFIG
-KUBEGET namespace:<namespace> 
+OUTPUT
 WORKDIR
 ```
 
@@ -138,6 +166,16 @@ If `KUBECONFIG` is not specified, the tool will attempt to search for:
 
 If a Kubernetes configuration file is not found or the API server is unresponsive, cluster information will be skipped.
 
+### OUTPUT
+This preamble configures the the location and file name of the generated archive file that contains the collected information
+from the specified servers.
+
+```
+OUTPUT path:<path of archive file>
+```
+
+If `OUTPUT` is not specified, the tool applies the value of flag `--output` as specified on the command line at runtime.
+
 ### WORKDIR
 Specifies the working directory used when building the archive bundle.  The
 directory is  used as temporary location to store data from all data sources
@@ -160,21 +198,43 @@ CAPTURE df -h
 CAPTURE df -i
 CAPTURE netstat -an
 CAPTURE ps -ef
-CAPTURE lsof -i 
+CAPTURE lsof -i
+
+OUTPUT path:/tmp/crashout/out.tar.gz
 ```
 
 ### Comments
-Instead of a directive, each line can start with `#` to indicate a comment which is ignored at runtime.
+Each line that starts with with `#` is considered to be a comment and is ignored at runtime as shown in 
+the following example:
 
-## Diagnostics.file Templating
-The Diagnostics.file supports templated content to dynamically insert values when the tool loads the scipt file. The file
-uses Go-style templates where attributes are wrapped in double curly braces `{{ <template-attribute> }}`.  Currently, the following
+```
+# This shows how to comment your script
+FROM local 162.164.10.1:2222 162.164.10.2:2222
+KUBECONFIG /home/username/.kube/kind-config-kind
+AUTHCONFIG username:test private-key:/home/testuser/.ssh/id_rsa
+WORKDIR /tmp/output
+
+# Capture the following commands
+CAPTURE df -h
+CAPTURE df -i
+CAPTURE netstat -an
+CAPTURE ps -ef
+CAPTURE lsof -i
+
+# send output here
+OUTPUT path:/tmp/crashout/out.tar.gz
+```
+
+## Templating
+The script also supports templated content to dynamically insert values when the tool runs. The file
+uses the Go programming language's style of text template where attributes are wrapped in double curly braces `{{ .<template-attribute> }}`.  Currently, the following
 attributes are supported:
 
 * `{{.Home}}` - emits the home directory of the user running the `crash-diagnostics` binary
 * `{{.Username}}` - emits the current username that runs the `crash-diagnostics` binary
 
-The following shows the previous example using templated values:
+The following script uses templated values that outputs the current `HOME` directory and
+`username`:
 
 ```
 FROM local 162.164.10.1:2222 162.164.10.2:2222
@@ -187,6 +247,8 @@ CAPTURE df -i
 CAPTURE netstat -an
 CAPTURE ps -ef
 CAPTURE lsof -i 
+
+OUTPUT path:{{.Home}}/.crashout/out.tar.gz
 ```
 
 
@@ -208,7 +270,7 @@ Next run crash-diagonostics using the sample Diagnostics.file in this directory.
 current environment:
 
 ```
-crash-diagnostics --output crashd.tar.gzip --loglevel debug
+crash-diagnostics run --output crashd.tar.gzip --loglevel debug
 ```
 
 You should see log messages on the screen similar to the following:

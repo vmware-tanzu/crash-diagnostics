@@ -51,6 +51,9 @@ func runExecutorTest(t *testing.T, test execTest) {
 		if err := os.RemoveAll(script.Defaults.WorkdirValue); err != nil {
 			t.Log(err)
 		}
+		if err := os.RemoveAll(script.Defaults.OutputValue); err != nil {
+			t.Log(err)
+		}
 	}()
 
 	script, err := script.Parse(strings.NewReader(test.source()))
