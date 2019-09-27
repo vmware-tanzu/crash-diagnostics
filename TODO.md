@@ -1,3 +1,7 @@
+# v.0.1.0-alpha.6
+* [ ] Update documentation 
+* [ ] Add open source docs and compliance notices
+
 # v.0.1.0-alpha.5
 * [x] Rebrand project - rename paths
 * [x] Rebrand project - update docs

@@ -290,3 +290,11 @@ INFO[0000] Created archive out.tar.gz
 INFO[0002] Created archive out.tar.gz
 INFO[0002] Output done
 ```
+
+## Contributing
+
+New contributors will need to sign a CLA (contributor license agreement). Details are described in our [contributing](CONTRIBUTING.md) documentation.
+
+
+## License
+This project is available under the [Apache License, Version 2.0](LICENSE.txt)
