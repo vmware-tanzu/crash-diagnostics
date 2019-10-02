@@ -1,4 +1,4 @@
-module gitlab.eng.vmware.com/vivienv/crash-diagnostics
+module github.com/vmware-tanzu/crash-diagnostics
 
 go 1.12
 

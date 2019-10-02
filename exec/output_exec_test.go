@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
+	"github.com/vmware-tanzu/crash-diagnostics/script"
 )
 
 func TestExecOUTPUT(t *testing.T) {

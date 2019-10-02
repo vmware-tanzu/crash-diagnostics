@@ -9,10 +9,10 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/ssh"
+	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 
 	"github.com/sirupsen/logrus"
-	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
+	"github.com/vmware-tanzu/crash-diagnostics/script"
 )
 
 // exeRemotely executes script on remote machines

@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
-	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
+	"github.com/vmware-tanzu/crash-diagnostics/script"
 )
 
 // exeWorkdir extract the viable WorkDir command from script, creates

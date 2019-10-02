@@ -6,7 +6,7 @@ package exec
 import (
 	"fmt"
 
-	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
+	"github.com/vmware-tanzu/crash-diagnostics/script"
 )
 
 func exeFrom(src *script.Script) (*script.FromCommand, error) {

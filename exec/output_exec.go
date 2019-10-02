@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
-	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
+	"github.com/vmware-tanzu/crash-diagnostics/script"
 )
 
 // exeOutput extract the OUTPUT command from script, creates

@@ -6,7 +6,7 @@ package exec
 import (
 	"fmt"
 
-	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
+	"github.com/vmware-tanzu/crash-diagnostics/script"
 )
 
 //exeAuthConfig retrieves a viable AuthConfig command from script

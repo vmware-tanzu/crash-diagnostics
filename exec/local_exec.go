@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
+	"github.com/vmware-tanzu/crash-diagnostics/script"
 )
 
 // exeLocally runs script using locally installed tool

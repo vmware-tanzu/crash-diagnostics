@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
-	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/cmd"
+	"github.com/vmware-tanzu/crash-diagnostics/cmd"
 )
 
 func main() {

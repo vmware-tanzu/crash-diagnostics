@@ -8,8 +8,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/exec"
-	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
+	"github.com/vmware-tanzu/crash-diagnostics/exec"
+	"github.com/vmware-tanzu/crash-diagnostics/script"
 )
 
 type runFlags struct {

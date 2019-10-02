@@ -7,10 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/archiver"
+	"github.com/vmware-tanzu/crash-diagnostics/archiver"
 
 	"github.com/sirupsen/logrus"
-	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
+	"github.com/vmware-tanzu/crash-diagnostics/script"
 )
 
 // Executor represents a type that can execute a script

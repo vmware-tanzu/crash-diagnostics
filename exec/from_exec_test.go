@@ -6,7 +6,7 @@ package exec
 import (
 	"testing"
 
-	"gitlab.eng.vmware.com/vivienv/crash-diagnostics/script"
+	"github.com/vmware-tanzu/crash-diagnostics/script"
 )
 
 func TestExecFROM(t *testing.T) {
