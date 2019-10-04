@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const version = "v0.1.0-alpha.5"
+const version = "v0.1.0-alpha.0"
 const defaultLogLevel = logrus.InfoLevel
 
 // globalFlags flags for the command
