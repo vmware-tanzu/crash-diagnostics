@@ -1,0 +1,14 @@
+language: go
+
+go:
+  - 1.13.x
+  - tip
+
+env:
+  global:
+    - GOPROXY=https://proxy.golang.org
+    - GO111MODULE=on
+
+script:
+  - .ci/gofmt.sh
+  - go test -v ./...

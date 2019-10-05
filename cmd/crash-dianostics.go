@@ -10,7 +10,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const version = "v0.1.0-alpha.0"
+var Version = "v0.1.0-alpha.0"
+
 const defaultLogLevel = logrus.InfoLevel
 
 // globalFlags flags for the command
@@ -30,7 +31,7 @@ func crashDiagnosticsCommand() *cobra.Command {
 			return preRun(flags)
 		},
 		SilenceUsage: true,
-		Version:      version,
+		Version:      Version,
 	}
 
 	cmd.PersistentFlags().BoolVar(
