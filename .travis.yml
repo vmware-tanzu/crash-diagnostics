@@ -12,6 +12,7 @@ script:
 - go run .ci/build/build.go
 before_deploy:
   - sudo snap install --classic goreleaser
+  - export PUBLISH=true
 deploy:
 - provider: script
   skip_cleanup: true
