@@ -12,3 +12,8 @@ script:
   - go run .ci/prebuild/gofmt_check.go
   - go test -v ./...
   - go run .ci/build/build.go
+
+deploy:
+- provider: script
+  skip_cleanup: true
+  script: go run .ci/deploy/travis_deploy.go

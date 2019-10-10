@@ -22,7 +22,7 @@ func main() {
 
 	for _, arch := range arches {
 		for _, os := range oses {
-			binary := fmt.Sprintf("build/%s/%s/crash-diagnostics", arch, os)
+			binary := fmt.Sprintf(".build/%s/%s/crash-diagnostics", arch, os)
 			gobuild(arch, os, e.Val("LDFLAGS"), binary)
 		}
 	}
@@ -35,8 +35,7 @@ func gobuild(arch, os, ldflags, binary string) {
 	b.SetVar("os", os)
 	b.SetVar("ldflags", ldflags)
 	b.SetVar("binary", binary)
-	result := b.Env("CGO_ENABLED=0 GOOS=$os GOARCH=$arch").Run("go build -o $binary .")
-	fmt.Println(result)
+	result := b.Env("CGO_ENABLED=0 GOOS=$os GOARCH=$arch").Run("go build -o $binary -ldflags $ldflags .")
 	if !b.Empty(result) {
 		fmt.Printf("Build for %s/%s failed: %s\n", arch, os, result)
 		return
