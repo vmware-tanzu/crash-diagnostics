@@ -8,9 +8,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/vmware-tanzu/crash-diagnostics/buildinfo"
 )
-
-var Version = "v0.1.0-alpha.0"
 
 const defaultLogLevel = logrus.InfoLevel
 
@@ -31,7 +30,7 @@ func crashDiagnosticsCommand() *cobra.Command {
 			return preRun(flags)
 		},
 		SilenceUsage: true,
-		Version:      Version,
+		Version:      buildinfo.Version,
 	}
 
 	cmd.PersistentFlags().BoolVar(
@@ -42,6 +41,7 @@ func crashDiagnosticsCommand() *cobra.Command {
 	)
 
 	cmd.AddCommand(newRunCommand())
+	cmd.AddCommand(newBuildinfoCommand())
 	return cmd
 }
 

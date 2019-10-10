@@ -1,0 +1,18 @@
+before:
+  hooks:
+    # you may remove this if you don't use vgo
+    - go mod tidy
+builds:
+- binary: crash-diagnostics
+  env:
+  - CGO_ENABLED=0
+  goos:
+    - darwin
+    - linux
+  goarch:
+    - amd64
+  ldflags: -s -w -X github.com/vmware-tanzu/crash-diagnostics/buildinfo.Version=v{{.Version}} -X github.com/vmware-tanzu/crash-diagnostics/buildinfo.GitSHA={{.FullCommit}}
+archives:
+checksum:
+  name_template: 'checksums.txt'
+
