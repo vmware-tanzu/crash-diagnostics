@@ -9,6 +9,7 @@ import (
 
 func main() {
 	e := echo.New()
+	fmt.Println("Running binary release...")
 
 	// ensure we're in travis
 	if e.Eval("${TRAVIS}") == "" {
