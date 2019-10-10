@@ -10,6 +10,8 @@ script:
 - go run .ci/prebuild/gofmt_check.go
 - go test -v ./...
 - go run .ci/build/build.go
+before_deploy:
+  - sudo snap install --classic goreleaser
 deploy:
 - provider: script
   skip_cleanup: true
