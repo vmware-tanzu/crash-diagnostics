@@ -15,5 +15,5 @@ deploy:
   skip_cleanup: true
   script: go run .ci/deploy/travis_deploy.go
   on:
-    repo: vladimirvivien/vmware-tanzu-crash-diagnostics
+    repo: vladimirvivien/crash-diagnostics
     all_branches: true
