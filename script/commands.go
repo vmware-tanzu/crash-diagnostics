@@ -51,7 +51,7 @@ type CommandMeta struct {
 
 var (
 	Cmds = map[string]CommandMeta{
-		CmdAs:         CommandMeta{Name: CmdAs, MinArgs: 1, MaxArgs: 1, Supported: true},
+		CmdAs:         CommandMeta{Name: CmdAs, MinArgs: 1, MaxArgs: 2, Supported: true},
 		CmdAuthConfig: CommandMeta{Name: CmdAuthConfig, MinArgs: 1, MaxArgs: 3, Supported: true},
 		CmdCapture:    CommandMeta{Name: CmdCapture, MinArgs: 1, MaxArgs: 1, Supported: true},
 		CmdCopy:       CommandMeta{Name: CmdCopy, MinArgs: 1, MaxArgs: -1, Supported: true},
@@ -63,14 +63,16 @@ var (
 	}
 )
 
+type ArgMap = map[string]string
+
 // Command is an abtract representatio of command in a script
 type Command interface {
 	// Index is the position of the command in the script
 	Index() int
 	// Name represents the name of the command
 	Name() string
-	// Args returns a slice of raw command arguments
-	Args() []string
+	// Args returns a map of parsed arguments
+	Args() ArgMap
 }
 
 // Script is a collection of commands
@@ -83,5 +85,5 @@ type Script struct {
 type cmd struct {
 	index int
 	name  string
-	args  []string
+	args  map[string]string
 }

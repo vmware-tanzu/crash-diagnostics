@@ -14,7 +14,7 @@ func TestCommandAS(t *testing.T) {
 		{
 			name: "AS specified with userid and groupid",
 			source: func() string {
-				return "AS foo:bar"
+				return "AS userid:foo groupid:bar"
 			},
 			script: func(s *Script) error {
 				cmds := s.Preambles[CmdAs]
@@ -37,7 +37,7 @@ func TestCommandAS(t *testing.T) {
 		{
 			name: "AS with only userid",
 			source: func() string {
-				return "AS foo"
+				return "AS userid:foo"
 			},
 			script: func(s *Script) error {
 				cmds := s.Preambles[CmdAs]
@@ -51,8 +51,8 @@ func TestCommandAS(t *testing.T) {
 				if asCmd.GetUserId() != "foo" {
 					return fmt.Errorf("Unexpected AS userid %s", asCmd.GetUserId())
 				}
-				if asCmd.GetGroupId() != "" {
-					return fmt.Errorf("Unexpected AS groupid %s", asCmd.GetUserId())
+				if asCmd.GetGroupId() != fmt.Sprintf("%d", os.Getgid()) {
+					return fmt.Errorf("Unexpected AS groupid %s", asCmd.GetGroupId())
 				}
 				return nil
 			},
@@ -77,14 +77,13 @@ func TestCommandAS(t *testing.T) {
 				if asCmd.GetGroupId() != fmt.Sprintf("%d", os.Getgid()) {
 					return fmt.Errorf("Unexpected AS default groupid %s", asCmd.GetUserId())
 				}
-
 				return nil
 			},
 		},
 		{
 			name: "Multiple AS provided",
 			source: func() string {
-				return "AS foo\nAS bar:bazz"
+				return "AS userid:foo\nAS userid:bar"
 			},
 			script: func(s *Script) error {
 				cmds := s.Preambles[CmdAs]
@@ -92,7 +91,7 @@ func TestCommandAS(t *testing.T) {
 					return fmt.Errorf("Script should only have 1 AS instruction, got %d", len(cmds))
 				}
 				asCmd := cmds[0].(*AsCommand)
-				if asCmd.GetUserId() != "foo" {
+				if asCmd.GetUserId() != "bar" {
 					return fmt.Errorf("Unexpected AS userid %s", asCmd.GetUserId())
 				}
 				if asCmd.GetGroupId() != "" {

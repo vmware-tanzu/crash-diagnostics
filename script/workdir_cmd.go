@@ -3,23 +3,32 @@
 
 package script
 
-// WorkdirCommand representes a WORKDIR directive in as script
+import (
+	"fmt"
+)
+
+// WorkdirCommand representes a WORKDIR:
+//
+// WORKDIR path:/path/to/workdir
 type WorkdirCommand struct {
 	cmd
-	dir string
 }
 
 // NewWorkdirCommand parses args and returns a new *WorkdirCommand value
-func NewWorkdirCommand(index int, args []string) (*WorkdirCommand, error) {
-	cmd := &WorkdirCommand{cmd: cmd{index: index, name: CmdWorkDir, args: args}}
-
-	if err := validateCmdArgs(cmd.name, args); err != nil {
+func NewWorkdirCommand(index int, rawArgs string) (*WorkdirCommand, error) {
+	if err := validateRawArgs(CmdOutput, rawArgs); err != nil {
 		return nil, err
 	}
-	for _, arg := range args {
-		cmd.dir = arg
-		break // only get first arg.
+	argMap, err := mapArgs(rawArgs)
+	if err != nil {
+		return nil, fmt.Errorf("WORKDIR: %v", err)
 	}
+
+	cmd := &WorkdirCommand{cmd: cmd{index: index, name: CmdWorkDir, args: argMap}}
+	if err := validateCmdArgs(cmd.name, argMap); err != nil {
+		return nil, err
+	}
+
 	return cmd, nil
 }
 
@@ -34,11 +43,11 @@ func (c *WorkdirCommand) Name() string {
 }
 
 // Args returns a slice of raw command arguments
-func (c *WorkdirCommand) Args() []string {
+func (c *WorkdirCommand) Args() map[string]string {
 	return c.cmd.args
 }
 
-// Dir returns the parsed path for directory
-func (c *WorkdirCommand) Dir() string {
-	return c.dir
+// Path returns the parsed path for directory
+func (c *WorkdirCommand) Path() string {
+	return c.cmd.args["path"]
 }

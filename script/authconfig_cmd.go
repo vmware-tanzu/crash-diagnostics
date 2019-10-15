@@ -3,47 +3,32 @@
 
 package script
 
-import (
-	"fmt"
-	"strings"
-)
+import "fmt"
 
-// AuthConfigCommand captures auth configuration for a runtime
+// AuthConfigCommand represents AUTHCONFIG directive:
+//
+// AUTHCONFIG username:username private-key:/path/to/key api-key:key
+//
+// Param username is required
 type AuthConfigCommand struct {
 	cmd
-	username   string
-	privateKey string
-	apiKey     string
 }
 
-// NewAuthConfigCommand parses the args and return a value of type *AuthCommand from:
-// AUTHCONFIG username:<user-name> private-key:<path/to/key> api-key:<api-key-value>
-func NewAuthConfigCommand(index int, args []string) (*AuthConfigCommand, error) {
-	cmd := &AuthConfigCommand{cmd: cmd{index: index, name: CmdAuthConfig, args: args}}
-
-	if err := validateCmdArgs(CmdAuthConfig, args); err != nil {
+// NewAuthConfigCommand parses the rawArgs and returns an  *AuthCommand
+func NewAuthConfigCommand(index int, rawArgs string) (*AuthConfigCommand, error) {
+	if err := validateRawArgs(CmdAuthConfig, rawArgs); err != nil {
 		return nil, err
 	}
 
-	// split each arg
-	for _, arg := range args {
-		parts := strings.Split(arg, ":")
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("%s: bad argument: %s", CmdAuthConfig, arg)
-		}
-
-		switch {
-		case strings.EqualFold(parts[0], "username"):
-			cmd.username = parts[1]
-		case strings.EqualFold(parts[0], "private-key"):
-			cmd.privateKey = parts[1]
-		case strings.EqualFold(parts[0], "api-key"):
-			cmd.apiKey = parts[1]
-		default:
-		}
-
+	argMap, err := mapArgs(rawArgs)
+	if err != nil {
+		return nil, fmt.Errorf("AUTHCONFIG: %v", err)
 	}
 
+	cmd := &AuthConfigCommand{cmd: cmd{index: index, name: CmdAuthConfig, args: argMap}}
+	if err := validateCmdArgs(CmdAuthConfig, argMap); err != nil {
+		return nil, err
+	}
 	return cmd, nil
 }
 
@@ -58,16 +43,16 @@ func (c *AuthConfigCommand) Name() string {
 }
 
 // Args returns a slice of raw command arguments
-func (c *AuthConfigCommand) Args() []string {
+func (c *AuthConfigCommand) Args() map[string]string {
 	return c.cmd.args
 }
 
 // GetPrivateKey returns the path of the private key configured
 func (c *AuthConfigCommand) GetPrivateKey() string {
-	return c.privateKey
+	return c.cmd.args["private-key"]
 }
 
 // GetUsername returns the User ID configured
 func (c *AuthConfigCommand) GetUsername() string {
-	return c.username
+	return c.cmd.args["username"]
 }

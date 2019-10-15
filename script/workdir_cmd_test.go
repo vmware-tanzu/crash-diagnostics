@@ -24,8 +24,8 @@ func TestCommandWORKDIR(t *testing.T) {
 				if !ok {
 					return fmt.Errorf("Unexpected type %T in script", dirs[0])
 				}
-				if wdCmd.Dir() != "foo/bar" {
-					return fmt.Errorf("WORKDIR has unexpected directory %s", wdCmd.Dir())
+				if wdCmd.Path() != "foo/bar" {
+					return fmt.Errorf("WORKDIR has unexpected directory %s", wdCmd.Path())
 				}
 				return nil
 			},
@@ -44,8 +44,8 @@ func TestCommandWORKDIR(t *testing.T) {
 				if !ok {
 					return fmt.Errorf("Unexpected type %T in script", dirs[0])
 				}
-				if wdCmd.Dir() != "bazz/buzz" {
-					return fmt.Errorf("WORKDIR has unexpected directory %s", wdCmd.Dir())
+				if wdCmd.Path() != "bazz/buzz" {
+					return fmt.Errorf("WORKDIR has unexpected directory %s", wdCmd.Path())
 				}
 				return nil
 			},

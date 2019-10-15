@@ -27,9 +27,9 @@ func TestCommandENV(t *testing.T) {
 				if len(envCmd.Envs()) != 1 {
 					return fmt.Errorf("ENV has unexpected number of env %d", len(envCmd.Envs()))
 				}
-				env := envCmd.Envs()[0]
-				if env != "foo=bar" {
-					return fmt.Errorf("ENV has unexpected env %s", env)
+				env := envCmd.Envs()["foo"]
+				if env != "bar" {
+					return fmt.Errorf("ENV has unexpected value: foo=%s", envCmd.Envs()["foo"])
 				}
 				return nil
 			},
@@ -52,9 +52,9 @@ func TestCommandENV(t *testing.T) {
 				if len(envCmd0.Envs()) != 1 {
 					return fmt.Errorf("ENV[0] has unexpected number of env %d", len(envCmd0.Envs()))
 				}
-				env := envCmd0.Envs()[0]
-				if env != "a=b" {
-					return fmt.Errorf("ENV[0] has unexpected env %s", env)
+				env := envCmd0.Envs()["a"]
+				if env != "b" {
+					return fmt.Errorf("ENV[0] has unexpected value a=%s", envCmd0.Envs()["a"])
 				}
 
 				envCmd1, ok := envs[1].(*EnvCommand)
@@ -65,9 +65,9 @@ func TestCommandENV(t *testing.T) {
 				if len(envCmd1.Envs()) != 2 {
 					return fmt.Errorf("ENV[1] has unexpected number of env %d", len(envCmd1.Envs()))
 				}
-				env0, env1 := envCmd1.Envs()[0], envCmd1.Envs()[1]
-				if env0 != "c=d" || env1 != "e=f" {
-					return fmt.Errorf("ENV[1] has unexpected env[0] %s and env[1] %s", env0, env1)
+				env0, env1 := envCmd1.Envs()["c"], envCmd1.Envs()["e"]
+				if env0 != "d" || env1 != "f" {
+					return fmt.Errorf("ENV[1] has unexpected values env[c]=%s and env[e]=%s", env0, env1)
 				}
 				return nil
 			},

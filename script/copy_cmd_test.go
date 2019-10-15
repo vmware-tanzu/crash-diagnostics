@@ -19,11 +19,12 @@ func TestCommandCOPY(t *testing.T) {
 					return fmt.Errorf("Script has unexpected COPY actions, has %d COPY", len(s.Actions))
 				}
 
-				if len(s.Actions[0].Args()) != 1 {
-					return fmt.Errorf("COPY has unexpected number of args %d", len(s.Actions[0].Args()))
+				cmd := s.Actions[0].(*CopyCommand)
+				if len(cmd.Paths()) != 1 {
+					return fmt.Errorf("COPY has unexpected number of paths %d", len(cmd.Paths()))
 				}
 
-				arg := s.Actions[0].Args()[0]
+				arg := cmd.Paths()[0]
 				if arg != "/a/b/c" {
 					return fmt.Errorf("COPY has unexpected argument %s", arg)
 				}
@@ -40,15 +41,15 @@ func TestCommandCOPY(t *testing.T) {
 					return fmt.Errorf("Script has unexpected COPY actions, has %d COPY", len(s.Actions))
 				}
 
-				cmd := s.Actions[0]
-				if len(cmd.Args()) != 2 {
-					return fmt.Errorf("COPY has unexpected number of args %d", len(cmd.Args()))
+				cmd := s.Actions[0].(*CopyCommand)
+				if len(cmd.Paths()) != 2 {
+					return fmt.Errorf("COPY has unexpected number of args %d", len(cmd.Paths()))
 				}
-				if cmd.Args()[0] != "/a/b/c" {
-					return fmt.Errorf("COPY has unexpected argument[0] %s", cmd.Args()[0])
+				if cmd.Paths()[0] != "/a/b/c" {
+					return fmt.Errorf("COPY has unexpected argument[0] %s", cmd.Paths()[0])
 				}
-				if cmd.Args()[1] != "/e/f/g" {
-					return fmt.Errorf("COPY has unexpected argument[1] %s", cmd.Args()[1])
+				if cmd.Paths()[1] != "/e/f/g" {
+					return fmt.Errorf("COPY has unexpected argument[1] %s", cmd.Paths()[1])
 				}
 
 				return nil
@@ -64,21 +65,24 @@ func TestCommandCOPY(t *testing.T) {
 					return fmt.Errorf("Script has unexpected COPY actions, has %d COPY", len(s.Actions))
 				}
 
-				if len(s.Actions[0].Args()) != 1 {
-					return fmt.Errorf("COPY action[0] has wrong number of args %d", len(s.Actions[0].Args()))
+				cmd0 := s.Actions[0].(*CopyCommand)
+				if len(cmd0.Paths()) != 1 {
+					return fmt.Errorf("COPY action[0] has wrong number of args %s", cmd0.Paths())
 				}
-				if len(s.Actions[1].Args()) != 2 {
-					return fmt.Errorf("COPY action[1] has wrong number of args %d", len(s.Actions[1].Args()))
-				}
-				arg := s.Actions[0].Args()[0]
+				arg := cmd0.Paths()[0]
 				if arg != "/a/b/c" {
 					return fmt.Errorf("COPY action[0] has unexpected arg %s", arg)
 				}
-				arg = s.Actions[1].Args()[0]
+
+				cmd1 := s.Actions[0].(*CopyCommand)
+				if len(cmd1.Paths()) != 2 {
+					return fmt.Errorf("COPY action[1] has wrong number of args %d", len(cmd1.Paths()))
+				}
+				arg = cmd1.Paths()[0]
 				if arg != "d" {
 					return fmt.Errorf("COPY action[1] has unexpected arg[0] %s", arg)
 				}
-				arg = s.Actions[1].Args()[1]
+				arg = cmd1.Paths()[1]
 				if arg != "/e/f" {
 					return fmt.Errorf("COPY action[1] has unexpected arg[1] %s", arg)
 				}

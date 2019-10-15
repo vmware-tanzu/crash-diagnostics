@@ -24,8 +24,8 @@ func TestCommandKUBECONFIG(t *testing.T) {
 				if !ok {
 					return fmt.Errorf("Unexpected type %T in script", cfgs[0])
 				}
-				if cfg.Config() != "/a/b/c" {
-					return fmt.Errorf("KUBECONFIG has unexpected config %s", cfg.Config())
+				if cfg.Path() != "/a/b/c" {
+					return fmt.Errorf("KUBECONFIG has unexpected config %s", cfg.Path())
 				}
 				return nil
 			},
@@ -44,8 +44,8 @@ func TestCommandKUBECONFIG(t *testing.T) {
 				if !ok {
 					return fmt.Errorf("Unexpected type %T in script", cfgs[0])
 				}
-				if cfg.Config() != "/e/f/g" {
-					return fmt.Errorf("KUBECONFIG has unexpected config %s", cfg.Config())
+				if cfg.Path() != "/e/f/g" {
+					return fmt.Errorf("KUBECONFIG has unexpected config %s", cfg.Path())
 				}
 				return nil
 			},

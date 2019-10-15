@@ -34,21 +34,31 @@ func (m *Machine) Port() string {
 	return m.port
 }
 
-// FromCommand represents FROM directive in a script
+// FromCommand represents FROM directive:
+//
+// FROM host0:port host1:port...hostN:port
+//
+// Each host must be specified as an address with host:port.
 type FromCommand struct {
 	cmd
 	machines []Machine
 }
 
 // NewFromCommand parses the args and returns *FromCommand
-func NewFromCommand(index int, args []string) (*FromCommand, error) {
-	cmd := &FromCommand{cmd: cmd{index: index, name: CmdFrom, args: args}}
-
-	if err := validateCmdArgs(CmdFrom, args); err != nil {
+func NewFromCommand(index int, rawArgs string) (*FromCommand, error) {
+	if err := validateRawArgs(CmdFrom, rawArgs); err != nil {
 		return nil, err
 	}
 
-	for _, arg := range args {
+	// by default hosts will store host addresses
+	argMap := map[string]string{"hosts": rawArgs}
+	cmd := &FromCommand{cmd: cmd{index: index, name: CmdFrom, args: argMap}}
+	if err := validateCmdArgs(CmdFrom, argMap); err != nil {
+		return nil, err
+	}
+
+	// populate machine representations
+	for _, arg := range spaceSep.Split(rawArgs, -1) {
 		var host, port string
 		switch {
 		case arg == "local":
@@ -58,7 +68,7 @@ func NewFromCommand(index int, args []string) (*FromCommand, error) {
 		default:
 			h, p, err := net.SplitHostPort(arg)
 			if err != nil {
-				return nil, fmt.Errorf("FROM command: %s", err)
+				return nil, fmt.Errorf("FROM: %s", err)
 			}
 			host = h
 			port = p
@@ -83,7 +93,7 @@ func (c *FromCommand) Name() string {
 }
 
 // Args returns a slice of raw command arguments
-func (c *FromCommand) Args() []string {
+func (c *FromCommand) Args() map[string]string {
 	return c.cmd.args
 }
 
