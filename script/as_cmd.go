@@ -12,9 +12,9 @@ import (
 
 // AsCommand represents AS directive:
 //
-// AS userid:"userid" groupid:"groupid"
+// AS userid:"userid" [groupid:"groupid"]
 //
-// Param userid is required, groupid optional
+// Param userid required; groupid optional
 type AsCommand struct {
 	cmd
 	user *user.User

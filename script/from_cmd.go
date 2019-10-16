@@ -6,6 +6,7 @@ package script
 import (
 	"fmt"
 	"net"
+	"strings"
 )
 
 // Machine represents a source machine
@@ -34,11 +35,13 @@ func (m *Machine) Port() string {
 	return m.port
 }
 
-// FromCommand represents FROM directive:
+// FromCommand represents FROM directive which may take
+// one of the following forms:
 //
-// FROM host0:port host1:port...hostN:port
+//     FROM host0:port host1:port ... hostN:port
+//     FROM hosts:"host0:port host1:port ... hostN:port"
 //
-// Each host must be specified as an address with host:port.
+// Each host must be specified as an address endpoint with host:port.
 type FromCommand struct {
 	cmd
 	machines []Machine
@@ -50,15 +53,23 @@ func NewFromCommand(index int, rawArgs string) (*FromCommand, error) {
 		return nil, err
 	}
 
-	// by default hosts will store host addresses
-	argMap := map[string]string{"hosts": rawArgs}
+	var argMap map[string]string
+	if strings.Contains(rawArgs, "hosts:") {
+		args, err := mapArgs(rawArgs)
+		if err != nil {
+			return nil, fmt.Errorf("ENV: %v", err)
+		}
+		argMap = args
+	} else {
+		argMap = map[string]string{"hosts": rawArgs}
+	}
 	cmd := &FromCommand{cmd: cmd{index: index, name: CmdFrom, args: argMap}}
 	if err := validateCmdArgs(CmdFrom, argMap); err != nil {
 		return nil, err
 	}
 
 	// populate machine representations
-	for _, arg := range spaceSep.Split(rawArgs, -1) {
+	for _, arg := range spaceSep.Split(argMap["hosts"], -1) {
 		var host, port string
 		switch {
 		case arg == "local":

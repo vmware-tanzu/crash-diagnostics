@@ -73,6 +73,30 @@ func TestCommandENV(t *testing.T) {
 			},
 		},
 		{
+			name: "ENV with named param arg",
+			source: func() string {
+				return "ENV vars:abc=defgh"
+			},
+			script: func(s *Script) error {
+				envs := s.Preambles[CmdEnv]
+				if len(envs) != 1 {
+					return fmt.Errorf("Script has unexpected number of ENV %d", len(envs))
+				}
+				envCmd, ok := envs[0].(*EnvCommand)
+				if !ok {
+					return fmt.Errorf("Unexpected type %T in script", envs[0])
+				}
+				if len(envCmd.Envs()) != 1 {
+					return fmt.Errorf("ENV has unexpected number of env %d", len(envCmd.Envs()))
+				}
+				env := envCmd.Envs()["abc"]
+				if env != "defgh" {
+					return fmt.Errorf("ENV has unexpected value: %#v", envCmd.Envs())
+				}
+				return nil
+			},
+		},
+		{
 			name: "ENV with bad formatted values",
 			source: func() string {
 				return "ENV a=b foo|bar"

@@ -3,14 +3,17 @@
 
 package script
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
-// KubeConfigCommand represents a KUBECONFIG directive:
-//
-// KUBECONFIG path:path/to/kubeconfig
+// KubeConfigCommand represents a KUBECONFIG directive which can have
+// one of the following forms:
+//     KUBECONFIG path/to/kubeconfig
+//     KUBECONFIG path:"path/to/kubeconfig"
 type KubeConfigCommand struct {
 	cmd
-	kubeCfg string
 }
 
 // NewKubeConfigCommand creates a value of type KubeConfigCommand in a script
@@ -18,15 +21,23 @@ func NewKubeConfigCommand(index int, rawArgs string) (*KubeConfigCommand, error)
 	if err := validateRawArgs(CmdKubeConfig, rawArgs); err != nil {
 		return nil, err
 	}
-	argMap, err := mapArgs(rawArgs)
-	if err != nil {
-		return nil, fmt.Errorf("KUBECONFIG: %v", err)
+
+	var argMap map[string]string
+	if strings.Contains(rawArgs, "path:") {
+		args, err := mapArgs(rawArgs)
+		if err != nil {
+			return nil, fmt.Errorf("KUBECONFIG: %v", err)
+		}
+		argMap = args
+	} else {
+		argMap = map[string]string{"path": rawArgs}
 	}
+
 	cmd := &KubeConfigCommand{cmd: cmd{index: index, name: CmdKubeConfig, args: argMap}}
 	if err := validateCmdArgs(CmdKubeConfig, argMap); err != nil {
 		return nil, err
 	}
-	cmd.kubeCfg = searchForConfig(argMap["path"])
+	cmd.cmd.args["path"] = searchForConfig(argMap["path"])
 	return cmd, nil
 }
 

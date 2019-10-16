@@ -14,9 +14,10 @@ var (
 	envSep = regexp.MustCompile(`=`)
 )
 
-// EnvCommand represents ENV directive:
+// EnvCommand represents ENV directive which can have one of the following forms:
 //
-// ENV [envs:"]key0=val0...keyN=valN["]
+//     ENV var0=val0 var1=val0 ... varN=valN
+//     ENV vars:"var0=val0 var1=val0 ... varN=valN"
 //
 // Supports multiple ENV in one script.
 type EnvCommand struct {
@@ -30,8 +31,18 @@ func NewEnvCommand(index int, rawArgs string) (*EnvCommand, error) {
 		return nil, err
 	}
 
-	// by default the args are stored in envs
-	argMap := map[string]string{"envs": rawArgs}
+	// map params
+	var argMap map[string]string
+	if strings.Contains(rawArgs, "vars:") {
+		args, err := mapArgs(rawArgs)
+		if err != nil {
+			return nil, fmt.Errorf("ENV: %v", err)
+		}
+		argMap = args
+	} else {
+		argMap = map[string]string{"vars": rawArgs}
+	}
+
 	cmd := &EnvCommand{
 		envs: make(map[string]string),
 		cmd:  cmd{index: index, name: CmdEnv, args: argMap},
@@ -41,7 +52,7 @@ func NewEnvCommand(index int, rawArgs string) (*EnvCommand, error) {
 		return nil, err
 	}
 
-	envs := spaceSep.Split(rawArgs, -1)
+	envs := spaceSep.Split(argMap["vars"], -1)
 	for _, env := range envs {
 		parts := envSep.Split(strings.TrimSpace(env), -1)
 		if len(parts) != 2 {

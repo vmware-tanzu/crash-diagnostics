@@ -3,9 +3,19 @@
 
 package script
 
-// CopyCommand represents a COPY directive:
+import (
+	"fmt"
+	"strings"
+)
+
+// CopyCommand represents a COPY directive which may have
+// one of the following two forms:
 //
-// COPY [paths:"]path0 path1 pathN["]
+//     COPY path0 path1 ... pathN
+//     COPY paths:"path0 path1 ... pathN"
+//
+// The former uses no named parameters while the latter uses
+// named parameter (i.e. paths)
 type CopyCommand struct {
 	cmd
 }
@@ -16,8 +26,17 @@ func NewCopyCommand(index int, rawArgs string) (*CopyCommand, error) {
 		return nil, err
 	}
 
-	// by default the args are assumed to be the path-list
-	argMap := map[string]string{"paths": rawArgs}
+	// determine shape of directive
+	var argMap map[string]string
+	if strings.Contains(rawArgs, "paths:") {
+		args, err := mapArgs(rawArgs)
+		if err != nil {
+			return nil, fmt.Errorf("COPY: %v", err)
+		}
+		argMap = args
+	} else {
+		argMap = map[string]string{"paths": rawArgs}
+	}
 	cmd := &CopyCommand{cmd: cmd{index: index, name: CmdCopy, args: argMap}}
 	if err := validateCmdArgs(CmdCopy, argMap); err != nil {
 		return nil, err

@@ -126,8 +126,8 @@ func TestCommandParse(t *testing.T) {
 					return fmt.Errorf("Script has unexpected number of actions %d", len(actions))
 				}
 				cpCmd := s.Actions[1].(*CopyCommand)
-				if len(cpCmd.Args()) != 2 {
-					return fmt.Errorf("Unexpected arg count %d for COPY in script with comment", len(cpCmd.Args()))
+				if len(cpCmd.Paths()) != 2 {
+					return fmt.Errorf("Unexpected arg count %d for COPY in script with comment", len(cpCmd.Paths()))
 				}
 				return nil
 			},

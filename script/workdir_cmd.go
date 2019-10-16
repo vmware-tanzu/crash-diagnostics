@@ -5,11 +5,14 @@ package script
 
 import (
 	"fmt"
+	"strings"
 )
 
-// WorkdirCommand representes a WORKDIR:
+// WorkdirCommand representes a WORKDIR which may have one
+// of the following forms:
 //
-// WORKDIR path:/path/to/workdir
+//    WORKDIR /path/to/workdir
+//    WORKDIR path:/path/to/workdir
 type WorkdirCommand struct {
 	cmd
 }
@@ -19,9 +22,16 @@ func NewWorkdirCommand(index int, rawArgs string) (*WorkdirCommand, error) {
 	if err := validateRawArgs(CmdOutput, rawArgs); err != nil {
 		return nil, err
 	}
-	argMap, err := mapArgs(rawArgs)
-	if err != nil {
-		return nil, fmt.Errorf("WORKDIR: %v", err)
+
+	var argMap map[string]string
+	if strings.Contains(rawArgs, "path:") {
+		args, err := mapArgs(rawArgs)
+		if err != nil {
+			return nil, fmt.Errorf("WORKDIR: %v", err)
+		}
+		argMap = args
+	} else {
+		argMap = map[string]string{"path": rawArgs}
 	}
 
 	cmd := &WorkdirCommand{cmd: cmd{index: index, name: CmdWorkDir, args: argMap}}

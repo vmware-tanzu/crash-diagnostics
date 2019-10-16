@@ -3,12 +3,19 @@
 
 package script
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
-// CaptuerCommand represents CAPTURE directive:
+// CaptureCommand represents CAPTURE directive which
+// can have one of the following two forms as shown below:
 //
-// CAPTURE cmd:<cmd-string> [shell:/path/to/shell]
+//     CAPTURE <command-string>
+//     CAPTURE cmd:"<command-string>" name:"cmd-name" desc:"cmd-desc"
 //
+// The former takes no named parameter. When the latter form is used,
+// parameter cmd: is required.
 type CaptureCommand struct {
 	cmd
 }
@@ -19,9 +26,16 @@ func NewCaptureCommand(index int, rawArgs string) (*CaptureCommand, error) {
 		return nil, err
 	}
 
-	argMap, err := mapArgs(rawArgs)
-	if err != nil {
-		return nil, fmt.Errorf("CAPTURE: %v", err)
+	// determine shape of directive
+	var argMap map[string]string
+	if strings.Contains(rawArgs, "cmd:") {
+		args, err := mapArgs(rawArgs)
+		if err != nil {
+			return nil, fmt.Errorf("CAPTURE: %v", err)
+		}
+		argMap = args
+	} else {
+		argMap = map[string]string{"cmd": rawArgs}
 	}
 
 	cmd := &CaptureCommand{cmd: cmd{index: index, name: CmdCapture, args: argMap}}
