@@ -18,13 +18,13 @@ func exeClusterInfo(src *script.Script, path string) {
 		return
 	}
 	cfgCmd := cfgs[0].(*script.KubeConfigCommand)
-	if _, err := os.Stat(cfgCmd.Config()); err != nil {
-		logrus.Warnf("Skipping cluster-info, unable to load KUBECONFIG %s: %s", cfgCmd.Config(), err)
+	if _, err := os.Stat(cfgCmd.Path()); err != nil {
+		logrus.Warnf("Skipping cluster-info, unable to load KUBECONFIG %s: %s", cfgCmd.Path(), err)
 		return
 	}
 
-	logrus.Debugf("Using KUBECONFIG %s", cfgCmd.Config())
-	k8sClient, err := k8s.GetClient(cfgCmd.Config())
+	logrus.Debugf("Using KUBECONFIG %s", cfgCmd.Path())
+	k8sClient, err := k8s.GetClient(cfgCmd.Path())
 	if err != nil {
 		logrus.Errorf("Skipping cluster-info, failed to create Kubernetes API server client: %s", err)
 		return

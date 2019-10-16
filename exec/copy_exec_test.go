@@ -24,7 +24,7 @@ func TestExecLocalCOPY(t *testing.T) {
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 
 				cpCmd := s.Actions[0].(*script.CopyCommand)
-				srcFile := cpCmd.Args()[0]
+				srcFile := cpCmd.Paths()[0]
 				if err := makeTestFakeFile(t, srcFile, "HelloFoo"); err != nil {
 					return err
 				}
@@ -39,7 +39,7 @@ func TestExecLocalCOPY(t *testing.T) {
 				if err != nil {
 					return err
 				}
-				fileName := filepath.Join(workdir.Dir(), machine, relPath)
+				fileName := filepath.Join(workdir.Path(), machine, relPath)
 				if _, err := os.Stat(fileName); err != nil {
 					return err
 				}
@@ -58,10 +58,10 @@ func TestExecLocalCOPY(t *testing.T) {
 
 				var srcFiles []string
 				cpCmd0 := s.Actions[0].(*script.CopyCommand)
-				srcFiles = append(srcFiles, cpCmd0.Args()[0])
+				srcFiles = append(srcFiles, cpCmd0.Paths()[0])
 				cpCmd1 := s.Actions[1].(*script.CopyCommand)
-				srcFiles = append(srcFiles, cpCmd1.Args()[0])
-				srcFiles = append(srcFiles, cpCmd1.Args()[1])
+				srcFiles = append(srcFiles, cpCmd1.Paths()[0])
+				srcFiles = append(srcFiles, cpCmd1.Paths()[1])
 
 				for i, srcFile := range srcFiles {
 					if err := makeTestFakeFile(t, srcFile, fmt.Sprintf("HelloFoo-%d", i)); err != nil {
@@ -81,7 +81,7 @@ func TestExecLocalCOPY(t *testing.T) {
 					if err != nil {
 						return err
 					}
-					fileName := filepath.Join(workdir.Dir(), machine, relPath)
+					fileName := filepath.Join(workdir.Path(), machine, relPath)
 					if _, err := os.Stat(fileName); err != nil {
 						return err
 					}
@@ -101,10 +101,10 @@ func TestExecLocalCOPY(t *testing.T) {
 
 				var srcFiles []string
 				cpCmd0 := s.Actions[0].(*script.CopyCommand)
-				srcFiles = append(srcFiles, cpCmd0.Args()[0])
+				srcFiles = append(srcFiles, cpCmd0.Paths()[0])
 				cpCmd1 := s.Actions[1].(*script.CopyCommand)
-				srcFiles = append(srcFiles, cpCmd1.Args()[0])
-				srcFiles = append(srcFiles, cpCmd1.Args()[1])
+				srcFiles = append(srcFiles, cpCmd1.Paths()[0])
+				srcFiles = append(srcFiles, cpCmd1.Paths()[1])
 
 				for i, srcFile := range srcFiles {
 					if i == 0 || i == 1 {
@@ -134,7 +134,7 @@ func TestExecLocalCOPY(t *testing.T) {
 					if err != nil {
 						return err
 					}
-					fileName := filepath.Join(workdir.Dir(), machine, relPath)
+					fileName := filepath.Join(workdir.Path(), machine, relPath)
 					if _, err := os.Stat(fileName); err != nil {
 						return err
 					}
@@ -188,7 +188,7 @@ func TestExecRemoteCOPY(t *testing.T) {
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 
 				cpCmd := s.Actions[0].(*script.CopyCommand)
-				srcFile := cpCmd.Args()[0]
+				srcFile := cpCmd.Paths()[0]
 				if err := makeRemoteTestFile(t, machine, srcFile, "HelloFoo"); err != nil {
 					return err
 				}
@@ -199,7 +199,7 @@ func TestExecRemoteCOPY(t *testing.T) {
 					return err
 				}
 
-				fileName := filepath.Join(workdir.Dir(), sanitizeStr(machine), srcFile)
+				fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), srcFile)
 				if _, err := os.Stat(fileName); err != nil {
 					return err
 				}
@@ -222,10 +222,10 @@ func TestExecRemoteCOPY(t *testing.T) {
 
 				var srcFiles []string
 				cpCmd0 := s.Actions[0].(*script.CopyCommand)
-				srcFiles = append(srcFiles, cpCmd0.Args()[0])
+				srcFiles = append(srcFiles, cpCmd0.Paths()[0])
 				cpCmd1 := s.Actions[1].(*script.CopyCommand)
-				srcFiles = append(srcFiles, cpCmd1.Args()[0])
-				srcFiles = append(srcFiles, cpCmd1.Args()[1])
+				srcFiles = append(srcFiles, cpCmd1.Paths()[0])
+				srcFiles = append(srcFiles, cpCmd1.Paths()[1])
 
 				for i, srcFile := range srcFiles {
 					if err := makeRemoteTestFile(t, machine, srcFile, fmt.Sprintf("HelloFoo-%d", i)); err != nil {
@@ -241,7 +241,7 @@ func TestExecRemoteCOPY(t *testing.T) {
 				}
 
 				for _, srcFile := range srcFiles {
-					fileName := filepath.Join(workdir.Dir(), sanitizeStr(machine), srcFile)
+					fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), srcFile)
 					if _, err := os.Stat(fileName); err != nil {
 						return err
 					}
@@ -265,10 +265,10 @@ func TestExecRemoteCOPY(t *testing.T) {
 
 				var srcFiles []string
 				cpCmd0 := s.Actions[0].(*script.CopyCommand)
-				srcFiles = append(srcFiles, cpCmd0.Args()[0])
+				srcFiles = append(srcFiles, cpCmd0.Paths()[0])
 				cpCmd1 := s.Actions[1].(*script.CopyCommand)
-				srcFiles = append(srcFiles, cpCmd1.Args()[0])
-				srcFiles = append(srcFiles, cpCmd1.Args()[1])
+				srcFiles = append(srcFiles, cpCmd1.Paths()[0])
+				srcFiles = append(srcFiles, cpCmd1.Paths()[1])
 
 				for i, srcFile := range srcFiles {
 					if i == 0 || i == 1 {
@@ -293,7 +293,7 @@ func TestExecRemoteCOPY(t *testing.T) {
 				}
 
 				for _, srcFile := range srcFiles {
-					fileName := filepath.Join(workdir.Dir(), sanitizeStr(machine), srcFile)
+					fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), srcFile)
 					if _, err := os.Stat(fileName); err != nil {
 						return err
 					}

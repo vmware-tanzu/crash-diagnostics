@@ -22,14 +22,14 @@ func TestExecWORKDIR(t *testing.T) {
 			exec: func(s *script.Script) error {
 				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Host()
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
-				defer os.RemoveAll(workdir.Dir())
+				defer os.RemoveAll(workdir.Path())
 				capCmd := s.Actions[0].(*script.CaptureCommand)
 
 				e := New(s)
 				if err := e.Execute(); err != nil {
 					return err
 				}
-				fileName := filepath.Join(workdir.Dir(), machine, fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCliString())))
+				fileName := filepath.Join(workdir.Path(), machine, fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
 				if _, err := os.Stat(fileName); err != nil {
 					return err
 				}
@@ -50,7 +50,7 @@ func TestExecWORKDIR(t *testing.T) {
 				if err := e.Execute(); err != nil {
 					return err
 				}
-				fileName := filepath.Join(workdir.Dir(), machine, fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCliString())))
+				fileName := filepath.Join(workdir.Path(), machine, fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
 				if _, err := os.Stat(fileName); err != nil {
 					return err
 				}

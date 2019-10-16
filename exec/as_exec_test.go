@@ -18,7 +18,7 @@ func TestExecAS(t *testing.T) {
 			source: func() string {
 				uid := os.Getuid()
 				gid := os.Getgid()
-				return fmt.Sprintf("AS %d:%d", uid, gid)
+				return fmt.Sprintf("AS userid:%d groupid:%d", uid, gid)
 			},
 			exec: func(s *script.Script) error {
 				e := New(s)
@@ -32,7 +32,7 @@ func TestExecAS(t *testing.T) {
 			name: "Exec AS with userid only",
 			source: func() string {
 				uid := os.Getuid()
-				return fmt.Sprintf("AS %d", uid)
+				return fmt.Sprintf("AS userid:%d", uid)
 			},
 			exec: func(s *script.Script) error {
 				e := New(s)
@@ -45,7 +45,7 @@ func TestExecAS(t *testing.T) {
 		{
 			name: "Exec AS with unknown uid gid",
 			source: func() string {
-				return "AS foo:bar"
+				return "AS userid:foo"
 			},
 			exec: func(s *script.Script) error {
 				e := New(s)

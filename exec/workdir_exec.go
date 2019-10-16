@@ -19,12 +19,12 @@ func exeWorkdir(src *script.Script) (*script.WorkdirCommand, error) {
 		return nil, fmt.Errorf("Script missing valid %s", script.CmdWorkDir)
 	}
 	workdir := dirs[0].(*script.WorkdirCommand)
-	logrus.Debugf("Using workdir %s", workdir.Dir())
+	logrus.Debugf("Using workdir %s", workdir.Path())
 
-	if _, err := os.Stat(workdir.Dir()); err != nil {
+	if _, err := os.Stat(workdir.Path()); err != nil {
 		if os.IsNotExist(err) {
-			logrus.Debugf("Creating  %s", workdir.Dir())
-			if err := os.MkdirAll(workdir.Dir(), 0744); err != nil && !os.IsExist(err) {
+			logrus.Debugf("Creating  %s", workdir.Path())
+			if err := os.MkdirAll(workdir.Path(), 0744); err != nil && !os.IsExist(err) {
 				return nil, err
 			}
 		} else {

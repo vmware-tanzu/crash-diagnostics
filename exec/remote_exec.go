@@ -63,8 +63,8 @@ func captureRemotely(user, privKey, hostAddr string, cmdCap *script.CaptureComma
 	}
 	defer sshc.Hangup()
 
-	cmdStr := cmdCap.GetCliString()
-	cliCmd, cliArgs := cmdCap.GetParsedCli()
+	cmdStr := cmdCap.GetCmdString()
+	cliCmd, cliArgs := cmdCap.GetParsedCmd()
 
 	fileName := fmt.Sprintf("%s.txt", sanitizeStr(cmdStr))
 	filePath := filepath.Join(workdir, fileName)
@@ -105,7 +105,7 @@ func copyRemotely(user, privKey string, machine *script.Machine, asCmd *script.A
 		return err
 	}
 
-	for _, path := range cmd.Args() {
+	for _, path := range cmd.Paths() {
 
 		remotePath := fmt.Sprintf("%s@%s:%s", user, host, path)
 		logrus.Debugf("Copying %s to %s", remotePath, dest)

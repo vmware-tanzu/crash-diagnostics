@@ -42,8 +42,8 @@ func exeLocally(src *script.Script, workdir string) error {
 }
 
 func captureLocally(asCmd *script.AsCommand, cmdCap *script.CaptureCommand, envs []string, workdir string) error {
-	cmdStr := cmdCap.GetCliString()
-	cliCmd, cliArgs := cmdCap.GetParsedCli()
+	cmdStr := cmdCap.GetCmdString()
+	cliCmd, cliArgs := cmdCap.GetParsedCmd()
 
 	if _, err := exec.LookPath(cliCmd); err != nil {
 		return err
@@ -87,7 +87,7 @@ func copyLocally(asCmd *script.AsCommand, cmd *script.CopyCommand, dest string) 
 		return err
 	}
 
-	for _, path := range cmd.Args() {
+	for _, path := range cmd.Paths() {
 		if relPath, err := filepath.Rel(dest, path); err == nil && !strings.HasPrefix(relPath, "..") {
 			logrus.Errorf("%s path %s cannot be relative to %s", cmd.Name(), path, dest)
 			continue

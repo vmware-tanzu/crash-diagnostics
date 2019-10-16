@@ -29,7 +29,7 @@ func TestExecLocalCAPTURE(t *testing.T) {
 					return err
 				}
 
-				fileName := filepath.Join(workdir.Dir(), machine, fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCliString())))
+				fileName := filepath.Join(workdir.Path(), machine, fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
 				if _, err := os.Stat(fileName); err != nil {
 					return err
 				}
@@ -52,8 +52,8 @@ func TestExecLocalCAPTURE(t *testing.T) {
 					return err
 				}
 
-				fname0 := filepath.Join(workdir.Dir(), machine, fmt.Sprintf("%s.txt", sanitizeStr(cmd0.GetCliString())))
-				fname1 := filepath.Join(workdir.Dir(), machine, fmt.Sprintf("%s.txt", sanitizeStr(cmd1.GetCliString())))
+				fname0 := filepath.Join(workdir.Path(), machine, fmt.Sprintf("%s.txt", sanitizeStr(cmd0.GetCmdString())))
+				fname1 := filepath.Join(workdir.Path(), machine, fmt.Sprintf("%s.txt", sanitizeStr(cmd1.GetCmdString())))
 				if _, err := os.Stat(fname0); err != nil {
 					return err
 				}
@@ -67,7 +67,7 @@ func TestExecLocalCAPTURE(t *testing.T) {
 			name: "CAPTURE command with user specified",
 			source: func() string {
 				uid := os.Getuid()
-				return fmt.Sprintf("AS %d \nCAPTURE /bin/echo 'HELLO WORLD'", uid)
+				return fmt.Sprintf("AS userid:%d \nCAPTURE /bin/echo 'HELLO WORLD'", uid)
 			},
 			exec: func(s *script.Script) error {
 				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Host()
@@ -79,7 +79,7 @@ func TestExecLocalCAPTURE(t *testing.T) {
 					return err
 				}
 
-				fileName := filepath.Join(workdir.Dir(), machine, fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCliString())))
+				fileName := filepath.Join(workdir.Path(), machine, fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
 				if _, err := os.Stat(fileName); err != nil {
 					return err
 				}
@@ -89,7 +89,7 @@ func TestExecLocalCAPTURE(t *testing.T) {
 		{
 			name: "CAPTURE command as unknown user",
 			source: func() string {
-				return "AS foo:barr \nCAPTURE /bin/echo 'HELLO WORLD'"
+				return "AS userid:foo \nCAPTURE /bin/echo 'HELLO WORLD'"
 			},
 			exec: func(s *script.Script) error {
 				e := New(s)
@@ -150,7 +150,7 @@ func TestExecRemoteCAPTURE(t *testing.T) {
 					return err
 				}
 
-				fileName := filepath.Join(workdir.Dir(), sanitizeStr(machine), fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCliString())))
+				fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
 				if _, err := os.Stat(fileName); err != nil {
 					return err
 				}
@@ -177,8 +177,8 @@ func TestExecRemoteCAPTURE(t *testing.T) {
 					return err
 				}
 
-				fname0 := filepath.Join(workdir.Dir(), sanitizeStr(machine), fmt.Sprintf("%s.txt", sanitizeStr(cmd0.GetCliString())))
-				fname1 := filepath.Join(workdir.Dir(), sanitizeStr(machine), fmt.Sprintf("%s.txt", sanitizeStr(cmd1.GetCliString())))
+				fname0 := filepath.Join(workdir.Path(), sanitizeStr(machine), fmt.Sprintf("%s.txt", sanitizeStr(cmd0.GetCmdString())))
+				fname1 := filepath.Join(workdir.Path(), sanitizeStr(machine), fmt.Sprintf("%s.txt", sanitizeStr(cmd1.GetCmdString())))
 				if _, err := os.Stat(fname0); err != nil {
 					return err
 				}
@@ -207,7 +207,7 @@ func TestExecRemoteCAPTURE(t *testing.T) {
 					return err
 				}
 
-				fileName := filepath.Join(workdir.Dir(), sanitizeStr(machine), fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCliString())))
+				fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
 				if _, err := os.Stat(fileName); err != nil {
 					return err
 				}
