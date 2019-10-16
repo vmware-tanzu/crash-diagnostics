@@ -109,8 +109,8 @@ func TestTemplatedScripts(t *testing.T) {
 				dirs := s.Preambles[CmdWorkDir]
 				wdCmd := dirs[0].(*WorkdirCommand)
 				expected := filepath.Join(hdir, "/.script")
-				if wdCmd.Dir() != expected {
-					return fmt.Errorf("Templated script failed, expecting WORKDIR %s, got %s", expected, wdCmd.Dir())
+				if wdCmd.Path() != expected {
+					return fmt.Errorf("Templated script failed, expecting WORKDIR %s, got %s", expected, wdCmd.Path())
 				}
 				return nil
 			},
@@ -127,9 +127,9 @@ func TestTemplatedScripts(t *testing.T) {
 				}
 				envs := s.Preambles[CmdEnv]
 				envCmd := envs[0].(*EnvCommand)
-				expected := fmt.Sprintf("USR=%s", usr.Username)
-				if envCmd.Envs()[0] != expected {
-					return fmt.Errorf("Templated script failed, expecting %s, got %s", expected, envCmd.Envs()[0])
+				expected := usr.Username
+				if envCmd.Envs()["USR"] != expected {
+					return fmt.Errorf("Templated script failed, expecting %s, got %s", expected, envCmd.Envs()["USR"])
 				}
 				return nil
 			},
@@ -147,8 +147,8 @@ func TestTemplatedScripts(t *testing.T) {
 				dirs := s.Preambles[CmdWorkDir]
 				wdCmd := dirs[0].(*WorkdirCommand)
 				expected := filepath.Join(pwd, "/.script")
-				if wdCmd.Dir() != expected {
-					return fmt.Errorf("Templated script failed, expecting WORKDIR %s, got %s", expected, wdCmd.Dir())
+				if wdCmd.Path() != expected {
+					return fmt.Errorf("Templated script failed, expecting WORKDIR %s, got %s", expected, wdCmd.Path())
 				}
 				return nil
 			},

@@ -46,11 +46,11 @@ func (e *Executor) Execute() error {
 	}
 
 	// retrieve KUBECONFIG and setup client connection
-	exeClusterInfo(e.script, filepath.Join(workdir.Dir(), "cluster-dump.json"))
+	exeClusterInfo(e.script, filepath.Join(workdir.Path(), "cluster-dump.json"))
 
 	// process actions for each cluster resource specified in FROM
 	for _, fromMachine := range fromCmd.Machines() {
-		machineWorkdir, err := makeMachineWorkdir(workdir.Dir(), fromMachine)
+		machineWorkdir, err := makeMachineWorkdir(workdir.Path(), fromMachine)
 		if err != nil {
 			return err
 		}
@@ -70,7 +70,7 @@ func (e *Executor) Execute() error {
 	}
 
 	// write result to output
-	if err := archiver.Tar(output.Path(), workdir.Dir()); err != nil {
+	if err := archiver.Tar(output.Path(), workdir.Path()); err != nil {
 		return err
 	}
 	logrus.Infof("Created output at path %s", output.Path())

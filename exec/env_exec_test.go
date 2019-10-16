@@ -51,7 +51,7 @@ func TestExecENV(t *testing.T) {
 					return err
 				}
 
-				fileName := filepath.Join(workdir.Dir(), machine, fmt.Sprintf("%s.txt", sanitizeStr(cmd.GetCliString())))
+				fileName := filepath.Join(workdir.Path(), machine, fmt.Sprintf("%s.txt", sanitizeStr(cmd.GetCmdString())))
 				if _, err := os.Stat(fileName); err != nil {
 					return err
 				}

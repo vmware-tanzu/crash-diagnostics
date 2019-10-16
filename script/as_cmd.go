@@ -8,35 +8,41 @@ import (
 	"os"
 	"os/user"
 	"strconv"
-	"strings"
 )
 
-// AsCommand represents AS directive in a script
+// AsCommand represents AS directive:
+//
+// AS userid:"userid" [groupid:"groupid"]
+//
+// Param userid required; groupid optional
 type AsCommand struct {
 	cmd
-	user    *user.User
-	userid  string
-	groupid string
+	user *user.User
 }
 
 // NewAsCommand returns *AsCommand with parsed arguments
-func NewAsCommand(index int, args []string) (*AsCommand, error) {
-	cmd := &AsCommand{cmd: cmd{index: index, name: CmdAs, args: args}}
-
-	if err := validateCmdArgs(CmdAs, args); err != nil {
+func NewAsCommand(index int, rawArgs string) (*AsCommand, error) {
+	if err := validateRawArgs(CmdAs, rawArgs); err != nil {
 		return nil, err
 	}
 
-	if len(args) > 0 {
-		asParts := strings.Split(args[0], ":")
-		if len(asParts) > 1 {
-			cmd.groupid = asParts[1]
-		}
-		cmd.userid = asParts[0]
-	} else {
-		cmd.userid = fmt.Sprintf("%d", os.Getuid())
-		cmd.groupid = fmt.Sprintf("%d", os.Getgid())
+	argMap, err := mapArgs(rawArgs)
+	if err != nil {
+		return nil, fmt.Errorf("AS: %v", err)
 	}
+	if err := validateCmdArgs(CmdAs, argMap); err != nil {
+		return nil, err
+	}
+	//validate required param
+	if _, ok := argMap["userid"]; len(argMap) == 1 && !ok {
+		return nil, fmt.Errorf("AS requires parameter userid")
+	}
+	// fill in default
+	if len(argMap) == 1 {
+		argMap["groupid"] = fmt.Sprintf("%d", os.Getgid())
+	}
+
+	cmd := &AsCommand{cmd: cmd{index: index, name: CmdAs, args: argMap}}
 
 	return cmd, nil
 }
@@ -52,18 +58,18 @@ func (c *AsCommand) Name() string {
 }
 
 // Args returns a slice of raw command arguments
-func (c *AsCommand) Args() []string {
+func (c *AsCommand) Args() map[string]string {
 	return c.cmd.args
 }
 
 // GetUserId returns the userid specified in AS
 func (c *AsCommand) GetUserId() string {
-	return c.userid
+	return c.cmd.args["userid"]
 }
 
 // GetGroupId returns the gid specified in AS
 func (c *AsCommand) GetGroupId() string {
-	return c.groupid
+	return c.cmd.args["groupid"]
 }
 
 // GetCredentials returns the uid and gid value extracted from Args
@@ -73,14 +79,14 @@ func (c *AsCommand) GetCredentials() (uid, gid int, err error) {
 	}
 
 	var usr *user.User
-	_, err = strconv.Atoi(c.userid)
+	_, err = strconv.Atoi(c.GetUserId())
 	if err != nil { // is id really a username
-		usr, err = user.Lookup(c.userid)
+		usr, err = user.Lookup(c.GetUserId())
 		if err != nil {
 			return -1, -1, err
 		}
 	} else {
-		usr, err = user.LookupId(c.userid)
+		usr, err = user.LookupId(c.GetUserId())
 		if err != nil {
 			return -1, -1, err
 		}
@@ -92,7 +98,7 @@ func (c *AsCommand) GetCredentials() (uid, gid int, err error) {
 
 func getUserIds(usr *user.User) (uid int, gid int, err error) {
 	if usr == nil {
-		return 0, 0, fmt.Errorf("Unable to lookup credentials, user nil")
+		return 0, 0, fmt.Errorf("unable to lookup credentials, user nil")
 	}
 	uid, err = strconv.Atoi(usr.Uid)
 	if err != nil {

@@ -25,11 +25,13 @@ func runCommandTest(t *testing.T, test commandTest) {
 		t.Log(err)
 		return
 	}
-	if err := test.script(script); err != nil {
-		if !test.shouldFail {
-			t.Fatal(err)
+	if test.script != nil {
+		if err := test.script(script); err != nil {
+			if !test.shouldFail {
+				t.Fatal(err)
+			}
+			t.Log(err)
 		}
-		t.Log(err)
 	}
 }
 func TestCommandParse(t *testing.T) {
@@ -98,7 +100,7 @@ func TestCommandParse(t *testing.T) {
 				if len(wdCmds) != 1 {
 					return fmt.Errorf("Script missing default preamble %s", CmdWorkDir)
 				}
-				dir := wdCmds[0].(*WorkdirCommand).Dir()
+				dir := wdCmds[0].(*WorkdirCommand).Path()
 				if dir != "l/m/n" {
 					return fmt.Errorf("Script instruction WORKDIR has unexpected Dir %s", dir)
 				}
@@ -124,8 +126,8 @@ func TestCommandParse(t *testing.T) {
 					return fmt.Errorf("Script has unexpected number of actions %d", len(actions))
 				}
 				cpCmd := s.Actions[1].(*CopyCommand)
-				if len(cpCmd.Args()) != 2 {
-					return fmt.Errorf("Unexpected arg count %d for COPY in script with comment", len(cpCmd.Args()))
+				if len(cpCmd.Paths()) != 2 {
+					return fmt.Errorf("Unexpected arg count %d for COPY in script with comment", len(cpCmd.Paths()))
 				}
 				return nil
 			},

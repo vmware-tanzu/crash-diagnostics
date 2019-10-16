@@ -3,9 +3,6 @@ A tool to help collect and analyze node information for troubleshooting unrespon
 
 This tool is designed for human operators to run against some or all nodes of a troubled or unresponsive cluster to collect logs, configurations, or any other node resource for analysis to help with troubleshotting of Kubernetes.  
 
-## Pre-requisites
- * Assumes the Kubernetes cluster is running on Linux
-
 ## `Crash-Diagnostics`
 The tool is compiled into a a single binary named `crash-dianostics`.  Currently, the binary supports two commands:
 
@@ -51,9 +48,10 @@ crash-diagnostics --file test-cluster.file -output test-cluster.tar.gz
 DIRECTIVE [arguments]
 ```
 
-A directive can either be a `preamble` for runtime configuration or an `action` which can execute a command that runs on each specified node in a cluster. 
+A directive can either be a `preamble` for runtime configuration or an `action` which can execute a command that runs on each specified host. 
 
 ### Example Diagnostics.file
+The following is a sample Diagnostics.file that captures command output and copy files from two hosts:
 ```
 FROM 127.0.0.1:22 192.168.99.7:22
 WORKDIR /tmp/crashdir
@@ -88,48 +86,84 @@ KUBECONFIG
 OUTPUT
 WORKDIR
 ```
+Each directive can receive named parameters to pass values to the command it represents.  Each named parameter uses an identifier followed by a colon `:` as shown below:
+```
+DIRECTIVE name0:<param value 0> name1:<param value 1> ... nameN:<param value N>
+```
+Optionally, some directives can be declared with a single default parameter value as shown below:
+```
+DIRECTIVE <default param value>
+```
+As an example, directive `WORKDIR` can be declared in the following two ways:
+```
+WORKDIR path:/some/path
+```
+Or `WORKDIR` can be declared with an unamed parameter which is assumed to be the `path:` parameter:
+```
+WORKDIR /some/path
+```
 
 ### AS
-This directive specifies the userid id and optional group id to  use when `crash-diagnostics` execute its commands against the current machine.
+This directive specifies the `userid` and optional `groupid` to  use when `crash-diagnostics` execute its commands against the current machine.
 ```
-AS <userid>[:<groupid>]
+AS userid:<userid> [groupid:<groupid>]
+```
+Example:
+```
+AS userid:100
+```
+Or
+```
+AS userid:vladimir groupid:200
 ```
 
 ### AUTHCONFIG
-Configures the authentication for connections to remote node servers with a username and a private key that is used
-in a keypair configuration for tools such as SSH.
+Configures the authentication for connections to remote node servers.  A `username` must be provide to used during authentication. A `private-key` must also be provided to be used in a private key/public certificate that can be used by tools such as SSH.
 
 ```
 AUTHCONFIG username:<name> private-key:</path/to/private/key>
 ```
 
 ### CAPTURE
-Executes a shell command on the specified machines (see FROM) and captures the output in the archived bundle for analysis.
+Executes a shell command on the specified machines (see `FROM` directive).  The result of the executed command is captured and saved in a file that is then added to the archived bundle for analysis.
+
+`CAPTURE` can be declared followed by the command to execute as shown in this example:
 
 ```
-CAPTURE [<shell command>]
+CAPTURE /bin/journalctl -l -u kube-apiserver
+```
+The previous command can be declared with its named parameter `path:` as shown below:
+```
+CAPTURE path:"/bin/journalctl -l -u kube-apiserver"
 ```
 
 ### COPY
 This action specifies one or more files (and/or directories) as data sources that are copied
-into the arhive bundle.
+into the arhive bundle.  The COPY command can be declared with its default unanmed parameter as shown below:
 
 ```
-COPY <space-separated files or directories>
+COPY /var/log/kube-proxy.log
+```
+The same command can also be declared with parameter name `paths:`
+```
+COPY paths:"/var/log/kube-proxy.log"
 ```
 
 ### ENV
-This directive is used to inject environment variables that to be processed by shell commands executed by the CAPTURE action at runtime.
+This directive is used to inject environment variables that are made available to other commands at runtime. A diagnostics file can have one or more ENV commands declared.  In its default format, `ENV` is declared followed by a list of environment variables as shown below:
 
 ```
-ENV key0=value0
-ENV key1=value1
-ENV keyN=valueN
+ENV Foo=bar Blat=bat
+ENV BUZZ=BAZ
+```
+The `ENV` command can optinally used parameter name `vars:` as shown below:
+```
+ENV vars:"Foo=bar Blat=bat"
 ```
 
 ### FROM
-This specifies a space-separated list of nodes from which data can be collected.  Each 
-machine is specified by an address and a service port as `<host-address>:<port>`. By default
+This specifies a space-separated list of nodes from which data is collected.  Each 
+host is specified by an address endpoint consisting of `<host-address>:<port>`. By default
 the tool will use SSH as at runtime to interact with the specified remote hosts.
 
 An address of `local` indicates that the current machine, where the `crash-diagnostics` binary, 
@@ -138,14 +172,25 @@ is running will be used as the source allowing the tool to directly access and e
 ```
 FROM local 10.10.100.2:22
 ```
+`FROM` can optionally include parameter name `hosts:` as shown below:
+```
+FROM hosts:"local 10.10.100.2:22"
+```
 
 ### KUBECONFIG
 This directive specifies the fully qualified path of the Kubernetes client configuration file. The
-tool will use this value to communicate with the API server to retrieve vital cluster information 
-if available.  
+tool will use this value to load the Kubernetes configuration file to communicate with the API server to retrieve vital cluster information if available.  
+
+In its default form, `KUBECONFIG` is declared followe by the path to the config file as shown below:
 
 ```
 KUBECONFIG /path/to/kube/config
+```
+
+The command can optionally use parameter name `path:` for its parameter as follows:
+
+```
+KUBECONFIG path:"/path/to/kube/config"
 ```
 
 By default, the following resourcess will be retrieved from the API server:
@@ -167,9 +212,12 @@ If `KUBECONFIG` is not specified, the tool will attempt to search for:
 If a Kubernetes configuration file is not found or the API server is unresponsive, cluster information will be skipped.
 
 ### OUTPUT
-This preamble configures the the location and file name of the generated archive file that contains the collected information
-from the specified servers.
+This preamble configures the the location and file name of the generated archive file that contains the collected information from the specified servers.  By default, `KUBECONFIG` is declared followed by the output path as shown below:
 
+```
+OUTPUT <path of archive file>
+```
+Optionally, the command may use parameter name `path:` to specify the path as shown below:
 ```
 OUTPUT path:<path of archive file>
 ```
@@ -177,13 +225,16 @@ OUTPUT path:<path of archive file>
 If `OUTPUT` is not specified, the tool applies the value of flag `--output` as specified on the command line at runtime.
 
 ### WORKDIR
-Specifies the working directory used when building the archive bundle.  The
-directory is  used as temporary location to store data from all data sources
-specified in the file.  When the tar is built, the content of that directory
-is removed.
+Specifies the working directory used when building the archive bundle.  The directory is  used as temporary location to store data from all data sources specified in the file.  When the tar is built, the content of that directory is removed.
+
+In its default form, `WORKDIR` is declared followed by the work directory path as shown below:
 
 ```
-WORKDIR <relative or absolute path>
+WORKDIR /tmp/crashdir
+```
+Optionally, `WORKDIR` may use parameter name `path:` as follows:
+```
+WORKDIR path:"/tmp/crashdir"
 ```
 
 ### Example File

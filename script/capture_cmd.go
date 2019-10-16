@@ -3,24 +3,45 @@
 
 package script
 
-// CaptuerCommand represents CAPTURE in a script
+import (
+	"fmt"
+	"strings"
+)
+
+// CaptureCommand represents CAPTURE directive which
+// can have one of the following two forms as shown below:
+//
+//     CAPTURE <command-string>
+//     CAPTURE cmd:"<command-string>" name:"cmd-name" desc:"cmd-desc"
+//
+// The former takes no named parameter. When the latter form is used,
+// parameter cmd: is required.
 type CaptureCommand struct {
 	cmd
-	cliCmdName string
-	cliCmdArgs []string
 }
 
 // NewCaptureCommand returns *CaptureCommand with parsed arguments
-func NewCaptureCommand(index int, args []string) (*CaptureCommand, error) {
-	cmd := &CaptureCommand{cmd: cmd{index: index, name: CmdCapture, args: args}}
-
-	if err := validateCmdArgs(CmdCapture, args); err != nil {
+func NewCaptureCommand(index int, rawArgs string) (*CaptureCommand, error) {
+	if err := validateRawArgs(CmdCapture, rawArgs); err != nil {
 		return nil, err
 	}
 
-	cmdName, cmdArgs := cliParse(cmd.args[0])
-	cmd.cliCmdName = cmdName
-	cmd.cliCmdArgs = cmdArgs
+	// determine shape of directive
+	var argMap map[string]string
+	if strings.Contains(rawArgs, "cmd:") {
+		args, err := mapArgs(rawArgs)
+		if err != nil {
+			return nil, fmt.Errorf("CAPTURE: %v", err)
+		}
+		argMap = args
+	} else {
+		argMap = map[string]string{"cmd": rawArgs}
+	}
+
+	cmd := &CaptureCommand{cmd: cmd{index: index, name: CmdCapture, args: argMap}}
+	if err := validateCmdArgs(CmdCapture, argMap); err != nil {
+		return nil, err
+	}
 
 	return cmd, nil
 }
@@ -36,16 +57,16 @@ func (c *CaptureCommand) Name() string {
 }
 
 // Args returns a slice of raw command arguments
-func (c *CaptureCommand) Args() []string {
+func (c *CaptureCommand) Args() map[string]string {
 	return c.cmd.args
 }
 
 // GetCliString returns the raw CLI command string
-func (c *CaptureCommand) GetCliString() string {
-	return c.args[0]
+func (c *CaptureCommand) GetCmdString() string {
+	return c.cmd.args["cmd"]
 }
 
 // GetParsedCli returns the CLI command name to be captured and its arguments
-func (c *CaptureCommand) GetParsedCli() (string, []string) {
-	return c.cliCmdName, c.cliCmdArgs
+func (c *CaptureCommand) GetParsedCmd() (string, []string) {
+	return cliParse(c.cmd.args["cmd"])
 }

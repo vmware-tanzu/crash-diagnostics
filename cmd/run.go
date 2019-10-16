@@ -53,7 +53,7 @@ func run(flag *runFlags, args []string) error {
 
 	// override output if needed
 	if flag.output != "" {
-		cmd, err := script.NewOutputCommand(0, []string{fmt.Sprintf("path:%s", flag.output)})
+		cmd, err := script.NewOutputCommand(0, fmt.Sprintf("path:%s", flag.output))
 		if err != nil {
 			return err
 		}
