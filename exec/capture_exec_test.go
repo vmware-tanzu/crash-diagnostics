@@ -17,7 +17,7 @@ func TestExecLocalCAPTURE(t *testing.T) {
 		{
 			name: "CAPTURE single command",
 			source: func() string {
-				return "CAPTURE /bin/echo 'HELLO WORLD'"
+				return `CAPTURE "/bin/echo 'HELLO WORLD'"`
 			},
 			exec: func(s *script.Script) error {
 				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Host()
@@ -39,7 +39,7 @@ func TestExecLocalCAPTURE(t *testing.T) {
 		{
 			name: "CAPTURE multiple commands",
 			source: func() string {
-				return "CAPTURE /bin/echo 'HELLO WORLD'\nCAPTURE ls ."
+				return "CAPTURE '/bin/echo \"HELLO WORLD\"'\nCAPTURE ls ."
 			},
 			exec: func(s *script.Script) error {
 				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Host()
@@ -67,7 +67,7 @@ func TestExecLocalCAPTURE(t *testing.T) {
 			name: "CAPTURE command with user specified",
 			source: func() string {
 				uid := os.Getuid()
-				return fmt.Sprintf("AS userid:%d \nCAPTURE /bin/echo 'HELLO WORLD'", uid)
+				return fmt.Sprintf("AS userid:%d \nCAPTURE '/bin/echo \"HELLO WORLD\"'", uid)
 			},
 			exec: func(s *script.Script) error {
 				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Host()

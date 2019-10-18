@@ -35,6 +35,29 @@ func TestCommandAS(t *testing.T) {
 			},
 		},
 		{
+			name: "AS with quoted userid and groupid",
+			source: func() string {
+				return `AS userid:"foo" groupid:bar`
+			},
+			script: func(s *Script) error {
+				cmds := s.Preambles[CmdAs]
+				if len(cmds) != 1 {
+					return fmt.Errorf("Script missing preamble %s", CmdAs)
+				}
+				asCmd, ok := cmds[0].(*AsCommand)
+				if !ok {
+					return fmt.Errorf("Unexpected type %T in script", cmds[0])
+				}
+				if asCmd.GetUserId() != "foo" {
+					return fmt.Errorf("Unexpected AS userid %s", asCmd.GetUserId())
+				}
+				if asCmd.GetGroupId() != "bar" {
+					return fmt.Errorf("Unexpected AS groupid %s", asCmd.GetUserId())
+				}
+				return nil
+			},
+		},
+		{
 			name: "AS with only userid",
 			source: func() string {
 				return "AS userid:foo"

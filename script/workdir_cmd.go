@@ -5,7 +5,6 @@ package script
 
 import (
 	"fmt"
-	"strings"
 )
 
 // WorkdirCommand representes a WORKDIR which may have one
@@ -24,14 +23,13 @@ func NewWorkdirCommand(index int, rawArgs string) (*WorkdirCommand, error) {
 	}
 
 	var argMap map[string]string
-	if strings.Contains(rawArgs, "path:") {
-		args, err := mapArgs(rawArgs)
-		if err != nil {
-			return nil, fmt.Errorf("WORKDIR: %v", err)
-		}
-		argMap = args
-	} else {
-		argMap = map[string]string{"path": rawArgs}
+	if !isNamedParam(rawArgs) {
+		// setup default param (notice quoted value)
+		rawArgs = makeNamedPram("path", rawArgs)
+	}
+	argMap, err := mapArgs(rawArgs)
+	if err != nil {
+		return nil, fmt.Errorf("WORKDIR: %v", err)
 	}
 
 	cmd := &WorkdirCommand{cmd: cmd{index: index, name: CmdWorkDir, args: argMap}}

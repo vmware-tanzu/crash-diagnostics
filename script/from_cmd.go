@@ -53,16 +53,18 @@ func NewFromCommand(index int, rawArgs string) (*FromCommand, error) {
 		return nil, err
 	}
 
+	// named param mapping is done differently
+	// because address for hosts contains char ':'
 	var argMap map[string]string
-	if strings.Contains(rawArgs, "hosts:") {
-		args, err := mapArgs(rawArgs)
-		if err != nil {
-			return nil, fmt.Errorf("ENV: %v", err)
-		}
-		argMap = args
-	} else {
-		argMap = map[string]string{"hosts": rawArgs}
+	// if no pram named 'hosts' found, assume raw default
+	if !strings.Contains(rawArgs, "hosts:") {
+		rawArgs = makeNamedPram("hosts", rawArgs)
 	}
+	argMap, err := mapArgs(rawArgs)
+	if err != nil {
+		return nil, fmt.Errorf("CAPTURE: %v", err)
+	}
+
 	cmd := &FromCommand{cmd: cmd{index: index, name: CmdFrom, args: argMap}}
 	if err := validateCmdArgs(CmdFrom, argMap); err != nil {
 		return nil, err

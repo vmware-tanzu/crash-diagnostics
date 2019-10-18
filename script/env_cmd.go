@@ -33,14 +33,13 @@ func NewEnvCommand(index int, rawArgs string) (*EnvCommand, error) {
 
 	// map params
 	var argMap map[string]string
-	if strings.Contains(rawArgs, "vars:") {
-		args, err := mapArgs(rawArgs)
-		if err != nil {
-			return nil, fmt.Errorf("ENV: %v", err)
-		}
-		argMap = args
-	} else {
-		argMap = map[string]string{"vars": rawArgs}
+	if !isNamedParam(rawArgs) {
+		// setup default param (notice quoted value)
+		rawArgs = makeNamedPram("vars", rawArgs)
+	}
+	argMap, err := mapArgs(rawArgs)
+	if err != nil {
+		return nil, fmt.Errorf("ENV: %v", err)
 	}
 
 	cmd := &EnvCommand{

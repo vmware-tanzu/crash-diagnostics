@@ -11,7 +11,7 @@ import (
 func TestCommandCAPTURE(t *testing.T) {
 	tests := []commandTest{
 		{
-			name: "CAPTURE single command",
+			name: "CAPTURE default param",
 			source: func() string {
 				return "CAPTURE /bin/echo HELLO WORLD"
 			},
@@ -33,6 +33,64 @@ func TestCommandCAPTURE(t *testing.T) {
 					return fmt.Errorf("CAPTURE action parsed cli unexpected command %s", cliCmd)
 				}
 				if len(cliArgs) != 2 {
+					return fmt.Errorf("CAPTURE action parsed cli unexpected args %d", len(cliArgs))
+				}
+
+				return nil
+			},
+		},
+		{
+			name: "CAPTURE default quoted param",
+			source: func() string {
+				return `CAPTURE '/bin/echo "HELLO WORLD"'`
+			},
+			script: func(s *Script) error {
+				if len(s.Actions) != 1 {
+					return fmt.Errorf("Script has unexpected actions, needs %d", len(s.Actions))
+				}
+				cmd, ok := s.Actions[0].(*CaptureCommand)
+				if !ok {
+					return fmt.Errorf("Unexpected action type %T in script", s.Actions[0])
+				}
+
+				if cmd.Args()["cmd"] != cmd.GetCmdString() {
+					return fmt.Errorf("CAPTURE action with unexpected CLI string %s", cmd.GetCmdString())
+				}
+
+				cliCmd, cliArgs := cmd.GetParsedCmd()
+				if cliCmd != "/bin/echo" {
+					return fmt.Errorf("CAPTURE action parsed cli unexpected command %s", cliCmd)
+				}
+				if len(cliArgs) != 1 {
+					return fmt.Errorf("CAPTURE action parsed cli unexpected args %d", len(cliArgs))
+				}
+
+				return nil
+			},
+		},
+		{
+			name: "CAPTURE single quoted command",
+			source: func() string {
+				return `CAPTURE cmd:"/bin/echo 'HELLO WORLD'"`
+			},
+			script: func(s *Script) error {
+				if len(s.Actions) != 1 {
+					return fmt.Errorf("Script has unexpected actions, needs %d", len(s.Actions))
+				}
+				cmd, ok := s.Actions[0].(*CaptureCommand)
+				if !ok {
+					return fmt.Errorf("Unexpected action type %T in script", s.Actions[0])
+				}
+
+				if cmd.Args()["cmd"] != cmd.GetCmdString() {
+					return fmt.Errorf("CAPTURE action with unexpected CLI string %s", cmd.GetCmdString())
+				}
+
+				cliCmd, cliArgs := cmd.GetParsedCmd()
+				if cliCmd != "/bin/echo" {
+					return fmt.Errorf("CAPTURE action parsed cli unexpected command %s", cliCmd)
+				}
+				if len(cliArgs) != 1 {
 					return fmt.Errorf("CAPTURE action parsed cli unexpected args %d", len(cliArgs))
 				}
 
