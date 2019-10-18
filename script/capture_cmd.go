@@ -5,7 +5,6 @@ package script
 
 import (
 	"fmt"
-	"strings"
 )
 
 // CaptureCommand represents CAPTURE directive which
@@ -18,6 +17,8 @@ import (
 // parameter cmd: is required.
 type CaptureCommand struct {
 	cmd
+	cmdName string
+	cmdArgs []string
 }
 
 // NewCaptureCommand returns *CaptureCommand with parsed arguments
@@ -26,23 +27,29 @@ func NewCaptureCommand(index int, rawArgs string) (*CaptureCommand, error) {
 		return nil, err
 	}
 
-	// determine shape of directive
+	// determine args
 	var argMap map[string]string
-	if strings.Contains(rawArgs, "cmd:") {
-		args, err := mapArgs(rawArgs)
-		if err != nil {
-			return nil, fmt.Errorf("CAPTURE: %v", err)
-		}
-		argMap = args
-	} else {
-		argMap = map[string]string{"cmd": rawArgs}
+	if !isNamedParam(rawArgs) {
+		// setup default param (notice quoted value)
+		rawArgs = makeNamedPram("cmd", rawArgs)
+	}
+	argMap, err := mapArgs(rawArgs)
+	if err != nil {
+		return nil, fmt.Errorf("CAPTURE: %v", err)
+	}
+
+	if err := validateCmdArgs(CmdCapture, argMap); err != nil {
+		return nil, fmt.Errorf("CAPTURE: %s", err)
 	}
 
 	cmd := &CaptureCommand{cmd: cmd{index: index, name: CmdCapture, args: argMap}}
-	if err := validateCmdArgs(CmdCapture, argMap); err != nil {
-		return nil, err
-	}
 
+	cmdName, cmdArgs, err := cmdParse(cmd.GetCmdString())
+	if err != nil {
+		return nil, fmt.Errorf("CAPTURE: %s", err)
+	}
+	cmd.cmdName = cmdName
+	cmd.cmdArgs = cmdArgs
 	return cmd, nil
 }
 
@@ -61,12 +68,12 @@ func (c *CaptureCommand) Args() map[string]string {
 	return c.cmd.args
 }
 
-// GetCliString returns the raw CLI command string
+// GetCmdString returns the raw CLI command string
 func (c *CaptureCommand) GetCmdString() string {
 	return c.cmd.args["cmd"]
 }
 
-// GetParsedCli returns the CLI command name to be captured and its arguments
+// GetParsedCmd returns the CLI command name to be captured and its arguments
 func (c *CaptureCommand) GetParsedCmd() (string, []string) {
-	return cliParse(c.cmd.args["cmd"])
+	return c.cmdName, c.cmdArgs
 }

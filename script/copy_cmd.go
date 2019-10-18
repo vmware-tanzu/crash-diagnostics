@@ -5,7 +5,6 @@ package script
 
 import (
 	"fmt"
-	"strings"
 )
 
 // CopyCommand represents a COPY directive which may have
@@ -28,19 +27,21 @@ func NewCopyCommand(index int, rawArgs string) (*CopyCommand, error) {
 
 	// determine shape of directive
 	var argMap map[string]string
-	if strings.Contains(rawArgs, "paths:") {
-		args, err := mapArgs(rawArgs)
-		if err != nil {
-			return nil, fmt.Errorf("COPY: %v", err)
-		}
-		argMap = args
-	} else {
-		argMap = map[string]string{"paths": rawArgs}
+	if !isNamedParam(rawArgs) {
+		// setup default param (notice quoted value)
+		rawArgs = makeNamedPram("paths", rawArgs)
 	}
-	cmd := &CopyCommand{cmd: cmd{index: index, name: CmdCopy, args: argMap}}
+	argMap, err := mapArgs(rawArgs)
+	if err != nil {
+		return nil, fmt.Errorf("COPY: %v", err)
+	}
+
 	if err := validateCmdArgs(CmdCopy, argMap); err != nil {
 		return nil, err
 	}
+
+	cmd := &CopyCommand{cmd: cmd{index: index, name: CmdCopy, args: argMap}}
+
 	return cmd, nil
 }
 

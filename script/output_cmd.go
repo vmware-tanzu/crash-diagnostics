@@ -5,7 +5,6 @@ package script
 
 import (
 	"fmt"
-	"strings"
 )
 
 // OutputCommand representes a OUTPUT directive which can have
@@ -23,14 +22,13 @@ func NewOutputCommand(index int, rawArgs string) (*OutputCommand, error) {
 	}
 
 	var argMap map[string]string
-	if strings.Contains(rawArgs, "path:") {
-		args, err := mapArgs(rawArgs)
-		if err != nil {
-			return nil, fmt.Errorf("OUTPUT: %v", err)
-		}
-		argMap = args
-	} else {
-		argMap = map[string]string{"path": rawArgs}
+	if !isNamedParam(rawArgs) {
+		// setup default param (notice quoted value)
+		rawArgs = makeNamedPram("path", rawArgs)
+	}
+	argMap, err := mapArgs(rawArgs)
+	if err != nil {
+		return nil, fmt.Errorf("OUTPUT: %v", err)
 	}
 
 	cmd := &OutputCommand{cmd: cmd{index: index, name: CmdOutput, args: argMap}}

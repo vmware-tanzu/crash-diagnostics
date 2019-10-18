@@ -43,7 +43,8 @@ func Parse(reader io.Reader) (*Script, error) {
 			continue
 		}
 		logrus.Debugf("Parsing [%d: %s]", line, text)
-		// split DIRECTIVE [ARGS]
+
+		// split DIRECTIVE [ARGS] after first space(s)
 		var cmdName, rawArgs string
 		tokens := spaceSep.Split(text, 2)
 		if len(tokens) == 2 {
@@ -151,33 +152,73 @@ func validateCmdArgs(cmdName string, args map[string]string) error {
 	return nil
 }
 
+// mapArgs takes the rawArgs in the form of
+//
+//    param0:"val0" param1:"val1" ... paramN:"valN"
+//
+// The param name must be followed by a colon and the value
+// may be quoted or unquoted. It is an error if
+// split(rawArgs, ":") yields to a len(slice) < 2.
 func mapArgs(rawArgs string) (map[string]string, error) {
-	// TODO split using quoted words scanner
 	argMap := make(map[string]string)
-	args := spaceSep.Split(rawArgs, -1)
-	for _, arg := range args {
-		parts := paramSep.Split(arg, 2)
-		if len(parts) != 2 {
-			return argMap, fmt.Errorf("invalid param: %s", arg)
-		}
-		argMap[parts[0]] = parts[1]
+	params, err := wordSplit(rawArgs)
+	if err != nil {
+		return nil, err
 	}
+
+	for _, param := range params {
+		parts := paramSep.Split(param, 2)
+		if len(parts) != 2 {
+			return argMap, fmt.Errorf("invalid param: %s", param)
+		}
+
+		name := parts[0]
+
+		// safely remove start/end quotes
+		val, err := wordSplit(parts[1])
+		if err != nil {
+			return nil, err
+		}
+
+		argMap[name] = val[0]
+	}
+
 	return argMap, nil
 }
 
-func cliParse(cmdStr string) (cmd string, args []string) {
-	args = []string{}
-	parts := spaceSep.Split(cmdStr, -1)
-	if len(parts) == 0 {
-		return
+// isNamedParam returs true if str has the form
+//
+//    name:value
+//
+func isNamedParam(str string) bool {
+	if len(str) == 0 {
+		return false
 	}
-	if len(parts) == 1 {
-		cmd = parts[0]
-		return
+
+	parts := paramSep.Split(str, 2)
+	if len(parts) >= 2 {
+		return true
 	}
-	cmd = parts[0]
-	args = parts[1:]
-	return
+	return false
+}
+
+// makeParam
+func makeNamedPram(name, value string) string {
+	value = strings.TrimSpace(value)
+	// possibly already quoted
+	if value[0] == '"' || value[0] == '\'' {
+		return fmt.Sprintf("%s:%s", name, value)
+	}
+	// return as quoted
+	return fmt.Sprintf(`%s:'%s'`, name, value)
+}
+
+func cmdParse(cmdStr string) (cmd string, args []string, err error) {
+	args, err = wordSplit(cmdStr)
+	if err != nil {
+		return "", nil, err
+	}
+	return args[0], args[1:], nil
 }
 
 // enforceDefaults adds missing defaults to the script

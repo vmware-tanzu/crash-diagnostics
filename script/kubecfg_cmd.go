@@ -5,7 +5,6 @@ package script
 
 import (
 	"fmt"
-	"strings"
 )
 
 // KubeConfigCommand represents a KUBECONFIG directive which can have
@@ -23,14 +22,13 @@ func NewKubeConfigCommand(index int, rawArgs string) (*KubeConfigCommand, error)
 	}
 
 	var argMap map[string]string
-	if strings.Contains(rawArgs, "path:") {
-		args, err := mapArgs(rawArgs)
-		if err != nil {
-			return nil, fmt.Errorf("KUBECONFIG: %v", err)
-		}
-		argMap = args
-	} else {
-		argMap = map[string]string{"path": rawArgs}
+	if !isNamedParam(rawArgs) {
+		// setup default param (notice quoted value)
+		rawArgs = makeNamedPram("path", rawArgs)
+	}
+	argMap, err := mapArgs(rawArgs)
+	if err != nil {
+		return nil, fmt.Errorf("KUBECONFIG: %v", err)
 	}
 
 	cmd := &KubeConfigCommand{cmd: cmd{index: index, name: CmdKubeConfig, args: argMap}}

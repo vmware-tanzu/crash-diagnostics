@@ -7,7 +7,7 @@ import "fmt"
 
 // AuthConfigCommand represents AUTHCONFIG directive:
 //
-// AUTHCONFIG username:username private-key:/path/to/key api-key:key
+// AUTHCONFIG username:"username" private-key:"/path/to/key api-key:key"
 //
 // Param username is required
 type AuthConfigCommand struct {
@@ -24,11 +24,12 @@ func NewAuthConfigCommand(index int, rawArgs string) (*AuthConfigCommand, error)
 	if err != nil {
 		return nil, fmt.Errorf("AUTHCONFIG: %v", err)
 	}
-
-	cmd := &AuthConfigCommand{cmd: cmd{index: index, name: CmdAuthConfig, args: argMap}}
 	if err := validateCmdArgs(CmdAuthConfig, argMap); err != nil {
 		return nil, err
 	}
+
+	cmd := &AuthConfigCommand{cmd: cmd{index: index, name: CmdAuthConfig, args: argMap}}
+
 	return cmd, nil
 }
 

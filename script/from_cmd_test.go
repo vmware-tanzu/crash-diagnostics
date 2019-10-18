@@ -37,7 +37,7 @@ func TestCommandFROM(t *testing.T) {
 		{
 			name: "FROM set to single remote machine",
 			source: func() string {
-				return "FROM foo.bar:1234"
+				return "FROM 'foo.bar:1234'"
 			},
 			script: func(s *Script) error {
 				froms := s.Preambles[CmdFrom]
@@ -65,7 +65,7 @@ func TestCommandFROM(t *testing.T) {
 		{
 			name: "FROM with multiple machines",
 			source: func() string {
-				return "FROM local 127.0.0.1:1234"
+				return "FROM 'local 127.0.0.1:1234'"
 			},
 			script: func(s *Script) error {
 				froms := s.Preambles[CmdFrom]
@@ -74,6 +74,7 @@ func TestCommandFROM(t *testing.T) {
 				}
 				fromCmd := froms[0].(*FromCommand)
 				if len(fromCmd.Machines()) != 2 {
+					t.Log("Machines:", fromCmd.Machines())
 					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Machines()))
 				}
 				m0 := fromCmd.Machines()[0]

@@ -86,21 +86,39 @@ KUBECONFIG
 OUTPUT
 WORKDIR
 ```
-Each directive can receive named parameters to pass values to the command it represents.  Each named parameter uses an identifier followed by a colon `:` as shown below:
+Each directive can receive named parameters that pass values to the command it represents.  Each named parameter uses an identifier that  is followed by a colon `:` and the value of the paramter as shown below:
+
 ```
 DIRECTIVE name0:<param value 0> name1:<param value 1> ... nameN:<param value N>
 ```
+Example:
+
+```
+OUTPUT path:/tmp/crashout/out.tar.gz
+```
+
+The value of the parameter may also be quoted if necessary to capture spaces as shown in the following example:
+
+```
+CAPTURE cmd:'/bin/echo "HELLO WORLD!"'
+```
+
 Optionally, some directives can be declared with a single default parameter value as shown below:
+
 ```
 DIRECTIVE <default param value>
 ```
-As an example, directive `WORKDIR` can be declared in the following two ways:
+
+The following shows an example of directive `WORKDIR` declared with a default (unamed) parameter:
+
 ```
-WORKDIR path:/some/path
+OUTPUT /tmp/crashout/out.tar.gz
 ```
-Or `WORKDIR` can be declared with an unamed parameter which is assumed to be the `path:` parameter:
+
+This can also be done by quoting the default parameter as shown below:
+
 ```
-WORKDIR /some/path
+OUTPUT "/tmp/crashout/out.tar.gz"
 ```
 
 ### AS
@@ -132,7 +150,8 @@ Executes a shell command on the specified machines (see `FROM` directive).  The 
 ```
 CAPTURE /bin/journalctl -l -u kube-apiserver
 ```
-The previous command can be declared with its named parameter `path:` as shown below:
+Or:
+
 ```
 CAPTURE path:"/bin/journalctl -l -u kube-apiserver"
 ```
@@ -144,7 +163,8 @@ into the arhive bundle.  The COPY command can be declared with its default unanm
 ```
 COPY /var/log/kube-proxy.log
 ```
-The same command can also be declared with parameter name `paths:`
+
+Or,
 ```
 COPY paths:"/var/log/kube-proxy.log"
 ```
