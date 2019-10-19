@@ -51,15 +51,19 @@ func NewEnvCommand(index int, rawArgs string) (*EnvCommand, error) {
 		return nil, err
 	}
 
+	// foreach key0=val0 key1=val1 ... keyN=valN
+	// split keyN=valN
 	envs := spaceSep.Split(argMap["vars"], -1)
 	for _, env := range envs {
-		parts := envSep.Split(strings.TrimSpace(env), -1)
+		parts := envSep.Split(strings.TrimSpace(env), 2)
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("Invalid ENV arg %s", env)
+			return nil, fmt.Errorf("ENV: invalid: %s", env)
 		}
 		key, val := parts[0], parts[1]
-		cmd.envs[key] = val
-		os.Setenv(parts[0], parts[1])
+		cmd.envs[key] = os.ExpandEnv(val)
+		if err := os.Setenv(key, os.ExpandEnv(val)); err != nil {
+			return nil, fmt.Errorf("ENV: %s", err)
+		}
 	}
 
 	return cmd, nil

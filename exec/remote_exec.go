@@ -97,8 +97,14 @@ func copyRemotely(user, privKey string, machine *script.Machine, asCmd *script.A
 
 	logrus.Debugf("Entering remote COPY command: %s", cmd.Args())
 
-	host := machine.Host()
-	port := machine.Port()
+	host, err := machine.Host()
+	if err != nil {
+		return fmt.Errorf("COPY: %s", err)
+	}
+	port, err := machine.Port()
+	if err != nil {
+		return fmt.Errorf("COPY: %s", err)
+	}
 
 	asUid, asGid, err := asCmd.GetCredentials()
 	if err != nil {

@@ -5,6 +5,7 @@ package script
 
 import (
 	"fmt"
+	"os"
 	"testing"
 )
 
@@ -75,6 +76,24 @@ func TestCommandAUTHCONFIG(t *testing.T) {
 				}
 				if authCmd.GetPrivateKey() != "/a/b/c" {
 					return fmt.Errorf("Unexpected privateKey %s", authCmd.GetPrivateKey())
+				}
+				return nil
+			},
+		},
+		{
+			name: "AUTHCONFIG - with var expansion",
+			source: func() string {
+				os.Setenv("fookey", "/a/b/c")
+				return "AUTHCONFIG username:${USER} private-key:$fookey"
+			},
+			script: func(s *Script) error {
+				cmds := s.Preambles[CmdAuthConfig]
+				authCmd := cmds[0].(*AuthConfigCommand)
+				if authCmd.GetUsername() != os.ExpandEnv("$USER") {
+					return fmt.Errorf("Unexpected username %s", authCmd.GetUsername())
+				}
+				if authCmd.GetPrivateKey() != "/a/b/c" {
+					return fmt.Errorf("Unexpected private-key %s", authCmd.GetPrivateKey())
 				}
 				return nil
 			},

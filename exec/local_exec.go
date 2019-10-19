@@ -16,7 +16,6 @@ import (
 
 // exeLocally runs script using locally installed tool
 func exeLocally(src *script.Script, workdir string) error {
-	envPairs := exeEnvs(src)
 	asCmd, err := exeAs(src)
 	if err != nil {
 		return err
@@ -30,7 +29,7 @@ func exeLocally(src *script.Script, workdir string) error {
 			}
 		case *script.CaptureCommand:
 			// capture command output
-			if err := captureLocally(asCmd, cmd, envPairs, workdir); err != nil {
+			if err := captureLocally(asCmd, cmd, nil, workdir); err != nil {
 				return err
 			}
 		default:

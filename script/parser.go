@@ -5,10 +5,8 @@ package script
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
@@ -26,10 +24,6 @@ var (
 // Parse parses the textual script from reader into an *Script representation
 func Parse(reader io.Reader) (*Script, error) {
 	logrus.Info("Parsing script file")
-	reader, err := parseTemplate(reader)
-	if err != nil {
-		return nil, err
-	}
 
 	lineScanner := bufio.NewScanner(reader)
 	lineScanner.Split(bufio.ScanLines)
@@ -158,7 +152,7 @@ func validateCmdArgs(cmdName string, args map[string]string) error {
 //
 // The param name must be followed by a colon and the value
 // may be quoted or unquoted. It is an error if
-// split(rawArgs, ":") yields to a len(slice) < 2.
+// split(rawArgs[n], ":") yields to a len(slice) < 2.
 func mapArgs(rawArgs string) (map[string]string, error) {
 	argMap := make(map[string]string)
 	params, err := wordSplit(rawArgs)
@@ -269,19 +263,4 @@ func enforceDefaults(script *Script) (*Script, error) {
 		script.Preambles[CmdKubeConfig] = []Command{cmd}
 	}
 	return script, nil
-}
-
-func parseTemplate(reader io.Reader) (io.Reader, error) {
-	logrus.Debug("Binding template parameters")
-	src, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return nil, err
-	}
-
-	dest := new(bytes.Buffer)
-	if err := applyTemplate(dest, string(src)); err != nil {
-		return nil, err
-	}
-
-	return dest, nil
 }

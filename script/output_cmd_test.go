@@ -5,6 +5,7 @@ package script
 
 import (
 	"fmt"
+	"os"
 	"testing"
 )
 
@@ -85,6 +86,27 @@ func TestCommandOUTPUT(t *testing.T) {
 					return fmt.Errorf("Unexpected type %T in script", outs[0])
 				}
 				if outCmd.Path() != "bazz/buzz.tar.gz" {
+					return fmt.Errorf("OUTPUT has unexpected directory %s", outCmd.Path())
+				}
+				return nil
+			},
+		},
+		{
+			name: "OUTPUT with expanded var",
+			source: func() string {
+				os.Setenv("foopath", "foo/bar.tar.gz")
+				return "OUTPUT $foopath"
+			},
+			script: func(s *Script) error {
+				outs := s.Preambles[CmdOutput]
+				if len(outs) != 1 {
+					return fmt.Errorf("Script has unexpected number of OUTPUT %d", len(outs))
+				}
+				outCmd, ok := outs[0].(*OutputCommand)
+				if !ok {
+					return fmt.Errorf("Unexpected type %T in script", outs[0])
+				}
+				if outCmd.Path() != "foo/bar.tar.gz" {
 					return fmt.Errorf("OUTPUT has unexpected directory %s", outCmd.Path())
 				}
 				return nil

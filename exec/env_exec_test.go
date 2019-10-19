@@ -4,11 +4,8 @@
 package exec
 
 import (
-	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -28,42 +25,50 @@ func createTestShellScript(t *testing.T, fname string, content string) error {
 func TestExecENV(t *testing.T) {
 	tests := []execTest{
 		{
-			name: "ENV with multiple key/values",
+			name: "ENV with with no var expansion",
 			source: func() string {
-				return "ENV MSG1=HELLO\nENV MSG2=WORLD MSG3=!\nCAPTURE ./foo.sh"
+				return "ENV vars:'TEST_A=1 TEST_B=2 TEST_C=3'"
 			},
 			exec: func(s *script.Script) error {
-				// create an executable script to apply ENV
-				scriptName := "foo.sh"
-				sh := "#!/bin/sh\necho $MSG1 $MSG2 $MSG3"
-				msgExpected := "HELLO WORLD !"
-				if err := createTestShellScript(t, scriptName, sh); err != nil {
-					return err
-				}
-				defer os.RemoveAll(scriptName)
-
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Host()
-				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
-				cmd := s.Actions[0].(*script.CaptureCommand)
-
 				e := New(s)
 				if err := e.Execute(); err != nil {
 					return err
 				}
-
-				fileName := filepath.Join(workdir.Path(), machine, fmt.Sprintf("%s.txt", sanitizeStr(cmd.GetCmdString())))
-				if _, err := os.Stat(fileName); err != nil {
+				if os.Getenv("TEST_A") != "1" {
+					t.Errorf("unexpected ENV TEST_A value: %s", os.Getenv("TEST_A"))
+				}
+				if os.Getenv("TEST_B") != "2" {
+					t.Errorf("unexpected ENV TEST_B value: %s", os.Getenv("TEST_B"))
+				}
+				if os.Getenv("TEST_C") != "3" {
+					t.Errorf("unexpected ENV TEST_C value: %s", os.Getenv("TEST_C"))
+				}
+				return nil
+			},
+		},
+		{
+			name: "ENV with chained var expansion",
+			source: func() string {
+				return `
+				ENV vars:'TEST_A=1' 
+				ENV vars:'TEST_B=${TEST_A}' 
+				ENV 'TEST_C=${USER}'
+				`
+			},
+			exec: func(s *script.Script) error {
+				e := New(s)
+				if err := e.Execute(); err != nil {
 					return err
 				}
-
-				file, err := ioutil.ReadFile(fileName)
-				if err != nil {
-					return err
+				if os.Getenv("TEST_A") != "1" {
+					t.Errorf("unexpected ENV TEST_A value: %s", os.Getenv("TEST_A"))
 				}
-				if strings.TrimSpace(string(file)) != msgExpected {
-					return fmt.Errorf("ENV value not applied during CAPATURE")
+				if os.Getenv("TEST_B") != "1" {
+					t.Errorf("unexpected ENV TEST_B value: %s", os.Getenv("TEST_B"))
 				}
-
+				if os.Getenv("TEST_C") != os.ExpandEnv("${USER}") {
+					t.Errorf("unexpected ENV TEST_C value: %s", os.Getenv("TEST_C"))
+				}
 				return nil
 			},
 		},

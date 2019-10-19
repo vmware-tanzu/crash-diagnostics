@@ -6,33 +6,41 @@ package script
 import (
 	"fmt"
 	"net"
+	"os"
 	"strings"
 )
 
-// Machine represents a source machine
+// Machine represents a machine as defined in FROM
 type Machine struct {
-	host string
-	port string
+	address string
 }
 
-// NewMachine returns a new machine
-func NewMachine(host, port string) *Machine {
-	return &Machine{host: host, port: port}
+// NewMachine returns a new *Machine
+func NewMachine(addr string) *Machine {
+	return &Machine{address: addr}
 }
 
 // Address returns the host:port address
 func (m *Machine) Address() string {
-	return net.JoinHostPort(m.host, m.port)
+	return m.address
 }
 
 // Host returns the host of the address
-func (m *Machine) Host() string {
-	return m.host
+func (m *Machine) Host() (string, error) {
+	h, _, err := net.SplitHostPort(m.Address())
+	if err != nil {
+		return "", err
+	}
+	return h, nil
 }
 
 // Port returns the port of the address
-func (m *Machine) Port() string {
-	return m.port
+func (m *Machine) Port() (string, error) {
+	_, p, err := net.SplitHostPort(m.Address())
+	if err != nil {
+		return "", err
+	}
+	return p, nil
 }
 
 // FromCommand represents FROM directive which may take
@@ -71,25 +79,9 @@ func NewFromCommand(index int, rawArgs string) (*FromCommand, error) {
 	}
 
 	// populate machine representations
-	for _, arg := range spaceSep.Split(argMap["hosts"], -1) {
-		var host, port string
-		switch {
-		case arg == "local":
-			host = "local"
-		case arg == "cluster":
-			host = "cluster"
-		default:
-			h, p, err := net.SplitHostPort(arg)
-			if err != nil {
-				return nil, fmt.Errorf("FROM: %s", err)
-			}
-			host = h
-			port = p
-			if p == "" {
-				port = "22"
-			}
-		}
-		cmd.machines = append(cmd.machines, *NewMachine(host, port))
+	for _, host := range spaceSep.Split(argMap["hosts"], -1) {
+		addrVal := os.ExpandEnv(host)
+		cmd.machines = append(cmd.machines, *NewMachine(addrVal))
 	}
 
 	return cmd, nil

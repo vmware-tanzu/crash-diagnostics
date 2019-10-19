@@ -125,6 +125,24 @@ func TestCommandAS(t *testing.T) {
 			shouldFail: true,
 		},
 		{
+			name: "AS with var expansion",
+			source: func() string {
+				os.Setenv("foogid", "barid")
+				return "AS userid:$USER groupid:$foogid"
+			},
+			script: func(s *Script) error {
+				cmds := s.Preambles[CmdAs]
+				asCmd := cmds[0].(*AsCommand)
+				if asCmd.GetUserId() != os.ExpandEnv("$USER") {
+					return fmt.Errorf("Unexpected AS userid %s", asCmd.GetUserId())
+				}
+				if asCmd.GetGroupId() != "barid" {
+					return fmt.Errorf("Unexpected AS groupid %s", asCmd.GetUserId())
+				}
+				return nil
+			},
+		},
+		{
 			name: "AS with multiple args",
 			source: func() string {
 				return "AS foo:bar fuzz:buzz"

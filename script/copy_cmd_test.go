@@ -4,6 +4,7 @@ package script
 
 import (
 	"fmt"
+	"os"
 	"testing"
 )
 
@@ -156,9 +157,35 @@ func TestCommandCOPY(t *testing.T) {
 			},
 		},
 		{
-			name: "COPY with named params with multiple paths",
+			name: "COPY multiple with named param",
 			source: func() string {
 				return `COPY paths:"/a/b/c /e/f/g"`
+			},
+			script: func(s *Script) error {
+				if len(s.Actions) != 1 {
+					return fmt.Errorf("Script has unexpected COPY actions, has %d COPY", len(s.Actions))
+				}
+
+				cmd := s.Actions[0].(*CopyCommand)
+				if len(cmd.Paths()) != 2 {
+					return fmt.Errorf("COPY has unexpected number of args %d", len(cmd.Paths()))
+				}
+				if cmd.Paths()[0] != "/a/b/c" {
+					return fmt.Errorf("COPY has unexpected argument[0] %s", cmd.Paths()[0])
+				}
+				if cmd.Paths()[1] != "/e/f/g" {
+					return fmt.Errorf("COPY has unexpected argument[1] %s", cmd.Paths()[1])
+				}
+
+				return nil
+			},
+		},
+		{
+			name: "COPY with var expansion",
+			source: func() string {
+				os.Setenv("foopath1", "/a/b/c")
+				os.Setenv("foodir", "g")
+				return "COPY ${foopath1} /e/f/${foodir}"
 			},
 			script: func(s *Script) error {
 				if len(s.Actions) != 1 {
