@@ -1,35 +1,35 @@
 # Crash Recovery and Diagnostics for Kubernetes
 A tool to help collect and analyze node information for troubleshooting unresponsive Kubernetes clusters.
 
-This tool is designed for human operators to run against some or all nodes of a troubled or unresponsive cluster to collect logs, configurations, or any other node resource for analysis to help with troubleshotting of Kubernetes.  
+This tool is designed for human operators to run against some or all nodes of a troubled or unresponsive cluster to collect logs, configurations, or any other node resource for analysis to help with troubleshooting of Kubernetes.  
 
 ## `Crash-Diagnostics`
-The tool is compiled into a a single binary named `crash-dianostics`.  Currently, the binary supports two commands:
+The tool is compiled into a single binary named `crash-diagnostics`.  Currently, the binary supports two commands:
 
 ```
 Usage:
-  crash-diagnotics [command]
+  crash-diagnostics [command]
 
 Available Commands:
   help        Help about any command
   run         Executes a diagnostics script file
 ```
 
-Command `run` uses a diagnostics file to script how and what resources to are collected from cluster machines. By default, `crash-diagnostics run` searches for script for `Diagnostics.file` which specifies line-by-line directives and commands that are interpreted into actions to be executed against the nodes in the cluster.
+Command `run` uses a diagnostics file to script how and what resources are collected from cluster machines. By default, `crash-diagnostics run` searches for script for `Diagnostics.file` which specifies line-by-line directives and commands that are interpreted into actions to be executed against the nodes in the cluster.
 
 ```
 > crash-diagnostics run --help
 
 Usage:
-  crash-diagnotics run [flags]
+  crash-diagnostics run [flags]
 
 Flags:
-      --file string     the path to the dianostics script file to run (default "Diagnostics.file")
+      --file string     the path to the diagnostics script file to run (default "Diagnostics.file")
       --output string   the path of the generated archive file (default "out.tar.gz")
 ```
 
 
-For instance, the following command will execte file `./Diagnostics.file` and store any collected data in file `out.tar.gz`:
+For instance, the following command will execute file `./Diagnostics.file` and store any collected data in file `out.tar.gz`:
 
 ```
 crash-diagnostics run
@@ -38,10 +38,10 @@ crash-diagnostics run
 To run a different script file  or specify a different output archive, use the flags shown below: 
 
 ```
-crash-diagnostics --file test-cluster.file -output test-cluster.tar.gz
+crash-diagnostics --file test-cluster.file --output test-cluster.tar.gz
 ```
 
-## Diagnotics.file Format
+## Diagnostics.file Format
 `Diagnostics.file` uses a simple line-by-line format (à la Dockerfile) to specify directives on how to collect data from cluster servers:
 
 ```
@@ -70,11 +70,11 @@ OUTPUT path:/tmp/crashout/out.tar.gzip
 
 ```
 In the previous example, the tool will collect information from servers `127.0.0.1:22` and `192.168.99.7:22` by executing the COPY and the CAPTURE 
-commands specified in the file.  The colleted information is bundled into archive file `/tmp/crashout/out.tar.gzip` specified by `OUTPUT` (note that 
+commands specified in the file.  The collected information is bundled into archive file `/tmp/crashout/out.tar.gzip` specified by `OUTPUT` (note that 
 the output file can also be specified by flag `--output`).
 
 ## Diagnostics.file Directives
-Currently, `crash-dianostics` supports the following directives:
+Currently, `crash-diagnostics` supports the following directives:
 ```
 AS
 AUTHCONFIG
@@ -86,39 +86,21 @@ KUBECONFIG
 OUTPUT
 WORKDIR
 ```
-Each directive can receive named parameters that pass values to the command it represents.  Each named parameter uses an identifier that  is followed by a colon `:` and the value of the paramter as shown below:
-
+Each directive can receive named parameters to pass values to the command it represents.  Each named parameter uses an identifier followed by a colon `:` as shown below:
 ```
 DIRECTIVE name0:<param value 0> name1:<param value 1> ... nameN:<param value N>
 ```
-Example:
-
-```
-OUTPUT path:/tmp/crashout/out.tar.gz
-```
-
-The value of the parameter may also be quoted if necessary to capture spaces as shown in the following example:
-
-```
-CAPTURE cmd:'/bin/echo "HELLO WORLD!"'
-```
-
-Optionally, some directives can be declared with a single default parameter value as shown below:
-
+Optionally, most directives can be declared with a single default unnamed parameter value as shown below:
 ```
 DIRECTIVE <default param value>
 ```
-
-The following shows an example of directive `WORKDIR` declared with a default (unamed) parameter:
-
+As an example, directive `WORKDIR` can be declared with its `path` named parameter:
 ```
-OUTPUT /tmp/crashout/out.tar.gz
+WORKDIR path:/some/path
 ```
-
-This can also be done by quoting the default parameter as shown below:
-
+Or it can be declared with an unnamed parameter, which internally is assumed to be the `path:` parameter:
 ```
-OUTPUT "/tmp/crashout/out.tar.gz"
+WORKDIR /some/path
 ```
 
 ### AS
@@ -136,84 +118,100 @@ AS userid:vladimir groupid:200
 ```
 
 ### AUTHCONFIG
-Configures the authentication for connections to remote node servers.  A `username` must be provide to used during authentication. A `private-key` must also be provided to be used in a private key/public certificate that can be used by tools such as SSH.
+Configures an authentication for connections to remote node servers.  A `username` must be along with an optional `private-key` which can be used by command backends that support private key/public key certificate such as SSH.
 
 ```
-AUTHCONFIG username:<name> private-key:</path/to/private/key>
+AUTHCONFIG username:vladimir private-key:/Users/vladimir/.ssh/ssh_rsa
 ```
 
 ### CAPTURE
-Executes a shell command on the specified machines (see `FROM` directive).  The result of the executed command is captured and saved in a file that is then added to the archived bundle for analysis.
+This directive captures the output of a command when executed executed on a specified machine (see `FROM` directive).  The output of the executed command is captured and saved in a file that is added to the archive file bundle.
 
-`CAPTURE` can be declared followed by the command to execute as shown in this example:
+The following shows an example of directive `CAPTURE`:
 
 ```
 CAPTURE /bin/journalctl -l -u kube-apiserver
 ```
-Or:
+
+Or, with its named parameter `cmd:`:
+```
+CAPTURE cmd:"/bin/journalctl -l -u kube-apiserver"
+```
+
+### CAPTURE file names
+The captured output will be written to a file whose name is derived from the command string as follows:
 
 ```
-CAPTURE path:"/bin/journalctl -l -u kube-apiserver"
+_bin_journalctl__l__u_kube-api-server.txt
 ```
 
 ### COPY
-This action specifies one or more files (and/or directories) as data sources that are copied
-into the arhive bundle.  The COPY command can be declared with its default unanmed parameter as shown below:
+This directive specifies one or more files (and/or directories) as data sources that are copied
+into the arachive bundle as shown in the following example
 
 ```
-COPY /var/log/kube-proxy.log
-```
+COPY /var/log/kube-proxy.log /var/log/containers
 
-Or,
+# Or with using its named parameter format with parameter `paths`:
+
+COPY paths:"/var/log/kube-proxy.log /var/log/containers"
 ```
-COPY paths:"/var/log/kube-proxy.log"
-```
+The previous command will copy file `/var/log/kube-proxy.log` and each file in directory `/var/log/containers` as part of the generated archive bundle.
+
 
 ### ENV
-This directive is used to inject environment variables that are made available to other commands at runtime. A diagnostics file can have one or more ENV commands declared.  In its default format, `ENV` is declared followed by a list of environment variables as shown below:
+This directive is used to inject environment variables that are made available to other commands at runtime:
+```
+ENV key0=val0 key1=val1 ... keyN=valN
+```
+Multiple variables can be declared for each `ENV`.  A Diagnostics file can have one or more `ENV` declarations.
+
+#### ENV Variable Expansion
+`Crash-Diagnostics` supports a simple version of Unix-style variable expansion using `$VarName` and `${varName}` formats.  The following example shows how this works:
 
 ```
-ENV Foo=bar Blat=bat
-ENV BUZZ=BAZ
+# environment vars
+ENV logroot=/var/log kubefile=kube-proxy.log
+ENV containerlogs=/var/log/containers
+
+# references vars above
+COPY $logroot/${kubefile} 
+COPY ${containerlogs}
 ```
-The `ENV` command can optinally used parameter name `vars:` as shown below:
+The `ENV` command can optionally used parameter name `vars:` as shown below:
 ```
 ENV vars:"Foo=bar Blat=bat"
 ```
 
 ### FROM
-This specifies a space-separated list of nodes from which data is collected.  Each 
-host is specified by an address endpoint consisting of `<host-address>:<port>`. By default
-the tool will use SSH as at runtime to interact with the specified remote hosts.
-
-An address of `local` indicates that the current machine, where the `crash-diagnostics` binary, 
-is running will be used as the source allowing the tool to directly access and execute commands.
+`FROM` specifies a space-separated list of nodes from which data is collected.  Each 
+host is specified by an address endpoint consisting of `<host-address>:<port>` as shown in the following example:
 
 ```
-FROM local 10.10.100.2:22
+FROM 10.10.100.2:22 10.10.100.3:22 10.10.100.4:22
+
+# Or using its named parameter `hosts`
+
+FROM hosts:"10.10.100.2:22 10.10.100.3:22 10.10.100.4:22"
 ```
-`FROM` can optionally include parameter name `hosts:` as shown below:
-```
-FROM hosts:"local 10.10.100.2:22"
-```
+
+By default the `crash-diagnostics` will use SSH as a runtime to interact with the specified remote hosts.
 
 ### KUBECONFIG
 This directive specifies the fully qualified path of the Kubernetes client configuration file. The
 tool will use this value to load the Kubernetes configuration file to communicate with the API server to retrieve vital cluster information if available.  
 
-In its default form, `KUBECONFIG` is declared followe by the path to the config file as shown below:
+`KUBECONFIG` is declared as shown below:
 
 ```
 KUBECONFIG /path/to/kube/config
-```
 
-The command can optionally use parameter name `path:` for its parameter as follows:
+# Or using its named parameter `path`
 
-```
 KUBECONFIG path:"/path/to/kube/config"
 ```
 
-By default, the following resourcess will be retrieved from the API server:
+By default, the following resources will be retrieved from the API server:
 
  * Namespaces
  * Nodes
@@ -232,37 +230,37 @@ If `KUBECONFIG` is not specified, the tool will attempt to search for:
 If a Kubernetes configuration file is not found or the API server is unresponsive, cluster information will be skipped.
 
 ### OUTPUT
-This preamble configures the the location and file name of the generated archive file that contains the collected information from the specified servers.  By default, `KUBECONFIG` is declared followed by the output path as shown below:
+This directive configures the location and file name of the generated archive file as shown in the following example:
 
 ```
-OUTPUT <path of archive file>
-```
-Optionally, the command may use parameter name `path:` to specify the path as shown below:
-```
-OUTPUT path:<path of archive file>
+OUTPUT /tmp/crashout/out.tar.gz
+
+# Or with its named parameter path
+
+OUTPUT path:"/tmp/crashout/out.tar.gz"
 ```
 
-If `OUTPUT` is not specified, the tool applies the value of flag `--output` as specified on the command line at runtime.
+If `OUTPUT` is not specified in the `Diagnostics.file`, the tool will apply the value of flag `--output` if provided.
 
 ### WORKDIR
-Specifies the working directory used when building the archive bundle.  The directory is  used as temporary location to store data from all data sources specified in the file.  When the tar is built, the content of that directory is removed.
-
-In its default form, `WORKDIR` is declared followed by the work directory path as shown below:
+In a Diagnostics.file, `WORKDIR` specifies the working directory used when building the archive bundle as shown in the following example:
 
 ```
 WORKDIR /tmp/crashdir
-```
-Optionally, `WORKDIR` may use parameter name `path:` as follows:
-```
+
+# Or using its named parameter path
+
 WORKDIR path:"/tmp/crashdir"
 ```
+
+The directory is  used as a temporary location to store data from all data sources specified in the file.  When the tar is built, the content of that directory is removed.
 
 ### Example File
 
 ```
 FROM local 162.164.10.1:2222 162.164.10.2:2222
-KUBECONFIG /home/username/.kube/kind-config-kind
-AUTHCONFIG username:test private-key:/home/testuser/.ssh/id_rsa
+KUBECONFIG ${USER}/.kube/kind-config-kind
+AUTHCONFIG username:test private-key:${USER}/.ssh/id_rsa
 WORKDIR /tmp/output
 
 CAPTURE df -h
@@ -281,8 +279,8 @@ the following example:
 ```
 # This shows how to comment your script
 FROM local 162.164.10.1:2222 162.164.10.2:2222
-KUBECONFIG /home/username/.kube/kind-config-kind
-AUTHCONFIG username:test private-key:/home/testuser/.ssh/id_rsa
+KUBECONFIG ${USER}/.kube/kind-config-kind
+AUTHCONFIG username:test private-key:${USER}/.ssh/id_rsa
 WORKDIR /tmp/output
 
 # Capture the following commands
@@ -296,32 +294,6 @@ CAPTURE lsof -i
 OUTPUT path:/tmp/crashout/out.tar.gz
 ```
 
-## Templating
-The script also supports templated content to dynamically insert values when the tool runs. The file
-uses the Go programming language's style of text template where attributes are wrapped in double curly braces `{{ .<template-attribute> }}`.  Currently, the following
-attributes are supported:
-
-* `{{.Home}}` - emits the home directory of the user running the `crash-diagnostics` binary
-* `{{.Username}}` - emits the current username that runs the `crash-diagnostics` binary
-
-The following script uses templated values that outputs the current `HOME` directory and
-`username`:
-
-```
-FROM local 162.164.10.1:2222 162.164.10.2:2222
-KUBECONFIG {{.Home}}/.kube/kind-config-kind
-AUTHCONFIG username:{{.Username} private-key:{{.Home}}/.ssh/id_rsa
-WORKDIR /tmp/output
-
-CAPTURE df -h
-CAPTURE df -i
-CAPTURE netstat -an
-CAPTURE ps -ef
-CAPTURE lsof -i 
-
-OUTPUT path:{{.Home}}/.crashout/out.tar.gz
-```
-
 
 ## Compile and Run
 `crash-diagnostics` is written in Go and requires version 1.11 or later.  Clone the source from its repo or download it to your local directory.  From the project's root directory, compile the code with the
@@ -333,7 +305,7 @@ GO111MODULE="on" go install .
 
 This should place the compiled `crash-diagnostics` binary in `$(go env GOPATH)/bin`.  You can test this with:
 ```
-crash-dianostics --help
+crash-diagnostics --help
 ```
 If this does not work properly, ensure that your Go environment is setup properly.
 
