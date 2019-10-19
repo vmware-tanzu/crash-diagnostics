@@ -5,6 +5,7 @@ package script
 
 import (
 	"fmt"
+	"os"
 	"testing"
 )
 
@@ -28,7 +29,7 @@ func TestCommandFROM(t *testing.T) {
 					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Machines()))
 				}
 				m := fromCmd.Machines()[0]
-				if m.Host() != "local" {
+				if m.Address() != "local" {
 					return fmt.Errorf("FROM has unexpected machine %s", m)
 				}
 				return nil
@@ -53,11 +54,8 @@ func TestCommandFROM(t *testing.T) {
 				if m.Address() != "foo.bar:1234" {
 					return fmt.Errorf("FROM has unexpected machine address %s", m.Address())
 				}
-				if m.Host() != "foo.bar" {
+				if m.Address() != "foo.bar:1234" {
 					return fmt.Errorf("FROM has unexpected machine host value %s", m)
-				}
-				if m.Port() != "1234" {
-					return fmt.Errorf("FROM has unexpected machine port value %s", m)
 				}
 				return nil
 			},
@@ -79,11 +77,11 @@ func TestCommandFROM(t *testing.T) {
 				}
 				m0 := fromCmd.Machines()[0]
 				m1 := fromCmd.Machines()[1]
-				if m0.Host() != "local" {
-					return fmt.Errorf("FROM arg 0 has unexpected host value: %s", m0.Host())
+				if m0.Address() != "local" {
+					return fmt.Errorf("FROM arg 0 has unexpected host value: %s", m0.Address())
 				}
-				if m1.Host() != "127.0.0.1" || m1.Port() != "1234" {
-					return fmt.Errorf("FROM arg 1 has unexpected host:%s port:%s values", m1.Host(), m1.Port())
+				if m1.Address() != "127.0.0.1:1234" {
+					return fmt.Errorf("FROM arg 1 has unexpected address:%s", m1.Address())
 				}
 
 				return nil
@@ -104,12 +102,12 @@ func TestCommandFROM(t *testing.T) {
 					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Machines()))
 				}
 				m0 := fromCmd.Machines()[0]
-				if m0.Host() != "local.1" || m0.Port() != "123" {
-					return fmt.Errorf("FROM arg 0 has unexpected machine arguments: %s:%s", m0.Host(), m0.Port())
+				if m0.Address() != "local.1:123" {
+					return fmt.Errorf("FROM arg 0 has unexpected machine arguments: %s", m0.Address())
 				}
 				m1 := fromCmd.Machines()[1]
-				if m1.Host() != "local.2" || m1.Port() != "456" {
-					return fmt.Errorf("FROM arg 1 has unexpected machine arguments: %s:%s", m1.Host(), m1.Port())
+				if m1.Address() != "local.2:456" {
+					return fmt.Errorf("FROM arg 1 has unexpected machine arguments: %s", m1.Address())
 				}
 				return nil
 			},
@@ -132,7 +130,7 @@ func TestCommandFROM(t *testing.T) {
 					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Machines()))
 				}
 				m := fromCmd.Machines()[0]
-				if m.Host() != "local" {
+				if m.Address() != "local" {
 					return fmt.Errorf("FROM has unexpected machine %s", m)
 				}
 				return nil
@@ -157,11 +155,32 @@ func TestCommandFROM(t *testing.T) {
 				if m.Address() != "foo.bar:1234" {
 					return fmt.Errorf("FROM has unexpected machine address %s", m.Address())
 				}
-				if m.Host() != "foo.bar" {
+				if m.Address() != "foo.bar:1234" {
 					return fmt.Errorf("FROM has unexpected machine host value %s", m)
 				}
-				if m.Port() != "1234" {
-					return fmt.Errorf("FROM has unexpected machine port value %s", m)
+				return nil
+			},
+		},
+		{
+			name: "FROM with var expansion",
+			source: func() string {
+				os.Setenv("foohost", "foo.bar")
+				os.Setenv("fooport", "1234")
+				return "FROM ${foohost}:$fooport"
+			},
+			script: func(s *Script) error {
+				froms := s.Preambles[CmdFrom]
+				if len(froms) != 1 {
+					return fmt.Errorf("Script has unexpected number of FROM %d", len(froms))
+				}
+				fromCmd := froms[0].(*FromCommand)
+
+				if len(fromCmd.Machines()) != 1 {
+					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Machines()))
+				}
+				m := fromCmd.Machines()[0]
+				if m.Address() != "foo.bar:1234" {
+					return fmt.Errorf("FROM has unexpected machine address %s", m.Address())
 				}
 				return nil
 			},

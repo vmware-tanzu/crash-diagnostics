@@ -4,6 +4,7 @@
 package exec
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -26,6 +27,12 @@ func New(src *script.Script) *Executor {
 // Execute executes the configured script
 func (e *Executor) Execute() error {
 	logrus.Info("Executing script file")
+
+	// execute ENVs, store all declared env values in
+	// running process enviroment variables.
+	if err := exeEnvs(e.script); err != nil {
+		return fmt.Errorf("exec: %s", err)
+	}
 
 	// exec FROM
 	fromCmd, err := exeFrom(e.script)
@@ -55,7 +62,7 @@ func (e *Executor) Execute() error {
 			return err
 		}
 
-		switch fromMachine.Host() {
+		switch fromMachine.Address() {
 		case "local":
 			logrus.Debug("Executing commands on local machine")
 			if err := exeLocally(e.script, machineWorkdir); err != nil {
@@ -81,9 +88,6 @@ func (e *Executor) Execute() error {
 
 func makeMachineWorkdir(workdir string, machine script.Machine) (string, error) {
 	machineAddr := machine.Address()
-	if machineAddr == "local:" {
-		machineAddr = machine.Host()
-	}
 	machineWorkdir := filepath.Join(workdir, sanitizeStr(machineAddr))
 	if err := os.MkdirAll(machineWorkdir, 0744); err != nil && !os.IsExist(err) {
 		return "", err

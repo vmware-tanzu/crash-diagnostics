@@ -43,6 +43,19 @@ func TestExecAS(t *testing.T) {
 			},
 		},
 		{
+			name: "Exec AS with expanded vars",
+			source: func() string {
+				return `AS userid:${USER}`
+			},
+			exec: func(s *script.Script) error {
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+				return nil
+			},
+		},
+		{
 			name: "Exec AS with unknown uid gid",
 			source: func() string {
 				return "AS userid:foo"

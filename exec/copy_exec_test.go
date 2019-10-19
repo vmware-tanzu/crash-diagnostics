@@ -20,7 +20,7 @@ func TestExecLocalCOPY(t *testing.T) {
 				return "COPY /tmp/foo0.txt"
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Host()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 
 				cpCmd := s.Actions[0].(*script.CopyCommand)
@@ -53,7 +53,7 @@ func TestExecLocalCOPY(t *testing.T) {
 				return "COPY /tmp/foo0.txt\nCOPY /tmp/foo1.txt /tmp/foo2.txt"
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Host()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 
 				var srcFiles []string
@@ -96,7 +96,7 @@ func TestExecLocalCOPY(t *testing.T) {
 				return "COPY /tmp/foodir0\nCOPY /tmp/foodir1 /tmp/foo2.txt"
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Host()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 
 				var srcFiles []string
@@ -143,6 +143,52 @@ func TestExecLocalCOPY(t *testing.T) {
 			},
 		},
 		{
+			name: "COPY with var expansion",
+			source: func() string {
+				os.Setenv("foofile0", "foo0.txt")
+				os.Setenv("foofile1", "/tmp/foo1.txt")
+				os.Setenv("foo2", "foo2")
+				return "COPY /tmp/${foofile0}\nCOPY ${foofile1} /tmp/${foo2}.txt"
+			},
+			exec: func(s *script.Script) error {
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
+
+				var srcFiles []string
+				cpCmd0 := s.Actions[0].(*script.CopyCommand)
+				srcFiles = append(srcFiles, cpCmd0.Paths()[0])
+				cpCmd1 := s.Actions[1].(*script.CopyCommand)
+				srcFiles = append(srcFiles, cpCmd1.Paths()[0])
+				srcFiles = append(srcFiles, cpCmd1.Paths()[1])
+
+				for i, srcFile := range srcFiles {
+					if err := makeTestFakeFile(t, srcFile, fmt.Sprintf("HelloFoo-%d", i)); err != nil {
+						return err
+					}
+					defer os.Remove(srcFile)
+
+				}
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+
+				for _, srcFile := range srcFiles {
+					relPath, err := filepath.Rel("/", srcFile)
+					if err != nil {
+						return err
+					}
+					fileName := filepath.Join(workdir.Path(), machine, relPath)
+					if _, err := os.Stat(fileName); err != nil {
+						return err
+					}
+				}
+
+				return nil
+			},
+		},
+		{
 			name: "COPY bad source files",
 			source: func() string {
 				return "COPY /foo/bar.txt"
@@ -179,7 +225,7 @@ func TestExecRemoteCOPY(t *testing.T) {
 			name: "COPY single files",
 			source: func() string {
 				src := `FROM 127.0.0.1:22
-				AUTHCONFIG username:{{.Username}} private-key:{{.Home}}/.ssh/id_rsa
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
 				COPY foo.txt`
 				return src
 			},
@@ -211,7 +257,7 @@ func TestExecRemoteCOPY(t *testing.T) {
 			name: "COPY multiple files",
 			source: func() string {
 				src := `FROM 127.0.0.1:22
-				AUTHCONFIG username:{{.Username}} private-key:{{.Home}}/.ssh/id_rsa
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
 				COPY foo0.txt
 				COPY foo1.txt foo2.txt`
 				return src
@@ -254,7 +300,7 @@ func TestExecRemoteCOPY(t *testing.T) {
 			name: "COPY directories and files",
 			source: func() string {
 				src := `FROM 127.0.0.1:22
-				AUTHCONFIG username:{{.Username}} private-key:{{.Home}}/.ssh/id_rsa
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
 				COPY foodir0
 				COPY foodir1 foo2.txt`
 				return src
@@ -305,7 +351,7 @@ func TestExecRemoteCOPY(t *testing.T) {
 			name: "COPY bad source files",
 			source: func() string {
 				src := `FROM 127.0.0.1:22
-				AUTHCONFIG username:{{.Username}} private-key:{{.Home}}/.ssh/id_rsa
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
 				COPY foodir0`
 				return src
 			},

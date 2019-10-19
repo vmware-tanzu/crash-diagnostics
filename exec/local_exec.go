@@ -16,7 +16,6 @@ import (
 
 // exeLocally runs script using locally installed tool
 func exeLocally(src *script.Script, workdir string) error {
-	envPairs := exeEnvs(src)
 	asCmd, err := exeAs(src)
 	if err != nil {
 		return err
@@ -30,7 +29,7 @@ func exeLocally(src *script.Script, workdir string) error {
 			}
 		case *script.CaptureCommand:
 			// capture command output
-			if err := captureLocally(asCmd, cmd, envPairs, workdir); err != nil {
+			if err := captureLocally(asCmd, cmd, nil, workdir); err != nil {
 				return err
 			}
 		default:
@@ -43,7 +42,10 @@ func exeLocally(src *script.Script, workdir string) error {
 
 func captureLocally(asCmd *script.AsCommand, cmdCap *script.CaptureCommand, envs []string, workdir string) error {
 	cmdStr := cmdCap.GetCmdString()
-	cliCmd, cliArgs := cmdCap.GetParsedCmd()
+	cliCmd, cliArgs, err := cmdCap.GetParsedCmd()
+	if err != nil {
+		return err
+	}
 
 	if _, err := exec.LookPath(cliCmd); err != nil {
 		return err
@@ -58,7 +60,7 @@ func captureLocally(asCmd *script.AsCommand, cmdCap *script.CaptureCommand, envs
 	filePath := filepath.Join(workdir, fileName)
 	logrus.Debugf("Capturing local command [%s] -into-> %s", cmdStr, filePath)
 
-	cmdReader, err := CliRun(uint32(asUid), uint32(asGid), envs, cliCmd, cliArgs...)
+	cmdReader, err := CliRun(uint32(asUid), uint32(asGid), cliCmd, cliArgs...)
 	if err != nil {
 		cliErr := fmt.Errorf("local command %s failed: %s", cliCmd, err)
 		logrus.Warn(cliErr)
@@ -109,7 +111,7 @@ func copyLocally(asCmd *script.AsCommand, cmd *script.CopyCommand, dest string) 
 		}
 
 		args := []string{cliCpArgs, path, targetPath}
-		_, err := CliRun(uint32(asUid), uint32(asGid), nil, cliCpName, args...)
+		_, err := CliRun(uint32(asUid), uint32(asGid), cliCpName, args...)
 		if err != nil {
 			cliErr := fmt.Errorf("local file copy failed: %s (may not exist): %s", path, err)
 			logrus.Warn(cliErr)

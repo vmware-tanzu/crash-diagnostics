@@ -3,20 +3,21 @@
 
 package exec
 
-import "github.com/vmware-tanzu/crash-diagnostics/script"
+import (
+	"github.com/vmware-tanzu/crash-diagnostics/script"
+)
 
-// execEnvs rertrieves all specified environment variables
-// and return as a slice of []string{key=value} pair.
-func exeEnvs(src *script.Script) []string {
-	envCmds := src.Preambles[script.CmdEnv]
-	var envPairs []string
-	for _, envCmd := range envCmds {
-		env := envCmd.(*script.EnvCommand)
-		if len(env.Envs()) > 0 {
-			for _, arg := range env.Envs() {
-				envPairs = append(envPairs, arg)
-			}
-		}
-	}
-	return envPairs
+// execEnvs saves each declared env variable
+// as an ENV for the running process.
+func exeEnvs(src *script.Script) error {
+	// envCmds := src.Preambles[script.CmdEnv]
+	// for _, envCmd := range envCmds {
+	// 	cmd := envCmd.(*script.EnvCommand)
+	// 	for name, val := range cmd.Envs() {
+	// 		if err := os.Setenv(name, os.ExpandEnv(val)); err != nil {
+	// 			return fmt.Errorf("ENV: %s", err)
+	// 		}
+	// 	}
+	// }
+	return nil
 }

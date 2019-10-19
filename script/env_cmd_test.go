@@ -35,6 +35,24 @@ func TestCommandENV(t *testing.T) {
 			},
 		},
 		{
+			name: "ENV with single quoted arg",
+			source: func() string {
+				return `ENV foo="bar bazz"`
+			},
+			script: func(s *Script) error {
+				envs := s.Preambles[CmdEnv]
+				envCmd := envs[0].(*EnvCommand)
+				if len(envCmd.Envs()) != 1 {
+					return fmt.Errorf("ENV has unexpected number of env %d", len(envCmd.Envs()))
+				}
+				env := envCmd.Envs()["foo"]
+				if env != "bar bazz" {
+					return fmt.Errorf("ENV has unexpected value: foo=%s", envCmd.Envs()["foo"])
+				}
+				return nil
+			},
+		},
+		{
 			name: "Multiple ENV with multiple args",
 			source: func() string {
 				return "ENV a=b\nENV 'c=d e=f'"
@@ -118,6 +136,29 @@ func TestCommandENV(t *testing.T) {
 				env0, env1 := envCmd0.Envs()["c"], envCmd0.Envs()["e"]
 				if env0 != "d" || env1 != "f" {
 					return fmt.Errorf("ENV has unexpected values env[c]=%s and env[e]=%s", env0, env1)
+				}
+				return nil
+			},
+		},
+		{
+			name: "ENV with var expansion",
+			source: func() string {
+				return `
+				ENV a=b
+				ENV 'c=${a} e=${c}'`
+			},
+			script: func(s *Script) error {
+				envs := s.Preambles[CmdEnv]
+				envCmd0 := envs[0].(*EnvCommand)
+				env := envCmd0.Envs()["a"]
+				if env != "b" {
+					return fmt.Errorf("Unexpected value env[a]=%s", envCmd0.Envs()["a"])
+				}
+
+				envCmd1 := envs[1].(*EnvCommand)
+				env0, env1 := envCmd1.Envs()["c"], envCmd1.Envs()["e"]
+				if env0 != "b" || env1 != "b" {
+					return fmt.Errorf("Unexpected values env[c]=%s and env[e]=%s", env0, env1)
 				}
 				return nil
 			},

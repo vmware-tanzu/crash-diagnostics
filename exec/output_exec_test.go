@@ -32,6 +32,29 @@ func TestExecOUTPUT(t *testing.T) {
 			},
 		},
 		{
+			name: "exec OUTPUT with var expansion",
+			source: func() string {
+				return `
+				ENV outfile=out.tar.gz
+				CAPTURE /bin/echo HELLO
+				OUTPUT path:/tmp/crashout/${outfile}
+				`
+			},
+			exec: func(s *script.Script) error {
+				output := s.Preambles[script.CmdOutput][0].(*script.OutputCommand)
+				defer os.RemoveAll(output.Path())
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+				if _, err := os.Stat(output.Path()); err != nil {
+					return err
+				}
+				return nil
+			},
+		},
+		{
 			name: "exec with missing OUTPUT",
 			source: func() string {
 				return "CAPTURE /bin/echo HELLO"

@@ -12,15 +12,19 @@ import (
 func TestExecFROM(t *testing.T) {
 	tests := []execTest{
 		{
-			name: "Exec FROM with single arg",
+			name: "FROM with multiple addresses",
 			source: func() string {
-				return "FROM local"
+				return `
+				ENV host=local
+				FROM '$host'
+				`
 			},
 			exec: func(s *script.Script) error {
 				e := New(s)
 				if err := e.Execute(); err != nil {
 					return err
 				}
+
 				return nil
 			},
 		},

@@ -16,15 +16,21 @@ This tag/version reflects migration to github
 * Translate identified TODOs to issues.
 
 # v.0.1.0-alpha.5
-* [ ] Uniform directive parameter format (i.e. DIRECTIVE param:value)
-* [ ] Introduce support for quoted strings in directives
-* [ ] Revamp EVN variable expansion (i.e. use os.Expand)
-* [ ] Apply tag v0.1.0-alpha.5
+* [x] Uniform directive parameter format (i.e. DIRECTIVE param:value)
 
-# v0.1.0-alpha.6
-* [ ] New directive `RUN` (i.e. RUN shell:"/bin/bash" cmd:"<command string>" )
+# v.0.1.0-alpha.6
+* [x] Introduce support for quoted strings in directives
 
 # v0.1.0-alpha.7
+* [ ] Revamp EVN variable expansion (i.e. use os.Expand)
+* [ ] Suppport for shell variable expansion format (i.e. ${Var})
+* [ ] Deprecate support for Go style templating ( i.e. {{.Var}} )
+* [ ] Apply tag v0.1.0-alpha.5
+
+# v0.1.0-alpha.8
+* [ ] New directive `RUN` (i.e. RUN shell:"/bin/bash" cmd:"<command string>" )
+
+# v0.1.0-alpha.9
 * [ ] New directive `KUBEGET`
 
 # v0.1.0-Beta.8

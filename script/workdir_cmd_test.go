@@ -5,6 +5,7 @@ package script
 
 import (
 	"fmt"
+	"os"
 	"testing"
 )
 
@@ -74,6 +75,27 @@ func TestCommandWORKDIR(t *testing.T) {
 			name: "WORKDIR with quoted named param",
 			source: func() string {
 				return "WORKDIR path:'foo/bar'"
+			},
+			script: func(s *Script) error {
+				dirs := s.Preambles[CmdWorkDir]
+				if len(dirs) != 1 {
+					return fmt.Errorf("Script has unexpected number of WORKDIR %d", len(dirs))
+				}
+				wdCmd, ok := dirs[0].(*WorkdirCommand)
+				if !ok {
+					return fmt.Errorf("Unexpected type %T in script", dirs[0])
+				}
+				if wdCmd.Path() != "foo/bar" {
+					return fmt.Errorf("WORKDIR has unexpected directory %s", wdCmd.Path())
+				}
+				return nil
+			},
+		},
+		{
+			name: "WORKDIR with expanded vars",
+			source: func() string {
+				os.Setenv("foopath", "foo/bar")
+				return "WORKDIR path:'${foopath}'"
 			},
 			script: func(s *Script) error {
 				dirs := s.Preambles[CmdWorkDir]

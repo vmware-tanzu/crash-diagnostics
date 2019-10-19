@@ -3,7 +3,10 @@
 
 package script
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 // AuthConfigCommand represents AUTHCONFIG directive:
 //
@@ -50,10 +53,10 @@ func (c *AuthConfigCommand) Args() map[string]string {
 
 // GetPrivateKey returns the path of the private key configured
 func (c *AuthConfigCommand) GetPrivateKey() string {
-	return c.cmd.args["private-key"]
+	return os.ExpandEnv(c.cmd.args["private-key"])
 }
 
 // GetUsername returns the User ID configured
 func (c *AuthConfigCommand) GetUsername() string {
-	return c.cmd.args["username"]
+	return os.ExpandEnv(c.cmd.args["username"])
 }
