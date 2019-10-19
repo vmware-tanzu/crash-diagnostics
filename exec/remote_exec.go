@@ -64,7 +64,10 @@ func captureRemotely(user, privKey, hostAddr string, cmdCap *script.CaptureComma
 	defer sshc.Hangup()
 
 	cmdStr := cmdCap.GetCmdString()
-	cliCmd, cliArgs := cmdCap.GetParsedCmd()
+	cliCmd, cliArgs, err := cmdCap.GetParsedCmd()
+	if err != nil {
+		return err
+	}
 
 	fileName := fmt.Sprintf("%s.txt", sanitizeStr(cmdStr))
 	filePath := filepath.Join(workdir, fileName)
@@ -130,7 +133,7 @@ func copyRemotely(user, privKey string, machine *script.Machine, asCmd *script.A
 		}
 
 		args := []string{cliScpArgs, "-o StrictHostKeyChecking=no", "-P", port, "-i", privKey, remotePath, targetPath}
-		_, err := CliRun(uint32(asUid), uint32(asGid), nil, cliScpName, args...)
+		_, err := CliRun(uint32(asUid), uint32(asGid), cliScpName, args...)
 		if err != nil {
 			cliErr := fmt.Errorf("scp command failed: %s", err)
 			logrus.Warn(cliErr)

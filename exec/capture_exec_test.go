@@ -5,8 +5,10 @@ package exec
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/vmware-tanzu/crash-diagnostics/script"
@@ -87,6 +89,37 @@ func TestExecLocalCAPTURE(t *testing.T) {
 			},
 		},
 		{
+			name: "CAPTURE with var expansion",
+			source: func() string {
+				return `
+				ENV msg="Hello to the World!"
+				CAPTURE "/bin/echo '${msg}'"`
+			},
+			exec: func(s *script.Script) error {
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
+				capCmd := s.Actions[0].(*script.CaptureCommand)
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+
+				fileName := filepath.Join(workdir.Path(), machine, fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
+				if _, err := os.Stat(fileName); err != nil {
+					return err
+				}
+				content, err := ioutil.ReadFile(fileName)
+				if err != nil {
+					return err
+				}
+				if strings.TrimSpace(string(content)) != "Hello to the World!" {
+					return fmt.Errorf("CAPTURE generated unexpected file content: %s", content)
+				}
+				return nil
+			},
+		},
+		{
 			name: "CAPTURE command as unknown user",
 			source: func() string {
 				return "AS userid:foo \nCAPTURE /bin/echo 'HELLO WORLD'"
@@ -136,8 +169,8 @@ func TestExecRemoteCAPTURE(t *testing.T) {
 			name: "CAPTURE single remote command",
 			source: func() string {
 				src := `FROM 127.0.0.1:22
-				AUTHCONFIG username:{{.Username}} private-key:{{.Home}}/.ssh/id_rsa
-				CAPTURE /bin/echo 'HELLO WORLD'`
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
+				CAPTURE /bin/echo "HELLO WORLD"`
 				return src
 			},
 			exec: func(s *script.Script) error {
@@ -161,7 +194,7 @@ func TestExecRemoteCAPTURE(t *testing.T) {
 			name: "CAPTURE multiple commands",
 			source: func() string {
 				src := `FROM 127.0.0.1:22
-				AUTHCONFIG username:{{.Username}} private-key:{{.Home}}/.ssh/id_rsa
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
 				CAPTURE /bin/echo HELLO!
 				CAPTURE ls /tmp`
 				return src
@@ -192,9 +225,9 @@ func TestExecRemoteCAPTURE(t *testing.T) {
 			name: "CAPTURE remote command AS user",
 			source: func() string {
 				src := `FROM 127.0.0.1:22
-				AS {{.Username}}
-				AUTHCONFIG private-key:{{.Home}}/.ssh/id_rsa
-				CAPTURE /bin/echo 'HELLO WORLD'`
+				AS userid:${USER}
+				AUTHCONFIG private-key:${HOME}/.ssh/id_rsa
+				CAPTURE /bin/echo "HELLO WORLD"`
 				return src
 			},
 			exec: func(s *script.Script) error {
@@ -218,9 +251,9 @@ func TestExecRemoteCAPTURE(t *testing.T) {
 			name: "CAPTURE remote command AS bad user",
 			source: func() string {
 				src := `FROM 127.0.0.1:22
-				AS foo
-				AUTHCONFIG private-key:{{.Home}}/.ssh/id_rsa
-				CAPTURE /bin/echo 'HELLO WORLD'`
+				AS userid:foo
+				AUTHCONFIG private-key:${HOME}/.ssh/id_rsa
+				CAPTURE /bin/echo "HELLO WORLD"`
 				return src
 			},
 			exec: func(s *script.Script) error {
@@ -233,8 +266,8 @@ func TestExecRemoteCAPTURE(t *testing.T) {
 			name: "CAPTURE remote command with bad AUTHCONFIG user",
 			source: func() string {
 				src := `FROM 127.0.0.1:22
-				AUTHCONFIG username:_foouser private-key:{{.Home}}/.ssh/id_rsa
-				CAPTURE /bin/echo 'HELLO WORLD'`
+				AUTHCONFIG username:_foouser private-key:$HOME/.ssh/id_rsa
+				CAPTURE /bin/echo "HELLO WORLD"`
 				return src
 			},
 			exec: func(s *script.Script) error {
@@ -247,7 +280,7 @@ func TestExecRemoteCAPTURE(t *testing.T) {
 			name: "CAPTURE bad remote command",
 			source: func() string {
 				src := `FROM 127.0.0.1:22
-				AUTHCONFIG username:{{.Username}} private-key:{{.Home}}/.ssh/id_rsa
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
 				CAPTURE _foo_ _bar_`
 				return src
 			},

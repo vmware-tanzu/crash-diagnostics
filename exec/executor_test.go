@@ -183,19 +183,21 @@ func TestExecutor(t *testing.T) {
 				src.WriteString("# This is a sample comment\n")
 				src.WriteString("#### START\n")
 				src.WriteString("FROM local\n")
-				src.WriteString("WORKDIR /tmp/{{.Username}}\n")
-				src.WriteString("CAPTURE /bin/echo HELLO\n")
+				src.WriteString("WORKDIR /tmp/${USER}\n")
+				src.WriteString("CAPTURE /bin/echo \"HELLO\"\n")
 				src.WriteString("COPY /tmp/buzz.txt\n")
-				src.WriteString("ENV MSG0=HELLO MSG1=WORLD\n")
+				src.WriteString("ENV MSG0=HELLO MSG1=WORLD BUZZFILE=buzz.txt\n")
 				src.WriteString("CAPTURE ./bar.sh\n")
-				src.WriteString("COPY /tmp/foodir /tmp/bardir /tmp/buzz.txt\n")
+				src.WriteString("COPY /tmp/foodir /tmp/bardir /tmp/${BUZZFILE}\n")
 				src.WriteString("##### END")
 				return src.String()
 			},
 			exec: func(s *script.Script) error {
 				// create an executable script to apply ENV
 				scriptName := "bar.sh"
-				sh := "#!/bin/sh\necho $MSG1 $MSG2"
+				sh := `#!/bin/sh
+				echo "$MSG1 $MSG2"
+				`
 				msgExpected := "HELLO WORLD"
 				if err := createTestShellScript(t, scriptName, sh); err != nil {
 					return fmt.Errorf("failed to create fake shell script bar.sh: %s", err)

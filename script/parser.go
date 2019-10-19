@@ -207,14 +207,6 @@ func makeNamedPram(name, value string) string {
 	return fmt.Sprintf(`%s:'%s'`, name, value)
 }
 
-func cmdParse(cmdStr string) (cmd string, args []string, err error) {
-	args, err = wordSplit(cmdStr)
-	if err != nil {
-		return "", nil, err
-	}
-	return args[0], args[1:], nil
-}
-
 // enforceDefaults adds missing defaults to the script
 func enforceDefaults(script *Script) (*Script, error) {
 	logrus.Debug("Appling default values")

@@ -5,6 +5,7 @@ package script
 
 import (
 	"fmt"
+	"os"
 )
 
 // CaptureCommand represents CAPTURE directive which
@@ -73,7 +74,18 @@ func (c *CaptureCommand) GetCmdString() string {
 	return c.cmd.args["cmd"]
 }
 
-// GetParsedCmd returns the CLI command name to be captured and its arguments
-func (c *CaptureCommand) GetParsedCmd() (string, []string) {
-	return c.cmdName, c.cmdArgs
+// GetParsedCmd returns the parsed cli command as commandName
+// followed by a slice of command arguments and any error that
+// may occur during parsing.
+func (c *CaptureCommand) GetParsedCmd() (string, []string, error) {
+	cmdStr := os.ExpandEnv(c.GetCmdString())
+	return cmdParse(cmdStr)
+}
+
+func cmdParse(cmdStr string) (cmd string, args []string, err error) {
+	args, err = wordSplit(cmdStr)
+	if err != nil {
+		return "", nil, err
+	}
+	return args[0], args[1:], nil
 }
