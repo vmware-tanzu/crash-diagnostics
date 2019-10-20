@@ -105,6 +105,12 @@ func Parse(reader io.Reader) (*Script, error) {
 				return nil, err
 			}
 			script.Actions = append(script.Actions, cmd)
+		case CmdRun:
+			cmd, err := NewRunCommand(line, rawArgs)
+			if err != nil {
+				return nil, err
+			}
+			script.Actions = append(script.Actions, cmd)
 		default:
 			return nil, fmt.Errorf("%s not supported", cmdName)
 		}
@@ -255,4 +261,12 @@ func enforceDefaults(script *Script) (*Script, error) {
 		script.Preambles[CmdKubeConfig] = []Command{cmd}
 	}
 	return script, nil
+}
+
+func cmdParse(cmdStr string) (cmd string, args []string, err error) {
+	args, err = wordSplit(cmdStr)
+	if err != nil {
+		return "", nil, err
+	}
+	return args[0], args[1:], nil
 }

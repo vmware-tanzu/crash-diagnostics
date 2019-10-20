@@ -25,7 +25,7 @@ This tag/version reflects migration to github
 * [ ] Revamp EVN variable expansion (i.e. use os.Expand)
 * [ ] Suppport for shell variable expansion format (i.e. ${Var})
 * [ ] Deprecate support for Go style templating ( i.e. {{.Var}} )
-* [ ] Apply tag v0.1.0-alpha.5
+* [ ] Apply tag v0.1.0-alpha.7
 
 # v0.1.0-alpha.8
 * [ ] New directive `RUN` (i.e. RUN shell:"/bin/bash" cmd:"<command string>" )
