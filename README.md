@@ -84,6 +84,7 @@ ENV
 FROM
 KUBECONFIG
 OUTPUT
+RUN
 WORKDIR
 ```
 Each directive can receive named parameters to pass values to the command it represents.  Each named parameter uses an identifier followed by a colon `:` as shown below:
@@ -242,6 +243,33 @@ OUTPUT path:"/tmp/crashout/out.tar.gz"
 
 If `OUTPUT` is not specified in the `Diagnostics.file`, the tool will apply the value of flag `--output` if provided.
 
+### RUN
+This directive executes the specified command on each machine in the `FROM` list. Unlike `CAPTURE` however, the output of the command is not written to the archive file bundle.
+
+The following shows an example of `RUN`:
+
+```
+RUN /bin/journalctl -l -u kube-apiserver
+ 
+# Or with its named parameter `cmd`
+
+RUN cmd:"/bin/journalctl -l -u kube-apiserver"
+```
+
+`RUN` is useful and helps to execute commands to interact with the remote node for tasks such as data preparation or gathering before aggregation.
+
+The following shows how `RUN` can be used (see [originating issue](https://github.com/vmware-tanzu/crash-diagnostics/issues/4#issuecomment-540926598))
+
+```
+# prepare needed data
+RUN mkdir -p /tmp/containers
+RUN /bin/bash -c 'for file in $(ls /var/log/containers/); do sudo cat /var/log/containers/$file > /tmp/containers/$file; done'
+COPY /tmp/containers
+
+# clean up
+RUN /usr/bin/rm -rf /tmp/containers
+```
+
 ### WORKDIR
 In a Diagnostics.file, `WORKDIR` specifies the working directory used when building the archive bundle as shown in the following example:
 
@@ -309,7 +337,7 @@ crash-diagnostics --help
 ```
 If this does not work properly, ensure that your Go environment is setup properly.
 
-Next run crash-diagonostics using the sample Diagnostics.file in this directory. Ensure to update it to reflect your
+Next run `crash-diagnostics` using the sample Diagnostics.file in this directory. Ensure to update it to reflect your
 current environment:
 
 ```

@@ -17,6 +17,7 @@ var (
 	CmdFrom       = "FROM"
 	CmdKubeConfig = "KUBECONFIG"
 	CmdOutput     = "OUTPUT"
+	CmdRun        = "RUN"
 	CmdWorkDir    = "WORKDIR"
 
 	Defaults = struct {
@@ -59,6 +60,7 @@ var (
 		CmdFrom:       CommandMeta{Name: CmdFrom, MinArgs: 1, MaxArgs: -1, Supported: true},
 		CmdKubeConfig: CommandMeta{Name: CmdKubeConfig, MinArgs: 1, MaxArgs: 1, Supported: true},
 		CmdOutput:     CommandMeta{Name: CmdOutput, MinArgs: 1, MaxArgs: 1, Supported: true},
+		CmdRun:        CommandMeta{Name: CmdRun, MinArgs: 1, MaxArgs: 1, Supported: true},
 		CmdWorkDir:    CommandMeta{Name: CmdWorkDir, MinArgs: 1, MaxArgs: 1, Supported: true},
 	}
 )

@@ -18,14 +18,14 @@ type globalFlags struct {
 	debug bool
 }
 
-// crashDianosticsCommand creates a main cli command
+// crashDiagnosticsCommand creates a main cli command
 func crashDiagnosticsCommand() *cobra.Command {
 	flags := &globalFlags{debug: false}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
-		Use:   "crash-diagnotics",
-		Short: "crash-dianostics helps to troubleshoot kubernetes cluster",
-		Long:  "crash-diagnotics collects diagnostics from an unresponsive Kubernetes cluster",
+		Use:   "crash-diagnostics",
+		Short: "crash-diagnostics helps to troubleshoot kubernetes cluster",
+		Long:  "crash-diagnostics collects diagnostics from an unresponsive Kubernetes cluster",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return preRun(flags)
 		},
