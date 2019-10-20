@@ -29,11 +29,12 @@ This tag/version reflects migration to github
 
 # v0.1.0-alpha.8
 * [ ] New directive `RUN` (i.e. RUN shell:"/bin/bash" cmd:"<command string>" )
+* [ ] Grammatical/word corrections in crash-diagnostics --help output
 
 # v0.1.0-alpha.9
 * [ ] New directive `KUBEGET`
 
-# v0.1.0-Beta.8
+# v0.1.0-Beta.10
 * [ ] Documentation update (tutorials and how tos)
 * [ ] Recipes (i.e. Diagnostics.file files for different well known debg)
 * [ ] Cloud API recipes (i.e. recipes to debug CAPV)

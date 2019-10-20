@@ -4,10 +4,13 @@
 package exec
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 
@@ -48,6 +51,10 @@ func exeRemotely(src *script.Script, machine *script.Machine, workdir string) er
 			if err := captureRemotely(user, privKey, machine.Address(), cmd, workdir); err != nil {
 				return err
 			}
+		case *script.RunCommand:
+			if err := runRemotely(user, privKey, machine.Address(), cmd, workdir); err != nil {
+				return err
+			}
 		default:
 			logrus.Errorf("Unsupported command %T", cmd)
 		}
@@ -82,6 +89,49 @@ func captureRemotely(user, privKey, hostAddr string, cmdCap *script.CaptureComma
 
 	if err := writeFile(cmdReader, filePath); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func runRemotely(user, privKey, hostAddr string, cmdRun *script.RunCommand, workdir string) error {
+	sshc := ssh.New(user, privKey)
+	if err := sshc.Dial(hostAddr); err != nil {
+		return err
+	}
+	defer sshc.Hangup()
+
+	cmdStr := cmdRun.GetCmdString()
+	cliCmd, cliArgs, err := cmdRun.GetParsedCmd()
+	if err != nil {
+		return err
+	}
+
+	logrus.Debugf("Running remote command: %s", cmdStr)
+
+	cmdReader, err := sshc.SSHRun(cliCmd, cliArgs...)
+	if err != nil {
+		sshErr := fmt.Errorf("Command failed: %s: %s", cliCmd, err)
+		logrus.Error(sshErr)
+		return nil
+	}
+
+	buf := new(bytes.Buffer)
+	if _, err := io.Copy(buf, cmdReader); err != nil {
+		return fmt.Errorf("RUN: result: %s", err)
+	}
+
+	// save result
+	result := strings.TrimSpace(buf.String())
+	if len(result) < 1 {
+		if err := os.Unsetenv("CMD_RESULT"); err != nil {
+			return fmt.Errorf("RUN: unset CMD_RESULT: %s", err)
+		}
+		return nil
+	}
+
+	if err := os.Setenv("CMD_RESULT", result); err != nil {
+		return fmt.Errorf("RUN: set CMD_RESULT: %s: %s", result, err)
 	}
 
 	return nil

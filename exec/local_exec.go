@@ -5,6 +5,7 @@ package exec
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,6 +31,11 @@ func exeLocally(src *script.Script, workdir string) error {
 		case *script.CaptureCommand:
 			// capture command output
 			if err := captureLocally(asCmd, cmd, nil, workdir); err != nil {
+				return err
+			}
+		case *script.RunCommand:
+			// run command and store result
+			if err := runLocally(asCmd, cmd, workdir); err != nil {
 				return err
 			}
 		default:
@@ -69,6 +75,44 @@ func captureLocally(asCmd *script.AsCommand, cmdCap *script.CaptureCommand, envs
 
 	if err := writeFile(cmdReader, filePath); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func runLocally(asCmd *script.AsCommand, cmdRun *script.RunCommand, workdir string) error {
+	cmdStr := cmdRun.GetCmdString()
+	cliCmd, cliArgs, err := cmdRun.GetParsedCmd()
+	if err != nil {
+		return err
+	}
+
+	if _, err := exec.LookPath(cliCmd); err != nil {
+		return err
+	}
+
+	asUid, asGid, err := asCmd.GetCredentials()
+	if err != nil {
+		return err
+	}
+
+	logrus.Debugf("Running command [%s]", cmdStr)
+
+	cmdReader, err := CliRun(uint32(asUid), uint32(asGid), cliCmd, cliArgs...)
+	if err != nil {
+		cmdErr := fmt.Errorf("Command failed: [%s]: %s", cliCmd, err)
+		logrus.Error(cmdErr)
+		return nil
+	}
+
+	bytes, err := ioutil.ReadAll(cmdReader)
+	if err != nil {
+		return fmt.Errorf("RUN: result: %s", err)
+	}
+
+	// save result of CMD
+	if err := os.Setenv("CMD_RESULT", strings.TrimSpace(string(bytes))); err != nil {
+		return fmt.Errorf("RUN: set CMD_RESULT: %s", err)
 	}
 
 	return nil

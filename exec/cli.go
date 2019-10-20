@@ -5,7 +5,9 @@ package exec
 
 import (
 	"bytes"
+	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"syscall"
 
@@ -21,8 +23,16 @@ func CliRun(uid, gid uint32, cmd string, args ...string) (io.Reader, error) {
 
 	logrus.Debugf("Running %s %v (uid=%d,gid=%d)", cmd, args, uid, gid)
 	if err := command.Run(); err != nil {
+		os.Setenv("CMD_EXITCODE", fmt.Sprintf("%d", command.ProcessState.ExitCode()))
+		os.Setenv("CMD_PID", fmt.Sprintf("%d", command.ProcessState.Pid()))
+		os.Setenv("CMD_SUCCESS", fmt.Sprintf("%t", command.ProcessState.Success()))
 		return nil, err
 	}
+
+	// save process info
+	os.Setenv("CMD_EXITCODE", fmt.Sprintf("%d", command.ProcessState.ExitCode()))
+	os.Setenv("CMD_PID", fmt.Sprintf("%d", command.ProcessState.Pid()))
+	os.Setenv("CMD_SUCCESS", fmt.Sprintf("%t", command.ProcessState.Success()))
 
 	return output, nil
 }

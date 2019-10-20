@@ -87,11 +87,25 @@ func (c *SSHClient) SSHRun(cmd string, args ...string) (io.Reader, error) {
 
 	output := new(bytes.Buffer)
 	session.Stdout = output
-	session.Stderr = output
+	// TODO figure out a way to get output from stderr
+	// The following was causing unpredicatiable behavior
+	// wher it seems the content would be overwritten by stderr
+	// even when stdout returned something.
+	//session.Stderr = output
 
-	if err := session.Run(cmdStr); err != nil {
+	if err := session.Start(cmdStr); err != nil {
 		return nil, err
 	}
+
+	if err := session.Wait(); err != nil {
+		os.Setenv("CMD_EXITCODE", fmt.Sprintf("%d", 1))
+		os.Setenv("CMD_SUCCESS", "false")
+		return nil, fmt.Errorf("SSH: error waiting for response: %s", err)
+	}
+
+	os.Setenv("CMD_EXITCODE", fmt.Sprintf("%d", 0))
+	os.Setenv("CMD_SUCCESS", "true")
+
 	logrus.Debugf("Remote command succeeded: %s", cmdStr)
 	return output, nil
 }
