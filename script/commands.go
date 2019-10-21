@@ -16,6 +16,7 @@ var (
 	CmdEnv        = "ENV"
 	CmdFrom       = "FROM"
 	CmdKubeConfig = "KUBECONFIG"
+	CmdKubeGet    = "KUBEGET"
 	CmdOutput     = "OUTPUT"
 	CmdRun        = "RUN"
 	CmdWorkDir    = "WORKDIR"
@@ -59,6 +60,7 @@ var (
 		CmdEnv:        CommandMeta{Name: CmdEnv, MinArgs: 1, MaxArgs: -1, Supported: true},
 		CmdFrom:       CommandMeta{Name: CmdFrom, MinArgs: 1, MaxArgs: -1, Supported: true},
 		CmdKubeConfig: CommandMeta{Name: CmdKubeConfig, MinArgs: 1, MaxArgs: 1, Supported: true},
+		CmdKubeGet:    CommandMeta{Name: CmdKubeGet, MinArgs: 1, MaxArgs: -1, Supported: true},
 		CmdOutput:     CommandMeta{Name: CmdOutput, MinArgs: 1, MaxArgs: 1, Supported: true},
 		CmdRun:        CommandMeta{Name: CmdRun, MinArgs: 1, MaxArgs: 2, Supported: true},
 		CmdWorkDir:    CommandMeta{Name: CmdWorkDir, MinArgs: 1, MaxArgs: 1, Supported: true},

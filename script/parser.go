@@ -111,6 +111,12 @@ func Parse(reader io.Reader) (*Script, error) {
 				return nil, err
 			}
 			script.Actions = append(script.Actions, cmd)
+		case CmdKubeGet:
+			cmd, err := NewKubeGetCommand(line, rawArgs)
+			if err != nil {
+				return nil, err
+			}
+			script.Actions = append(script.Actions, cmd)
 		default:
 			return nil, fmt.Errorf("%s not supported", cmdName)
 		}
