@@ -341,7 +341,7 @@ Next run `crash-diagnostics` using the sample Diagnostics.file in this directory
 current environment:
 
 ```
-crash-diagnostics run --output crashd.tar.gzip --loglevel debug
+crash-diagnostics run --output crashd.tar.gzip --debug
 ```
 
 You should see log messages on the screen similar to the following:

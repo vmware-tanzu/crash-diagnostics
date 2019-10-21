@@ -36,18 +36,18 @@ func NewRunCommand(index int, rawArgs string) (*RunCommand, error) {
 	}
 	argMap, err := mapArgs(rawArgs)
 	if err != nil {
-		return nil, fmt.Errorf("CAPTURE: %v", err)
+		return nil, fmt.Errorf("RUN: %v", err)
 	}
 
 	if err := validateCmdArgs(CmdCapture, argMap); err != nil {
-		return nil, fmt.Errorf("CAPTURE: %s", err)
+		return nil, fmt.Errorf("RUN: %s", err)
 	}
 
 	cmd := &RunCommand{cmd: cmd{index: index, name: CmdCapture, args: argMap}}
 
 	cmdName, cmdArgs, err := cmdParse(cmd.GetCmdString())
 	if err != nil {
-		return nil, fmt.Errorf("CAPTURE: %s", err)
+		return nil, fmt.Errorf("RUN: %s", err)
 	}
 	cmd.cmdName = cmdName
 	cmd.cmdArgs = cmdArgs
