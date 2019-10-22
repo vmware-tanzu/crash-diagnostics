@@ -19,16 +19,7 @@ import (
 )
 
 // exeRemotely executes script on remote machines
-func exeRemotely(src *script.Script, machine *script.Machine, workdir string) error {
-	asCmd, err := exeAs(src)
-	if err != nil {
-		return err
-	}
-
-	authCmd, err := exeAuthConfig(src)
-	if err != nil {
-		return err
-	}
+func exeRemotely(asCmd *script.AsCommand, authCmd *script.AuthConfigCommand, action script.Command, machine *script.Machine, workdir string) error {
 
 	user := asCmd.GetUserId()
 	if authCmd.GetUsername() != "" {
@@ -40,25 +31,25 @@ func exeRemotely(src *script.Script, machine *script.Machine, workdir string) er
 		return fmt.Errorf("missing private key file")
 	}
 
-	for _, action := range src.Actions {
-		switch cmd := action.(type) {
-		case *script.CopyCommand:
-			if err := copyRemotely(user, privKey, machine, asCmd, cmd, workdir); err != nil {
-				return err
-			}
-		case *script.CaptureCommand:
-			// capture command output
-			if err := captureRemotely(user, privKey, machine.Address(), cmd, workdir); err != nil {
-				return err
-			}
-		case *script.RunCommand:
-			if err := runRemotely(user, privKey, machine.Address(), cmd, workdir); err != nil {
-				return err
-			}
-		default:
-			logrus.Errorf("Unsupported command %T", cmd)
+	//for _, action := range src.Actions {
+	switch cmd := action.(type) {
+	case *script.CopyCommand:
+		if err := copyRemotely(user, privKey, machine, asCmd, cmd, workdir); err != nil {
+			return err
 		}
+	case *script.CaptureCommand:
+		// capture command output
+		if err := captureRemotely(user, privKey, machine.Address(), cmd, workdir); err != nil {
+			return err
+		}
+	case *script.RunCommand:
+		if err := runRemotely(user, privKey, machine.Address(), cmd, workdir); err != nil {
+			return err
+		}
+	default:
+		logrus.Errorf("Unsupported command %T", cmd)
 	}
+	//}
 
 	return nil
 }

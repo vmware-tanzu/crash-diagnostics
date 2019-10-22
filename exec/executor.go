@@ -28,6 +28,11 @@ func New(src *script.Script) *Executor {
 func (e *Executor) Execute() error {
 	logrus.Info("Executing script file")
 
+	asCmd, err := exeAs(e.script)
+	if err != nil {
+		return err
+	}
+
 	// execute ENVs, store all declared env values in
 	// running process enviroment variables.
 	if err := exeEnvs(e.script); err != nil {
@@ -52,26 +57,48 @@ func (e *Executor) Execute() error {
 		return err
 	}
 
-	// retrieve KUBECONFIG and setup client connection
-	exeClusterInfo(e.script, filepath.Join(workdir.Path(), "cluster-dump.json"))
+	// attempt to create client from KUBECONFIG
+	k8sClient, err := exeKubeConfig(e.script)
+	if err != nil {
+		logrus.Warnf("Failed to load KUBECONFIG: %s", err)
+	}
 
-	// process actions for each cluster resource specified in FROM
-	for _, fromMachine := range fromCmd.Machines() {
-		machineWorkdir, err := makeMachineWorkdir(workdir.Path(), fromMachine)
-		if err != nil {
-			return err
-		}
-
-		switch fromMachine.Address() {
-		case "local":
-			logrus.Debug("Executing commands on local machine")
-			if err := exeLocally(e.script, machineWorkdir); err != nil {
-				return err
+	// Execute each action as appeared in script
+	var authCmd *script.AuthConfigCommand
+	for _, action := range e.script.Actions {
+		switch cmd := action.(type) {
+		case *script.KubeGetCommand:
+			logrus.Infof("KUBEGET: getting API objects (this may take a while)")
+			if err := exeKubeGet(k8sClient, cmd, workdir.Path()); err != nil {
+				return fmt.Errorf("KUBEGET: %s", err)
 			}
 		default:
-			logrus.Debug("Executing remote commands at ", fromMachine.Address())
-			if err := exeRemotely(e.script, &fromMachine, machineWorkdir); err != nil {
-				return err
+			for _, machine := range fromCmd.Machines() {
+				machineWorkdir, err := makeMachineWorkdir(workdir.Path(), machine)
+				if err != nil {
+					return err
+				}
+
+				switch machine.Address() {
+				case "local":
+					logrus.Debug("Executing commands on local machine")
+					if err := exeLocally(asCmd, action, machineWorkdir); err != nil {
+						return err
+					}
+				default:
+					logrus.Debug("Executing remote commands at ", machine.Address())
+					if authCmd == nil {
+						auth, err := exeAuthConfig(e.script)
+						if err != nil {
+							return err
+						}
+						authCmd = auth
+					}
+					if err := exeRemotely(asCmd, authCmd, action, &machine, machineWorkdir); err != nil {
+						return err
+					}
+				}
+
 			}
 		}
 	}

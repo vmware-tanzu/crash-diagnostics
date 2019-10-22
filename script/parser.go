@@ -217,7 +217,7 @@ func makeNamedPram(name, value string) string {
 
 // enforceDefaults adds missing defaults to the script
 func enforceDefaults(script *Script) (*Script, error) {
-	logrus.Debug("Appling default values")
+	logrus.Debug("Applying default values")
 	if _, ok := script.Preambles[CmdAs]; !ok {
 		cmd, err := NewAsCommand(0, fmt.Sprintf("userid:%d groupid:%d", os.Getuid(), os.Getgid()))
 		if err != nil {

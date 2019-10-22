@@ -45,7 +45,8 @@ func TestCommandKUBEGET(t *testing.T) {
 		{
 			name: "KUBEGET objects with other params",
 			source: func() string {
-				return "KUBEGET objects namespaces:myns,testns groups:v1 kinds:pods,events versions:1 names:my-app labels:prod containers:webapp"
+				return `
+				KUBEGET objects namespaces:"myns testns" groups:"v1" kinds:"pods events" versions:"1" names:"my-app" labels:"prod" containers:"webapp"`
 			},
 			script: func(s *Script) error {
 				kgCmd := s.Actions[0].(*KubeGetCommand)
@@ -56,7 +57,7 @@ func TestCommandKUBEGET(t *testing.T) {
 				if kgCmd.What() != "objects" {
 					return fmt.Errorf("KUBEGET unexpected what: %s", kgCmd.What())
 				}
-				if kgCmd.Namespaces() != "myns,testns" {
+				if kgCmd.Namespaces() != "myns testns" {
 					return fmt.Errorf("KUBEGET unexpected namespaces: %s", kgCmd.Namespaces())
 				}
 				if kgCmd.Groups() != "v1" {

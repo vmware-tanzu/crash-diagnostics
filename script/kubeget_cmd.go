@@ -5,14 +5,13 @@ package script
 
 import (
 	"fmt"
-	"os"
 	"strings"
 )
 
 var (
 	kubegetParams = struct {
 		containers,
-		namespsaces,
+		namespaces,
 		groups,
 		kinds,
 		versions,
@@ -20,14 +19,14 @@ var (
 		labels,
 		what string
 	}{
-		containers:  "containers",
-		namespsaces: "namespaces",
-		groups:      "groups",
-		kinds:       "kinds",
-		versions:    "versions",
-		names:       "names",
-		labels:      "labels",
-		what:        "what",
+		containers: "containers",
+		namespaces: "namespaces",
+		groups:     "groups",
+		kinds:      "kinds",
+		versions:   "versions",
+		names:      "names",
+		labels:     "labels",
+		what:       "what",
 	}
 )
 
@@ -104,40 +103,40 @@ func (c *KubeGetCommand) Args() map[string]string {
 
 // What returns the type of resource to get (i.e. objects, logs, all)
 func (c *KubeGetCommand) What() string {
-	return os.ExpandEnv(c.args[kubegetParams.what])
+	return ExpandEnv(c.args[kubegetParams.what])
 }
 
-// Containers returns a comma-sep list of containers from which to retrieve logs
+// Containers returns a slice of container names from which to retrieve logs
 func (c *KubeGetCommand) Containers() string {
-	return os.ExpandEnv(c.args[kubegetParams.namespsaces])
+	return ExpandEnv(c.args[kubegetParams.containers])
 }
 
-// Namespaces returns a comma-sep list of namespaces from which to retrieve objects
+// Namespaces returns a slice of namespaces from which to retrieve objects
 func (c *KubeGetCommand) Namespaces() string {
-	return os.ExpandEnv(c.args[kubegetParams.namespsaces])
+	return ExpandEnv(c.args[kubegetParams.namespaces])
 }
 
-// Groups returns a comma-sep resource groups from which to retrieve objects
+// Groups returns slice of groups from which to retrieve objects
 func (c *KubeGetCommand) Groups() string {
-	return os.ExpandEnv(c.args[kubegetParams.groups])
+	return ExpandEnv(c.args[kubegetParams.groups])
 }
 
-// Versions returns a comma-sep of resource versions to retrieve
+// Versions returns slice of resource versions to retrieve
 func (c *KubeGetCommand) Versions() string {
-	return os.ExpandEnv(c.args[kubegetParams.groups])
+	return ExpandEnv(c.args[kubegetParams.versions])
 }
 
-// Kinds returns a comma-sep list of resource object kinds to retrieve
+// Kinds returns a slice of object kinds to retrieve
 func (c *KubeGetCommand) Kinds() string {
-	return os.ExpandEnv(c.args[kubegetParams.kinds])
+	return ExpandEnv(c.args[kubegetParams.kinds])
 }
 
-// Names returns a comma-sep list of resource names to retrieve
+// Names returns a slice of resource names to retrieve
 func (c *KubeGetCommand) Names() string {
-	return os.ExpandEnv(c.args[kubegetParams.names])
+	return ExpandEnv(c.args[kubegetParams.names])
 }
 
-// Labels returns a comma-sep list of resource labels to match
+// Labels returns a slice of resource labels to match
 func (c *KubeGetCommand) Labels() string {
-	return os.ExpandEnv(c.args[kubegetParams.kinds])
+	return ExpandEnv(c.args[kubegetParams.labels])
 }

@@ -16,32 +16,28 @@ import (
 )
 
 // exeLocally runs script using locally installed tool
-func exeLocally(src *script.Script, workdir string) error {
-	asCmd, err := exeAs(src)
-	if err != nil {
-		return err
-	}
+func exeLocally(asCmd *script.AsCommand, action script.Command, workdir string) error {
 
-	for _, action := range src.Actions {
-		switch cmd := action.(type) {
-		case *script.CopyCommand:
-			if err := copyLocally(asCmd, cmd, workdir); err != nil {
-				return err
-			}
-		case *script.CaptureCommand:
-			// capture command output
-			if err := captureLocally(asCmd, cmd, nil, workdir); err != nil {
-				return err
-			}
-		case *script.RunCommand:
-			// run command and store result
-			if err := runLocally(asCmd, cmd, workdir); err != nil {
-				return err
-			}
-		default:
-			logrus.Errorf("Unsupported command %T", cmd)
+	//for _, action := range src.Actions {
+	switch cmd := action.(type) {
+	case *script.CopyCommand:
+		if err := copyLocally(asCmd, cmd, workdir); err != nil {
+			return err
 		}
+	case *script.CaptureCommand:
+		// capture command output
+		if err := captureLocally(asCmd, cmd, nil, workdir); err != nil {
+			return err
+		}
+	case *script.RunCommand:
+		// run command and store result
+		if err := runLocally(asCmd, cmd, workdir); err != nil {
+			return err
+		}
+	default:
+		logrus.Errorf("Unsupported command %T", cmd)
 	}
+	//}
 
 	return nil
 }
