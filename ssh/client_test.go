@@ -84,7 +84,7 @@ func TestSSHClient(t *testing.T) {
 				}
 				defer sshClient.Hangup()
 
-				reader, err := sshClient.SSHRun("echo", "Hello!")
+				reader, err := sshClient.SSHRun("echo 'Hello World!'")
 				if err != nil {
 					return err
 				}
@@ -93,7 +93,7 @@ func TestSSHClient(t *testing.T) {
 					return err
 				}
 
-				if strings.TrimSpace(buff.String()) != "Hello!" {
+				if strings.TrimSpace(buff.String()) != "Hello World!" {
 					t.Fatal("SSHRun unexpected result: ", buff.String())
 				}
 				return nil
@@ -110,7 +110,7 @@ func TestSSHClient(t *testing.T) {
 				}
 				defer sshClient.Hangup()
 
-				if _, err := sshClient.SSHRun("foo", "bar"); err != nil {
+				if _, err := sshClient.SSHRun("foo bar"); err != nil {
 					return err
 				}
 
