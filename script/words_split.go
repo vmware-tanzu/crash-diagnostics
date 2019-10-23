@@ -2,6 +2,7 @@ package script
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"strings"
 	"unicode"
@@ -106,4 +107,48 @@ func isQuote(r rune) bool {
 
 func isChar(r rune) bool {
 	return !isQuote(r) && !unicode.IsSpace(r)
+}
+
+func quote(str string) string {
+	if strings.Index(str, `'`) > -1 {
+		return doubleQuote(str)
+	}
+	if strings.Index(str, `"`) > -1 {
+		return singleQuote(str)
+	}
+	return doubleQuote(str)
+}
+
+func doubleQuote(val string) string {
+	return fmt.Sprintf(`"%s"`, val)
+}
+
+func singleQuote(val string) string {
+	return fmt.Sprintf(`'%s'`, val)
+}
+
+func isQuoted(val string) bool {
+	single := `'`
+	dbl := `"`
+	if strings.HasPrefix(val, single) && strings.HasSuffix(val, single) {
+		return true
+	}
+	if strings.HasPrefix(val, dbl) && strings.HasSuffix(val, dbl) {
+		return true
+	}
+	return false
+}
+
+func trimQuotes(val string) string {
+	single := `'`
+	dbl := `"`
+
+	if strings.HasPrefix(val, single) || strings.HasPrefix(val, dbl) {
+		val = strings.TrimPrefix(val, val[0:1])
+	}
+	if strings.HasSuffix(val, single) || strings.HasSuffix(val, dbl) {
+		val = strings.TrimSuffix(val, val[len(val)-1:len(val)])
+	}
+
+	return val
 }

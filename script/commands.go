@@ -54,13 +54,13 @@ var (
 	Cmds = map[string]CommandMeta{
 		CmdAs:         CommandMeta{Name: CmdAs, MinArgs: 1, MaxArgs: 2, Supported: true},
 		CmdAuthConfig: CommandMeta{Name: CmdAuthConfig, MinArgs: 1, MaxArgs: 3, Supported: true},
-		CmdCapture:    CommandMeta{Name: CmdCapture, MinArgs: 1, MaxArgs: 1, Supported: true},
+		CmdCapture:    CommandMeta{Name: CmdCapture, MinArgs: 1, MaxArgs: 2, Supported: true},
 		CmdCopy:       CommandMeta{Name: CmdCopy, MinArgs: 1, MaxArgs: -1, Supported: true},
 		CmdEnv:        CommandMeta{Name: CmdEnv, MinArgs: 1, MaxArgs: -1, Supported: true},
 		CmdFrom:       CommandMeta{Name: CmdFrom, MinArgs: 1, MaxArgs: -1, Supported: true},
 		CmdKubeConfig: CommandMeta{Name: CmdKubeConfig, MinArgs: 1, MaxArgs: 1, Supported: true},
 		CmdOutput:     CommandMeta{Name: CmdOutput, MinArgs: 1, MaxArgs: 1, Supported: true},
-		CmdRun:        CommandMeta{Name: CmdRun, MinArgs: 1, MaxArgs: 1, Supported: true},
+		CmdRun:        CommandMeta{Name: CmdRun, MinArgs: 1, MaxArgs: 2, Supported: true},
 		CmdWorkDir:    CommandMeta{Name: CmdWorkDir, MinArgs: 1, MaxArgs: 1, Supported: true},
 	}
 )

@@ -161,26 +161,22 @@ func validateCmdArgs(cmdName string, args map[string]string) error {
 // split(rawArgs[n], ":") yields to a len(slice) < 2.
 func mapArgs(rawArgs string) (map[string]string, error) {
 	argMap := make(map[string]string)
+
+	// split params: param0:<param-val0> paramN:<param-valN> badparam
 	params, err := wordSplit(rawArgs)
 	if err != nil {
 		return nil, err
 	}
 
+	// for each, split pram:<pram-value> into {param, <param-val>}
 	for _, param := range params {
 		parts := paramSep.Split(param, 2)
 		if len(parts) != 2 {
 			return argMap, fmt.Errorf("invalid param: %s", param)
 		}
-
 		name := parts[0]
-
-		// safely remove start/end quotes
-		val, err := wordSplit(parts[1])
-		if err != nil {
-			return nil, err
-		}
-
-		argMap[name] = val[0]
+		val := trimQuotes(parts[1])
+		argMap[name] = val
 	}
 
 	return argMap, nil
@@ -264,6 +260,7 @@ func enforceDefaults(script *Script) (*Script, error) {
 }
 
 func cmdParse(cmdStr string) (cmd string, args []string, err error) {
+	logrus.Debugf("Parsing: %s", cmdStr)
 	args, err = wordSplit(cmdStr)
 	if err != nil {
 		return "", nil, err
