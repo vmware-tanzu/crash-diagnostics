@@ -112,7 +112,7 @@ func makeRemoteTestFile(t *testing.T, addr, fileName, content string) error {
 	defer sshc.Hangup()
 
 	t.Logf("creating remote test file %s", fileName)
-	_, err = sshc.SSHRun("echo", fmt.Sprintf("\"%s\"", content), ">", fileName)
+	_, err = sshc.SSHRun(fmt.Sprintf(`echo '%s' > %s`, content, fileName))
 	if err != nil {
 		return err
 	}
@@ -130,7 +130,7 @@ func removeRemoteTestFile(t *testing.T, addr, fileName string) error {
 	}
 	defer sshc.Hangup()
 	t.Logf("removing remote test file %s", fileName)
-	_, err = sshc.SSHRun("rm", "-rf", fileName)
+	_, err = sshc.SSHRun(fmt.Sprintf("rm -rf %s", fileName))
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func makeRemoteTestDir(t *testing.T, addr, path string) error {
 	}
 	defer sshc.Hangup()
 	t.Logf("creating remote test  dir %s", path)
-	_, err = sshc.SSHRun("mkdir", "-p", path)
+	_, err = sshc.SSHRun(fmt.Sprintf("mkdir -p %s", path))
 	if err != nil {
 		return err
 	}

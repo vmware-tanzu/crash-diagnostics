@@ -70,19 +70,18 @@ func captureRemotely(user, privKey, hostAddr string, cmdCap *script.CaptureComma
 	}
 	defer sshc.Hangup()
 
-	cmdStr := cmdCap.GetCmdString()
-	cliCmd, cliArgs, err := cmdCap.GetParsedCmd()
+	cmdStr, err := cmdCap.GetEffectiveCmdStr()
 	if err != nil {
 		return err
 	}
 
 	fileName := fmt.Sprintf("%s.txt", sanitizeStr(cmdStr))
 	filePath := filepath.Join(workdir, fileName)
-	logrus.Debugf("Capturing remote command [%s] -into-> %s", cmdStr, filePath)
+	logrus.Debugf("CAPTURE command [%s] -into-> %s", cmdStr, filePath)
 
-	cmdReader, err := sshc.SSHRun(cliCmd, cliArgs...)
+	cmdReader, err := sshc.SSHRun(cmdStr)
 	if err != nil {
-		sshErr := fmt.Errorf("remote command %s failed: %s", cliCmd, err)
+		sshErr := fmt.Errorf("CAPTURE remote command %s failed: %s", cmdStr, err)
 		logrus.Warn(sshErr)
 		return writeError(sshErr, filePath)
 	}
@@ -101,17 +100,14 @@ func runRemotely(user, privKey, hostAddr string, cmdRun *script.RunCommand, work
 	}
 	defer sshc.Hangup()
 
-	cmdStr := cmdRun.GetCmdString()
-	cliCmd, cliArgs, err := cmdRun.GetParsedCmd()
+	cmdStr, err := cmdRun.GetEffectiveCmdStr()
 	if err != nil {
 		return err
 	}
 
-	logrus.Debugf("Running remote command: %s", cmdStr)
-
-	cmdReader, err := sshc.SSHRun(cliCmd, cliArgs...)
+	cmdReader, err := sshc.SSHRun(cmdStr)
 	if err != nil {
-		sshErr := fmt.Errorf("Command failed: %s: %s", cliCmd, err)
+		sshErr := fmt.Errorf("RUN remote command failed: %s: %s", cmdStr, err)
 		logrus.Error(sshErr)
 		return nil
 	}
