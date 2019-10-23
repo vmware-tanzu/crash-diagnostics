@@ -12,45 +12,42 @@ import (
 // can have one of the following two forms as shown below:
 //
 //     RUN <command-string>
-//     RUN cmd:"<command-string>" name:"cmd-name" desc:"cmd-desc"
+//     RUN cmd:"<command-string>" shell:"shell-path" desc:"cmd-desc"
 //
 // The former takes no named parameter. When the latter form is used,
 // parameter cmd: is required.
 type RunCommand struct {
 	cmd
-	cmdName string
-	cmdArgs []string
 }
 
 // NewRunCommand returns *RunCommand with parsed arguments
 func NewRunCommand(index int, rawArgs string) (*RunCommand, error) {
-	if err := validateRawArgs(CmdCapture, rawArgs); err != nil {
+	if err := validateRawArgs(CmdRun, rawArgs); err != nil {
 		return nil, err
 	}
 
 	// determine args
-	var argMap map[string]string
+	argMap := make(map[string]string)
 	if !isNamedParam(rawArgs) {
-		// setup default param (notice quoted value)
-		rawArgs = makeNamedPram("cmd", rawArgs)
-	}
-	argMap, err := mapArgs(rawArgs)
-	if err != nil {
-		return nil, fmt.Errorf("RUN: %v", err)
+		// setup default param
+		if isQuoted(rawArgs) {
+			argMap["cmd"] = trimQuotes(rawArgs)
+		} else {
+			argMap["cmd"] = rawArgs
+		}
+	} else {
+		args, err := mapArgs(rawArgs)
+		if err != nil {
+			return nil, fmt.Errorf("RUN: %v", err)
+		}
+		argMap = args
 	}
 
-	if err := validateCmdArgs(CmdCapture, argMap); err != nil {
+	if err := validateCmdArgs(CmdRun, argMap); err != nil {
 		return nil, fmt.Errorf("RUN: %s", err)
 	}
 
 	cmd := &RunCommand{cmd: cmd{index: index, name: CmdCapture, args: argMap}}
-
-	cmdName, cmdArgs, err := cmdParse(cmd.GetCmdString())
-	if err != nil {
-		return nil, fmt.Errorf("RUN: %s", err)
-	}
-	cmd.cmdName = cmdName
-	cmd.cmdArgs = cmdArgs
 	return cmd, nil
 }
 
@@ -69,15 +66,53 @@ func (c *RunCommand) Args() map[string]string {
 	return c.cmd.args
 }
 
-// GetCmdString returns the raw CLI command string
-func (c *RunCommand) GetCmdString() string {
-	return c.cmd.args["cmd"]
+// GetCmdShell returns shell program and arguments
+// for running the command string (i.e. /bin/bash -c)
+func (c *RunCommand) GetCmdShell() string {
+	return os.ExpandEnv(c.cmd.args["shell"])
 }
 
-// GetParsedCmd returns the parsed cli command as commandName
-// followed by a slice of command arguments and any error that
-// may occur during parsing.
+// GetCmdString returns the raw CLI command string
+func (c *RunCommand) GetCmdString() string {
+	return os.ExpandEnv(c.cmd.args["cmd"])
+}
+
+// GetEffectiveCmd returns the shell (if any) and command as
+// a slice of strings
+func (c *RunCommand) GetEffectiveCmd() ([]string, error) {
+	cmdStr := c.GetCmdString()
+	shell := c.GetCmdShell()
+	if c.GetCmdShell() != "" {
+		shArgs, err := wordSplit(shell)
+		if err != nil {
+			return nil, err
+		}
+		return append(shArgs, cmdStr), nil
+	}
+	cmdArgs, err := wordSplit(cmdStr)
+	if err != nil {
+		return nil, err
+	}
+	return cmdArgs, nil
+}
+
+// GetParsedCmd returns the effective parsed command as commandName
+// followed by a slice of command arguments
 func (c *RunCommand) GetParsedCmd() (string, []string, error) {
-	cmdStr := os.ExpandEnv(c.GetCmdString())
-	return cmdParse(cmdStr)
+	args, err := c.GetEffectiveCmd()
+	if err != nil {
+		return "", nil, err
+	}
+	return args[0], args[1:], nil
+}
+
+// GetEffectiveCmdStr returns the effective command as a string
+// which wraps the command around a shell quote if necessary
+func (c *RunCommand) GetEffectiveCmdStr() (string, error) {
+	cmdStr := c.GetCmdString()
+	shell := c.GetCmdShell()
+	if c.GetCmdShell() != "" {
+		return fmt.Sprintf("%s %s", shell, quote(cmdStr)), nil
+	}
+	return cmdStr, nil
 }

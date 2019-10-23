@@ -12,13 +12,13 @@ import (
 func TestCommandCAPTURE(t *testing.T) {
 	tests := []commandTest{
 		{
-			name: "CAPTURE default param",
+			name: "CAPTURE with unqoted default with quoted param",
 			source: func() string {
-				return "CAPTURE /bin/echo HELLO WORLD"
+				return `CAPTURE /bin/echo "HELLO WORLD"`
 			},
 			script: func(s *Script) error {
 				if len(s.Actions) != 1 {
-					return fmt.Errorf("Script has unexpected actions, needs %d", len(s.Actions))
+					return fmt.Errorf("Script has unexpected action count, needs %d", len(s.Actions))
 				}
 				cmd, ok := s.Actions[0].(*CaptureCommand)
 				if !ok {
@@ -26,141 +26,174 @@ func TestCommandCAPTURE(t *testing.T) {
 				}
 
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
-					return fmt.Errorf("CAPTURE action with unexpected CLI string %s", cmd.GetCmdString())
+					return fmt.Errorf("CAPTURE action with unexpected command string %s", cmd.GetCmdString())
 				}
-
 				cliCmd, cliArgs, err := cmd.GetParsedCmd()
 				if err != nil {
-					return fmt.Errorf("CAPTURE command parse failed: %s", cmd.GetCmdString())
+					return fmt.Errorf("CAPTURE command parse failed: %s", err)
 				}
 				if cliCmd != "/bin/echo" {
-					return fmt.Errorf("CAPTURE action parsed cli unexpected command %s", cliCmd)
+					return fmt.Errorf("CAPTURE unexpected command parsed: %s", cliCmd)
+				}
+				if len(cliArgs) != 1 {
+					return fmt.Errorf("CAPTURE unexpected command args parsed: %d", len(cliArgs))
+				}
+				if cliArgs[0] != "HELLO WORLD" {
+					return fmt.Errorf("CAPTURE has unexpected cli args: %#v", cliArgs)
+				}
+				return nil
+			},
+		},
+		{
+			name: "CAPTURE single-quoted default with quoted param",
+			source: func() string {
+				return `CAPTURE '/bin/echo -n "HELLO WORLD"'`
+			},
+			script: func(s *Script) error {
+				if len(s.Actions) != 1 {
+					return fmt.Errorf("Script has unexpected actions, needs %d", len(s.Actions))
+				}
+				cmd := s.Actions[0].(*CaptureCommand)
+				if cmd.Args()["cmd"] != cmd.GetCmdString() {
+					return fmt.Errorf("CAPTURE action with unexpected CLI string %s", cmd.GetCmdString())
+				}
+				cliCmd, cliArgs, err := cmd.GetParsedCmd()
+				if err != nil {
+					return fmt.Errorf("CAPTURE command parse failed: %s", err)
+				}
+				if cliCmd != "/bin/echo" {
+					return fmt.Errorf("CAPTURE unexpected command parsed: %s", cliCmd)
 				}
 				if len(cliArgs) != 2 {
-					return fmt.Errorf("CAPTURE action parsed cli unexpected args %d", len(cliArgs))
+					return fmt.Errorf("CAPTURE unexpected command args parsed: %d", len(cliArgs))
 				}
-
+				if cliArgs[0] != "-n" {
+					return fmt.Errorf("CAPTURE has unexpected cli args: %#v", cliArgs)
+				}
+				if cliArgs[1] != "HELLO WORLD" {
+					return fmt.Errorf("CAPTURE has unexpected cli args: %#v", cliArgs)
+				}
 				return nil
 			},
 		},
 		{
-			name: "CAPTURE default quoted param",
+			name: "CAPTURE single-quoted named param with quoted arg",
 			source: func() string {
-				return `CAPTURE '/bin/echo "HELLO WORLD"'`
+				return `CAPTURE cmd:'/bin/echo -n "HELLO WORLD"'`
 			},
 			script: func(s *Script) error {
 				if len(s.Actions) != 1 {
 					return fmt.Errorf("Script has unexpected actions, needs %d", len(s.Actions))
 				}
-				cmd, ok := s.Actions[0].(*CaptureCommand)
-				if !ok {
-					return fmt.Errorf("Unexpected action type %T in script", s.Actions[0])
-				}
-
+				cmd := s.Actions[0].(*CaptureCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
 					return fmt.Errorf("CAPTURE action with unexpected CLI string %s", cmd.GetCmdString())
 				}
-
 				cliCmd, cliArgs, err := cmd.GetParsedCmd()
 				if err != nil {
-					return fmt.Errorf("CAPTURE command parse failed: %s", cmd.GetCmdString())
+					return fmt.Errorf("CAPTURE command parse failed: %s", err)
 				}
 				if cliCmd != "/bin/echo" {
-					return fmt.Errorf("CAPTURE action parsed cli unexpected command %s", cliCmd)
+					return fmt.Errorf("CAPTURE unexpected command parsed: %s", cliCmd)
 				}
-				if len(cliArgs) != 1 {
-					return fmt.Errorf("CAPTURE action parsed cli unexpected args %d", len(cliArgs))
+				if len(cliArgs) != 2 {
+					return fmt.Errorf("CAPTURE unexpected command args parsed: %d", len(cliArgs))
 				}
-
+				if cliArgs[0] != "-n" {
+					return fmt.Errorf("CAPTURE has unexpected cli args: %#v", cliArgs)
+				}
+				if cliArgs[1] != "HELLO WORLD" {
+					return fmt.Errorf("CAPTURE has unexpected cli args: %#v", cliArgs)
+				}
 				return nil
 			},
 		},
 		{
-			name: "CAPTURE single quoted command",
+			name: "CAPTURE double-quoted named param with quoted arg",
 			source: func() string {
-				return `CAPTURE cmd:"/bin/echo 'HELLO WORLD'"`
+				return `CAPTURE cmd:"/bin/echo -n 'HELLO WORLD'"`
 			},
 			script: func(s *Script) error {
 				if len(s.Actions) != 1 {
 					return fmt.Errorf("Script has unexpected actions, needs %d", len(s.Actions))
 				}
-				cmd, ok := s.Actions[0].(*CaptureCommand)
-				if !ok {
-					return fmt.Errorf("Unexpected action type %T in script", s.Actions[0])
-				}
-
+				cmd := s.Actions[0].(*CaptureCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
 					return fmt.Errorf("CAPTURE action with unexpected CLI string %s", cmd.GetCmdString())
 				}
-
 				cliCmd, cliArgs, err := cmd.GetParsedCmd()
 				if err != nil {
-					return fmt.Errorf("CAPTURE command parse failed: %s", cmd.GetCmdString())
+					return fmt.Errorf("CAPTURE command parse failed: %s", err)
 				}
 				if cliCmd != "/bin/echo" {
-					return fmt.Errorf("CAPTURE action parsed cli unexpected command %s", cliCmd)
+					return fmt.Errorf("CAPTURE unexpected command parsed: %s", cliCmd)
 				}
-				if len(cliArgs) != 1 {
-					return fmt.Errorf("CAPTURE action parsed cli unexpected args %d", len(cliArgs))
+				if len(cliArgs) != 2 {
+					return fmt.Errorf("CAPTURE unexpected command args parsed: %d", len(cliArgs))
 				}
-
+				if cliArgs[0] != "-n" {
+					return fmt.Errorf("CAPTURE has unexpected cli args: %#v", cliArgs)
+				}
+				if cliArgs[1] != "HELLO WORLD" {
+					return fmt.Errorf("CAPTURE has unexpected cli args: %#v", cliArgs)
+				}
 				return nil
 			},
 		},
 		{
 			name: "CAPTURE multiple commands",
 			source: func() string {
-				return "CAPTURE /bin/echo HELLO\nCOPY a/b\nCAPTURE /bin/clear"
+				return `
+				CAPTURE /bin/echo "HELLO WORLD"
+				CAPTURE cmd:"/bin/bash -c date"`
 			},
 			script: func(s *Script) error {
-				if len(s.Actions) != 3 {
+				if len(s.Actions) != 2 {
 					return fmt.Errorf("Script has unexpected number of actions: %d", len(s.Actions))
 				}
-				cmd0, ok := s.Actions[0].(*CaptureCommand)
-				if !ok {
-					return fmt.Errorf("Unexpected action type %T at pos 0", s.Actions[0])
-				}
-				cmd2, ok := s.Actions[2].(*CaptureCommand)
-				if !ok {
-					return fmt.Errorf("Unexpected action type %T at pos 0", s.Actions[2])
-				}
-
+				cmd0 := s.Actions[0].(*CaptureCommand)
+				cmd2 := s.Actions[1].(*CaptureCommand)
 				if cmd0.Args()["cmd"] != cmd0.GetCmdString() {
-					return fmt.Errorf("CAPTURE action 0 with unexpected CLI string %s", cmd0.GetCmdString())
+					return fmt.Errorf("CAPTURE at 0 with unexpected command string %s", cmd0.GetCmdString())
 				}
 				if cmd2.Args()["cmd"] != cmd2.GetCmdString() {
-					return fmt.Errorf("CAPTURE action 2 with unexpected CLI string %s", cmd2.GetCmdString())
+					return fmt.Errorf("CAPTURE at 2 with unexpected command string %s", cmd2.GetCmdString())
+				}
+				cliCmd, cliArgs, err := cmd2.GetParsedCmd()
+				if err != nil {
+					return fmt.Errorf("CAPTURE command parse failed: %s", err)
+				}
+				if cliCmd != "/bin/bash" {
+					return fmt.Errorf("CAPTURE unexpected command parsed: %s", cliCmd)
+				}
+				if len(cliArgs) != 2 {
+					return fmt.Errorf("CAPTURE unexpected command args parsed: %d", len(cliArgs))
+				}
+				if cliArgs[0] != "-c" {
+					return fmt.Errorf("CAPTURE has unexpected cli args: %#v", cliArgs)
+				}
+				if cliArgs[1] != "date" {
+					return fmt.Errorf("CAPTURE has unexpected cli args: %#v", cliArgs)
 				}
 				return nil
 			},
 		},
 		{
-			name: "CAPTURE with named parameters",
+			name: "CAPTURE unquoted named params",
 			source: func() string {
 				return "CAPTURE cmd:/bin/date"
 			},
 			script: func(s *Script) error {
-				if len(s.Actions) != 1 {
-					return fmt.Errorf("Script has unexpected actions, needs %d", len(s.Actions))
-				}
-				cmd, ok := s.Actions[0].(*CaptureCommand)
-				if !ok {
-					return fmt.Errorf("Unexpected action type %T in script", s.Actions[0])
-				}
-
-				if cmd.Args()["cmd"] != cmd.GetCmdString() {
-					return fmt.Errorf("CAPTURE action with unexpected CLI string %s", cmd.GetCmdString())
-				}
-
+				cmd := s.Actions[0].(*CaptureCommand)
 				cliCmd, cliArgs, err := cmd.GetParsedCmd()
 				if err != nil {
-					return fmt.Errorf("CAPTURE command parse failed: %s", cmd.GetCmdString())
+					return fmt.Errorf("CAPTURE command parse failed: %s", err)
 				}
 				if cliCmd != "/bin/date" {
-					return fmt.Errorf("CAPTURE action parsed cli unexpected command %s", cliCmd)
+					return fmt.Errorf("CAPTURE parsed unexpected command name: %s", cliCmd)
 				}
 				if len(cliArgs) != 0 {
-					return fmt.Errorf("CAPTURE action parsed cli unexpected args %d", len(cliArgs))
+					return fmt.Errorf("CAPTURE parsed unexpected command args: %d", len(cliArgs))
 				}
 
 				return nil
@@ -173,29 +206,58 @@ func TestCommandCAPTURE(t *testing.T) {
 				return `CAPTURE '/bin/echo "$msg"'`
 			},
 			script: func(s *Script) error {
+				cmd := s.Actions[0].(*CaptureCommand)
+				cliCmd, cliArgs, err := cmd.GetParsedCmd()
+				if err != nil {
+					return fmt.Errorf("CAPTURE command parse failed: %s", err)
+				}
+				if cliCmd != "/bin/echo" {
+					return fmt.Errorf("CAPTURE parsed unexpected command name %s", cliCmd)
+				}
+				if cliArgs[0] != "Hello World!" {
+					return fmt.Errorf("CAPTURE parsed unexpected command args: %s", cliArgs)
+				}
+
+				return nil
+			},
+		},
+		{
+			name: "CAPTURE quoted with shell and quoted subproc",
+			source: func() string {
+				return `CAPTURE shell:"/bin/bash -c" cmd:"echo 'HELLO WORLD'"`
+			},
+			script: func(s *Script) error {
 				if len(s.Actions) != 1 {
 					return fmt.Errorf("Script has unexpected actions, needs %d", len(s.Actions))
 				}
-				cmd, ok := s.Actions[0].(*CaptureCommand)
-				if !ok {
-					return fmt.Errorf("Unexpected action type %T in script", s.Actions[0])
-				}
-
+				cmd := s.Actions[0].(*CaptureCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
 					return fmt.Errorf("CAPTURE action with unexpected CLI string %s", cmd.GetCmdString())
 				}
 
-				cliCmd, cliArgs, err := cmd.GetParsedCmd()
-				if err != nil {
-					return fmt.Errorf("CAPTURE command parse failed: %s", cmd.GetCmdString())
+				if cmd.Args()["cmd"] != cmd.GetCmdString() {
+					return fmt.Errorf("CAPTURE action with unexpected command string %s", cmd.GetCmdString())
 				}
-				if cliCmd != "/bin/echo" {
-					return fmt.Errorf("CAPTURE action parsed cli unexpected command %s", cliCmd)
-				}
-				if len(cliArgs) != 1 {
-					return fmt.Errorf("CAPTURE action parsed cli unexpected args %d", len(cliArgs))
+				if cmd.Args()["shell"] != cmd.GetCmdShell() {
+					return fmt.Errorf("CAPTURE action with unexpected shell %s", cmd.GetCmdShell())
 				}
 
+				cliCmd, cliArgs, err := cmd.GetParsedCmd()
+				if err != nil {
+					return fmt.Errorf("CAPTURE command parse failed: %s", err)
+				}
+				if len(cliArgs) != 2 {
+					return fmt.Errorf("CAPTURE unexpected command args parsed: %#v", cliArgs)
+				}
+				if cliCmd != "/bin/bash" {
+					return fmt.Errorf("CAPTURE unexpected command parsed: %#v", cliCmd)
+				}
+				if cliArgs[0] != "-c" {
+					return fmt.Errorf("CAPTURE has unexpected shell argument: expecting -c, got %s", cliArgs[0])
+				}
+				if cliArgs[1] != "echo 'HELLO WORLD'" {
+					return fmt.Errorf("CAPTURE has unexpected shell argument: expecting -c, got %s", cliArgs[0])
+				}
 				return nil
 			},
 		},

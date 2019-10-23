@@ -6,6 +6,7 @@ package exec
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/vmware-tanzu/crash-diagnostics/script"
@@ -104,7 +105,7 @@ func TestExecLocalRUN(t *testing.T) {
 			},
 		},
 		{
-			name: "RUN with errror code",
+			name: "RUN with error code",
 			source: func() string {
 				return `
 				RUN "/bin/date --foo"
@@ -124,6 +125,62 @@ func TestExecLocalRUN(t *testing.T) {
 				result := os.Getenv("CMD_SUCCESS")
 				if result == "true" {
 					return fmt.Errorf("RUN has unexpected CMD_SUCCESS: %s", result)
+				}
+				return nil
+			},
+		},
+		{
+			name: "RUN unquoted default with quoted subcommand",
+			source: func() string {
+				return `RUN /bin/bash -c 'echo "Hello World"'`
+			},
+			exec: func(s *script.Script) error {
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+				pid := os.Getenv("CMD_PID")
+				if pid == "" {
+					return fmt.Errorf("RUN has unexpected pid %s", pid)
+				}
+
+				exitcode := os.Getenv("CMD_EXITCODE")
+				if exitcode != "0" {
+					return fmt.Errorf("RUN has unexpected exit code %s", exitcode)
+				}
+
+				result := os.Getenv("CMD_RESULT")
+				if strings.TrimSpace(result) != "Hello World" {
+					return fmt.Errorf("RUN has unexpected CMD_RESULT: %s", result)
+				}
+				return nil
+			},
+		},
+		{
+			name: "RUN with shell and wrapped quoted subcommand",
+			source: func() string {
+				return `RUN shell:"/bin/bash -c" cmd:'echo "Hello World"'`
+			},
+			exec: func(s *script.Script) error {
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+				pid := os.Getenv("CMD_PID")
+				if pid == "" {
+					return fmt.Errorf("RUN has unexpected pid %s", pid)
+				}
+
+				exitcode := os.Getenv("CMD_EXITCODE")
+				if exitcode != "0" {
+					return fmt.Errorf("RUN has unexpected exit code %s", exitcode)
+				}
+
+				result := os.Getenv("CMD_RESULT")
+				if strings.TrimSpace(result) != "Hello World" {
+					return fmt.Errorf("RUN has unexpected CMD_RESULT: %s", result)
 				}
 				return nil
 			},
@@ -226,6 +283,60 @@ func TestExecRemoteRUN(t *testing.T) {
 
 				result := os.Getenv("CMD_RESULT")
 				if result != "HELLO WORLD ALL" {
+					return fmt.Errorf("RUN has unexpected CMD_RESULT: %s", result)
+				}
+				return nil
+			},
+		},
+		{
+			name: "RUN default param with quoted subcommand",
+			source: func() string {
+				return `
+				FROM 127.0.0.1:22
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
+				RUN /bin/bash -c 'echo "Hello World"'`
+			},
+			exec: func(s *script.Script) error {
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+
+				exitcode := os.Getenv("CMD_EXITCODE")
+				if exitcode != "0" {
+					return fmt.Errorf("RUN has unexpected exit code %s", exitcode)
+				}
+
+				result := os.Getenv("CMD_RESULT")
+				if strings.TrimSpace(result) != "Hello World" {
+					return fmt.Errorf("RUN has unexpected CMD_RESULT: %s", result)
+				}
+				return nil
+			},
+		},
+		{
+			name: "RUN with shell and wrapped quoted subcommand",
+			source: func() string {
+				return `
+				FROM 127.0.0.1:22
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
+				RUN shell:"/bin/bash -c" cmd:'echo "Hello World"'`
+			},
+			exec: func(s *script.Script) error {
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+
+				exitcode := os.Getenv("CMD_EXITCODE")
+				if exitcode != "0" {
+					return fmt.Errorf("RUN has unexpected exit code %s", exitcode)
+				}
+
+				result := os.Getenv("CMD_RESULT")
+				if strings.TrimSpace(result) != "Hello World" {
 					return fmt.Errorf("RUN has unexpected CMD_RESULT: %s", result)
 				}
 				return nil

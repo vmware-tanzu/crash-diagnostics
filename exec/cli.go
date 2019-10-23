@@ -21,7 +21,7 @@ func CliRun(uid, gid uint32, cmd string, args ...string) (io.Reader, error) {
 		Credential: &syscall.Credential{Uid: uid, Gid: gid, NoSetGroups: true},
 	}
 
-	logrus.Debugf("Running %s %v (uid=%d,gid=%d)", cmd, args, uid, gid)
+	logrus.Debugf("Running %s %#v (uid=%d,gid=%d)", cmd, args, uid, gid)
 	if err := command.Run(); err != nil {
 		os.Setenv("CMD_EXITCODE", fmt.Sprintf("%d", command.ProcessState.ExitCode()))
 		os.Setenv("CMD_PID", fmt.Sprintf("%d", command.ProcessState.Pid()))

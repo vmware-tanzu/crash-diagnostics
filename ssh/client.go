@@ -9,7 +9,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"strings"
 
 	"github.com/sirupsen/logrus"
 
@@ -76,9 +75,8 @@ func (c *SSHClient) Dial(addr string) error {
 }
 
 // SSHRun executes the specified command on a remote host over SSH
-func (c *SSHClient) SSHRun(cmd string, args ...string) (io.Reader, error) {
-	cmdStr := strings.TrimSpace(fmt.Sprintf("%s %s", cmd, strings.Join(args, " ")))
-	logrus.Debug("Running remote command: ", cmdStr)
+func (c *SSHClient) SSHRun(cmdStr string) (io.Reader, error) {
+	logrus.Debug("SSHRun: ", cmdStr)
 	session, err := c.sshc.NewSession()
 	if err != nil {
 		return nil, err

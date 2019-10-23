@@ -5,7 +5,6 @@ package script
 
 import (
 	"fmt"
-	"os"
 )
 
 // CaptureCommand represents CAPTURE directive which
@@ -17,67 +16,46 @@ import (
 // The former takes no named parameter. When the latter form is used,
 // parameter cmd: is required.
 type CaptureCommand struct {
-	cmd
-	cmdName string
-	cmdArgs []string
+	*RunCommand
 }
 
 // NewCaptureCommand returns *CaptureCommand with parsed arguments
 func NewCaptureCommand(index int, rawArgs string) (*CaptureCommand, error) {
-	if err := validateRawArgs(CmdCapture, rawArgs); err != nil {
-		return nil, err
-	}
-
-	// determine args
-	var argMap map[string]string
-	if !isNamedParam(rawArgs) {
-		// setup default param (notice quoted value)
-		rawArgs = makeNamedPram("cmd", rawArgs)
-	}
-	argMap, err := mapArgs(rawArgs)
+	runCmd, err := NewRunCommand(index, rawArgs)
 	if err != nil {
 		return nil, fmt.Errorf("CAPTURE: %v", err)
 	}
+	runCmd.name = CmdCapture
 
-	if err := validateCmdArgs(CmdCapture, argMap); err != nil {
-		return nil, fmt.Errorf("CAPTURE: %s", err)
-	}
+	return &CaptureCommand{runCmd}, nil
+}
 
-	cmd := &CaptureCommand{cmd: cmd{index: index, name: CmdCapture, args: argMap}}
-
-	cmdName, cmdArgs, err := cmdParse(cmd.GetCmdString())
+// GetEffectiveCmd returns the shell (if any) and command as
+// a slice of strings
+func (c *CaptureCommand) GetEffectiveCmd() ([]string, error) {
+	args, err := c.RunCommand.GetEffectiveCmd()
 	if err != nil {
 		return nil, fmt.Errorf("CAPTURE: %s", err)
 	}
-	cmd.cmdName = cmdName
-	cmd.cmdArgs = cmdArgs
-	return cmd, nil
+	return args, nil
 }
 
-// Index is the position of the command in the script
-func (c *CaptureCommand) Index() int {
-	return c.cmd.index
-}
-
-// Name represents the name of the command
-func (c *CaptureCommand) Name() string {
-	return c.cmd.name
-}
-
-// Args returns a slice of raw command arguments
-func (c *CaptureCommand) Args() map[string]string {
-	return c.cmd.args
-}
-
-// GetCmdString returns the raw CLI command string
-func (c *CaptureCommand) GetCmdString() string {
-	return c.cmd.args["cmd"]
-}
-
-// GetParsedCmd returns the parsed cli command as commandName
-// followed by a slice of command arguments and any error that
-// may occur during parsing.
+// GetParsedCmd returns the effective parsed command as commandName
+// followed by a slice of command arguments
 func (c *CaptureCommand) GetParsedCmd() (string, []string, error) {
-	cmdStr := os.ExpandEnv(c.GetCmdString())
-	return cmdParse(cmdStr)
+	cmd, args, err := c.RunCommand.GetParsedCmd()
+	if err != nil {
+		return "", nil, fmt.Errorf("CAPTURE: %s", err)
+	}
+	return cmd, args, nil
+}
+
+// GetEffectiveCmdStr returns the effective command as a string
+// which wraps the command around a shell quote if necessary
+func (c *CaptureCommand) GetEffectiveCmdStr() (string, error) {
+	cmdStr, err := c.RunCommand.GetEffectiveCmdStr()
+	if err != nil {
+		return "", fmt.Errorf("CAPTURE: %s", err)
+	}
+	return cmdStr, nil
 }

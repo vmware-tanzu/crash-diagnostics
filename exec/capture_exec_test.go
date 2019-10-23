@@ -41,7 +41,9 @@ func TestExecLocalCAPTURE(t *testing.T) {
 		{
 			name: "CAPTURE multiple commands",
 			source: func() string {
-				return "CAPTURE '/bin/echo \"HELLO WORLD\"'\nCAPTURE ls ."
+				return `
+				CAPTURE '/bin/echo "HELLO WORLD"'
+				CAPTURE ls .`
 			},
 			exec: func(s *script.Script) error {
 				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
@@ -69,7 +71,10 @@ func TestExecLocalCAPTURE(t *testing.T) {
 			name: "CAPTURE command with user specified",
 			source: func() string {
 				uid := os.Getuid()
-				return fmt.Sprintf("AS userid:%d \nCAPTURE '/bin/echo \"HELLO WORLD\"'", uid)
+				return fmt.Sprintf(`
+					AS userid:%d 
+					CAPTURE '/bin/echo "HELLO WORLD"'`,
+					uid)
 			},
 			exec: func(s *script.Script) error {
 				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
@@ -94,6 +99,35 @@ func TestExecLocalCAPTURE(t *testing.T) {
 				return `
 				ENV msg="Hello to the World!"
 				CAPTURE "/bin/echo '${msg}'"`
+			},
+			exec: func(s *script.Script) error {
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
+				capCmd := s.Actions[0].(*script.CaptureCommand)
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+
+				fileName := filepath.Join(workdir.Path(), machine, fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
+				if _, err := os.Stat(fileName); err != nil {
+					return err
+				}
+				content, err := ioutil.ReadFile(fileName)
+				if err != nil {
+					return err
+				}
+				if strings.TrimSpace(string(content)) != "Hello to the World!" {
+					return fmt.Errorf("CAPTURE generated unexpected file content: %s", content)
+				}
+				return nil
+			},
+		},
+		{
+			name: "CAPTURE unquoted default with quoted subcommand",
+			source: func() string {
+				return `CAPTURE /bin/bash -c 'echo "Hello to the World!"'`
 			},
 			exec: func(s *script.Script) error {
 				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
@@ -243,6 +277,38 @@ func TestExecRemoteCAPTURE(t *testing.T) {
 				fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
 				if _, err := os.Stat(fileName); err != nil {
 					return err
+				}
+				return nil
+			},
+		},
+		{
+			name: "CAPTURE unquoted default with quoted subcommand",
+			source: func() string {
+				return `
+				FROM 127.0.0.1:22
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
+				CAPTURE /bin/bash -c 'echo "Hello to the World!"'`
+			},
+			exec: func(s *script.Script) error {
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
+				capCmd := s.Actions[0].(*script.CaptureCommand)
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+
+				fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
+				if _, err := os.Stat(fileName); err != nil {
+					return err
+				}
+				content, err := ioutil.ReadFile(fileName)
+				if err != nil {
+					return err
+				}
+				if strings.TrimSpace(string(content)) != "Hello to the World!" {
+					return fmt.Errorf("CAPTURE generated unexpected file content: %s", content)
 				}
 				return nil
 			},
