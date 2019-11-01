@@ -22,24 +22,31 @@ This tag/version reflects migration to github
 * [x] Introduce support for quoted strings in directives
 
 # v0.1.0-alpha.7
-* [ ] Revamp EVN variable expansion (i.e. use os.Expand)
-* [ ] Suppport for shell variable expansion format (i.e. ${Var})
-* [ ] Deprecate support for Go style templating ( i.e. {{.Var}} )
-* [ ] Apply tag v0.1.0-alpha.7
+* [x] Revamp EVN variable expansion (i.e. use os.Expand)
+* [x] Suppport for shell variable expansion format (i.e. ${Var})
+* [x] Deprecate support for Go style templating ( i.e. {{.Var}} )
+* [x] Apply tag v0.1.0-alpha.7
 
 # v0.1.0-alpha.8
-* [ ] New directive `RUN` (i.e. RUN shell:"/bin/bash" cmd:"<command string>" )
-* [ ] Grammatical/word corrections in crash-diagnostics --help output
+* [x] New directive `RUN` (i.e. RUN shell:"/bin/bash" cmd:"<command string>" )
+* [x] Grammatical/word corrections in crash-diagnostics --help output
 
 # v0.1.0-alpha.9
+* [x] Embedded quotes bug fix for `RUN` and `CAPTURE`
+
+# v0.1.0 Release
+* [ ] Doc udpdate
+* [ ] Todo and Roadmap updates
+
+# v0.2.0-alpha.0
 * [ ] New directive `KUBEGET`
 
-# v0.1.0-Beta.10
+# v0.2.1
 * [ ] Documentation update (tutorials and how tos)
 * [ ] Recipes (i.e. Diagnostics.file files for different well known debg)
 * [ ] Cloud API recipes (i.e. recipes to debug CAPV)
 
-# v0.2.0
+# v0.3.0
 * Refactor internal executor into a pluggable interface-driven model
   - i.e. possible suppor for different runtime ()
   - default runtime may use ssh and scp while other runtime may choose to use something else
