@@ -14,18 +14,23 @@ These releases are meant to introduce new features and introduce fundamental des
 ### Features
 * Go API - ensure a clear API surface for code reuse and embedding.
 * Pluggable executors - make executors (the code that executes the translated script directives) work using pluggable API (i.e. interface) 
-* `KUBEGET` - new directive to collect objects from a running Kubernetes API server
-* Develop troubleshooting recipes
 
 ## v0.2.x-Releases
-These releases will provide stability of features introduced in previous release series (v0.1.0).  The main theme in this release series is optimization. `Crash-diagnostics` has plenty of opportunities to improve operations when collecting cluster information.  
+The 0.2.x releases will continue to provide stability of features introduced in previous release series (v0.1.0).  
+There will be two main themes in this release:
+* Introduction of new `KUBEGET` directive to query objects from the API server
+* Start a collection of Diagnostics files for troubleshooting recipes
+* Redesign the execution backend into a pluggable system allowing different execution runtime (i.e. SSH, HTTP, gRPC, cloud provider, etc)
 
-### Features
-Some features may include:
+
+## v0.3.x-Releases
+This series of release will start introduce optimization features.  Some features may include:
 * Parsing and execution optimization (i.e. parallel execution)
 * A Uniform retry strategies (smart enough to requeue actions when failed)
+
+## v0.4.x-Releases
+Exploring other interesting ideas: 
 * Automated diagnostics (would be nice)
 * And more...
 
-## v0.3.x-Releases
 TBD
