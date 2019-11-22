@@ -5,7 +5,6 @@ package script
 
 import (
 	"fmt"
-	"os"
 )
 
 // OutputCommand representes a OUTPUT directive which can have
@@ -56,5 +55,5 @@ func (c *OutputCommand) Args() map[string]string {
 
 // Path returns the parsed path for directory
 func (c *OutputCommand) Path() string {
-	return os.ExpandEnv(c.cmd.args["path"])
+	return ExpandEnv(c.cmd.args["path"])
 }

@@ -14,7 +14,7 @@ func exeEnvs(src *script.Script) error {
 	// for _, envCmd := range envCmds {
 	// 	cmd := envCmd.(*script.EnvCommand)
 	// 	for name, val := range cmd.Envs() {
-	// 		if err := os.Setenv(name, os.ExpandEnv(val)); err != nil {
+	// 		if err := os.Setenv(name, script.ExpandEnv(val)); err != nil {
 	// 			return fmt.Errorf("ENV: %s", err)
 	// 		}
 	// 	}

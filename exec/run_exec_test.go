@@ -185,6 +185,25 @@ func TestExecLocalRUN(t *testing.T) {
 				return nil
 			},
 		},
+		{
+			name: "RUN with escaped var expansion",
+			source: func() string {
+				return `
+				ENV MSG="Hello"
+				RUN /bin/bash -c 'msg="$MSG World!" && echo \$msg'`
+			},
+			exec: func(s *script.Script) error {
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+				result := os.Getenv("CMD_RESULT")
+				if strings.TrimSpace(result) != "Hello World!" {
+					return fmt.Errorf("RUN has unexpected CMD_RESULT: %s", result)
+				}
+				return nil
+			},
+		},
 	}
 
 	for _, test := range tests {

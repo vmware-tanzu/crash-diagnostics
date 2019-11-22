@@ -89,7 +89,7 @@ func TestCommandAUTHCONFIG(t *testing.T) {
 			script: func(s *Script) error {
 				cmds := s.Preambles[CmdAuthConfig]
 				authCmd := cmds[0].(*AuthConfigCommand)
-				if authCmd.GetUsername() != os.ExpandEnv("$USER") {
+				if authCmd.GetUsername() != ExpandEnv("$USER") {
 					return fmt.Errorf("Unexpected username %s", authCmd.GetUsername())
 				}
 				if authCmd.GetPrivateKey() != "/a/b/c" {

@@ -5,7 +5,6 @@ package script
 
 import (
 	"fmt"
-	"os"
 )
 
 // RunCommand represents RUN directive which
@@ -69,12 +68,12 @@ func (c *RunCommand) Args() map[string]string {
 // GetCmdShell returns shell program and arguments
 // for running the command string (i.e. /bin/bash -c)
 func (c *RunCommand) GetCmdShell() string {
-	return os.ExpandEnv(c.cmd.args["shell"])
+	return ExpandEnv(c.cmd.args["shell"])
 }
 
 // GetCmdString returns the raw CLI command string
 func (c *RunCommand) GetCmdString() string {
-	return os.ExpandEnv(c.cmd.args["cmd"])
+	return ExpandEnv(c.cmd.args["cmd"])
 }
 
 // GetEffectiveCmd returns the shell (if any) and command as

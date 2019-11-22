@@ -66,7 +66,7 @@ func TestExecENV(t *testing.T) {
 				if os.Getenv("TEST_B") != "1" {
 					t.Errorf("unexpected ENV TEST_B value: %s", os.Getenv("TEST_B"))
 				}
-				if os.Getenv("TEST_C") != os.ExpandEnv("${USER}") {
+				if os.Getenv("TEST_C") != script.ExpandEnv("${USER}") {
 					t.Errorf("unexpected ENV TEST_C value: %s", os.Getenv("TEST_C"))
 				}
 				return nil

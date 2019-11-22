@@ -6,7 +6,6 @@ package script
 import (
 	"fmt"
 	"net"
-	"os"
 	"strings"
 )
 
@@ -80,7 +79,7 @@ func NewFromCommand(index int, rawArgs string) (*FromCommand, error) {
 
 	// populate machine representations
 	for _, host := range spaceSep.Split(argMap["hosts"], -1) {
-		addrVal := os.ExpandEnv(host)
+		addrVal := ExpandEnv(host)
 		cmd.machines = append(cmd.machines, *NewMachine(addrVal))
 	}
 

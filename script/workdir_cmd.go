@@ -5,7 +5,6 @@ package script
 
 import (
 	"fmt"
-	"os"
 )
 
 // WorkdirCommand representes a WORKDIR which may have one
@@ -58,5 +57,5 @@ func (c *WorkdirCommand) Args() map[string]string {
 
 // Path returns the parsed path for directory
 func (c *WorkdirCommand) Path() string {
-	return os.ExpandEnv(c.cmd.args["path"])
+	return ExpandEnv(c.cmd.args["path"])
 }
