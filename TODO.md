@@ -40,6 +40,9 @@ This tag/version reflects migration to github
 
 # v0.1.1
 * [ ] Fix parameter expansion clash between tool parser and shell
+* [ ] Introduce ability to escape variable expansion
+* [ ] Update docs
+* [ ] Update changelog doc
 
 # v0.2.0-alpha.0
 * [ ] New directive `KUBEGET`

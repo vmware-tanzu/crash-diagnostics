@@ -156,11 +156,17 @@ The previous command will copy file `/var/log/kube-proxy.log` and each file in d
 
 
 ### ENV
-This directive is used to inject environment variables that are made available to other commands at runtime:
+This directive is used to inject environment variables that are made available to other commands in the script file at runtime:
 ```
-ENV key0=val0 key1=val1 ... keyN=valN
+ENV key0=val0 key1=val1 key2=val2
+ENV key3=val3
+...
+ENV keyN=valN
 ```
-Multiple variables can be declared for each `ENV`.  A Diagnostics file can have one or more `ENV` declarations.
+Multiple variables can be declared for each `ENV` and a Diagnostics file can have one or more `ENV` declarations.  The `ENV` command can optionally use the named parameter format with parameter `vars:` as shown below:
+```
+ENV vars:"Foo=bar Blat=bat"
+```
 
 #### ENV Variable Expansion
 `Crash-Diagnostics` supports a simple version of Unix-style variable expansion using `$VarName` and `${varName}` formats.  The following example shows how this works:
@@ -174,9 +180,27 @@ ENV containerlogs=/var/log/containers
 COPY $logroot/${kubefile} 
 COPY ${containerlogs}
 ```
-The `ENV` command can optionally used parameter name `vars:` as shown below:
+
+#### Escaping Variable Expansion
+Because Crash Diagnostics files use the same variable expansion format as a shell script, this may create situations where the Diagnostics file expand variables that are intended to be interpreted by the shell script on the remote server.  For instance, the following command will not work properly:
+
 ```
-ENV vars:"Foo=bar Blat=bat"
+RUN /bin/bash -c 'for f in $(find /var/logs/containers -type f); do cat $f; done'
+```
+The previous will fail because Crash Diagnostics will expand the named variables (to empty) before the command is sent to the server as follows:
+```
+/bin/bash -c 'for f in find /var/logs/containers -type f); do cat ; done'
+```
+
+To fix this, Crash Diagnostics supports the ability to escape a variable expansion using `\$`.  Using the previous example, this would look like the following:
+
+```
+RUN /bin/bash -c 'for f in \$(find /var/logs/containers -type f); do cat \$f; done'
+```
+With the escape slashes in place, the correct shell command will be sent to the remote server as intended:
+
+```
+/bin/bash -c 'for f in $(find /var/logs/containers -type f); do cat $f; done'
 ```
 
 ### FROM
