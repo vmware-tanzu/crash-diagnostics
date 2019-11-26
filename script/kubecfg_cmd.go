@@ -5,7 +5,6 @@ package script
 
 import (
 	"fmt"
-	"os"
 )
 
 // KubeConfigCommand represents a KUBECONFIG directive which can have
@@ -57,7 +56,7 @@ func (c *KubeConfigCommand) Args() map[string]string {
 
 // Config returns the path to the config file
 func (c *KubeConfigCommand) Path() string {
-	return os.ExpandEnv(c.cmd.args["path"])
+	return ExpandEnv(c.cmd.args["path"])
 }
 
 // searchForConfig searches in several places for

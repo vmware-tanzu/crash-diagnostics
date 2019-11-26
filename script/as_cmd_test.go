@@ -133,7 +133,7 @@ func TestCommandAS(t *testing.T) {
 			script: func(s *Script) error {
 				cmds := s.Preambles[CmdAs]
 				asCmd := cmds[0].(*AsCommand)
-				if asCmd.GetUserId() != os.ExpandEnv("$USER") {
+				if asCmd.GetUserId() != ExpandEnv("$USER") {
 					return fmt.Errorf("Unexpected AS userid %s", asCmd.GetUserId())
 				}
 				if asCmd.GetGroupId() != "barid" {

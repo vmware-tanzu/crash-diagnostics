@@ -71,8 +71,8 @@ func NewEnvCommand(index int, rawArgs string) (*EnvCommand, error) {
 		}
 		value := val[0]
 
-		cmd.envs[key] = os.ExpandEnv(value)
-		if err := os.Setenv(key, os.ExpandEnv(value)); err != nil {
+		cmd.envs[key] = ExpandEnv(value)
+		if err := os.Setenv(key, ExpandEnv(value)); err != nil {
 			return nil, fmt.Errorf("ENV: %s", err)
 		}
 	}

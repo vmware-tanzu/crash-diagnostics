@@ -1,4 +1,142 @@
 # Changelog
+## v0.1.0
+This is the first release of the project.  It marks the end of the 0.1.0-alpha.x release series designed to get the project to a stable and usable place.  It includes the following high level features:
+
+* Support for diagnostics script file
+* Support for several directive commands including RUN, COPY, CAPTURE, etc
+* Flexible script directive format with support fro nested quotes for complex shell commands
+* Script supports environment variable declaration with variable expansion
+* Ability to execute diagnostics script commands on remote machines
+* Automatically collect and collate script result as a tar file
+* Etc
+
+See the [README](https://github.com/vmware-tanzu/crash-diagnostics/blob/master/README.md) for feature detail.
+
+#### Changelog
+
+79322fa Merge pull request #28 from vladimirvivien/v0.1.0-release
+8a0d801 v0.1.0 Release and doc update
+32e599b Merge pull request #27 from vladimirvivien/release-v0.1.0
+7124db5 v0.1.0 release doc updates
+
+## v0.1.0-alpha.9
+This is a fix release that corrects the way directives such as `RUN` and `CAPTURE` handle embedded quotes (see issue #23 for detail).  This release also adds the `shell:` named param to `RUN` and `CAPTURE` to specify a shell program to use to wrap a given command.  So now the followings are supported for these two actions (note the way quotes can now be embedded):
+
+* `{RUN | CAPTURE} echo "Hello World!"`
+* `{RUN | CAPTURE} "echo 'Hello World!'"`
+* `{RUN | CAPTURE} 'echo "Hello World"'`
+* `{RUN | CAPTURE} "/bin/sh -c 'date -u'"`
+* `{RUN | CAPTURE} /bin/bash -c 'echo "Hello World"'`
+* `{RUN | CAPTURE} cmd:"echo 'HELLO WORLD'"`
+* `{RUN | CAPTURE} shell:"/bin/bash -c" cmd:"echo 'HELLO WORLD'"`
+
+#### Changelog
+264a134 Merge pull request #25 from vladimirvivien/quote-bug-fix
+88071f2 Changes and tests for quoted SSH commands
+bf355da Executor test updates to handle embedded quotes
+e9b93ec Script parser updates to handle embeded quotes
+dac401b Merge pull request #22 from YanzhaoLi/topic/fix-run-error-info
+fd7e470 Change Run command's error info
+
+
+## v0.1.0-alpha.8
+This release introduces the new `RUN` directive to execute commands on remote machines without capturing the output in the generated archive file like `CAPTURE`.  This is useful help interact with the remote nodes for tasks such as data preparation such as the following example:
+
+```
+# gather logs
+RUN mkdir -p /tmp/all-logs
+RUN cp /var/log/containers/* /tmp/all-logs 
+RUN cp /var/log/kube-apiserver.log /tmp/all-logs
+RUN cp /var/log/kubelet.log /tmp/all-logs
+RUN cp /var/log/kube-proxy.log /tmp/all-logs
+
+# copy all logs
+COPY /tmp/all-logs
+
+# clean up
+RUN /usr/bin/rm -rf /tmp/all-logs
+```
+
+#### Changelog
+e2a9055 Merge pull request #19 from vladimirvivien/run-command-support
+1cd6097 Documentation updates for RUN command
+f8442b3 Executor updates for RUN command
+64d62a5 Parser updates for RUN command
+
+
+## v0.1.0-alhpa.7
+This release introduces Unix-style variable expansion in Diagnostics.file script.  The previous `Go-style` templating has been `deprecated`  in favor of the more traditional variable expansion.
+
+## Variable Expansion
+Now all directives that appear in the Diagnostic script file can support variable expansion. This provides a more familiar feel to those with experience writing shell script.  For instance, the following shows how variable expansion can be used in a Diagnostics script:
+
+```
+ENV clogs=/var/log/containers
+ENV klogroot=/var/log
+COPY ${clogs}
+COPY $klogroot/kubelet.log
+COPY ${klogroot}/kube-proxy.log
+COPY ${klogroot}/kube-apiserver.log
+```
+
+Diagnostics script files can also access any environment variables made available to the process at runtime:
+```
+FROM 127.0.0.1:22
+AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
+CAPTURE /bin/echo "HELLO WORLD"
+```
+
+#### Changelog
+e64ccca Merge pull request #18 from vladimirvivien/var-expansion-redo
+43b2371 Documentation updates
+0621e2c Executor updates with var expansion support
+bfd2430 Parser update  with variable expansion support
+
+
+## v0.1.0-alpha.6
+This release introduces better more robust directive string parsing with support for quoted values.  With this release, the followings are possible:
+* `DIRECTIVE paramName:ParamValue` example: `WORKDIR path:/tmp/mypath`
+* `DIRECTIVE paramName:"paramValue"` example `OUTPUT path:"/tmp/my dir"`
+* `DIRECTIVE paramName:'value0 "value1"'`  example `CAPTURE cmd:'/bin/echo "Hello World!"'`
+
+Also most directive also support now a default parameter than can be specified without a parameter name which can also support quoted values:
+
+* `WORKDIR "/tmp/my dir"`
+* `ENV "key0=val0 key1=val1"`
+* Etc. (see documentation)
+
+#### Changelog
+647c71b Merge pull request #14 from vladimirvivien/quoted-cmd-parsing
+4c22fef Better command parsing, quoted value support
+
+
+## v0.1.0-alpha.5
+This release introduces a uniform way of specifying parameters for DIRECTIVEs in the Diagnostics.file.  Now, named parameters may be used to pass values into all directives.  See the README.
+
+#### Changelog
+5710199 Merge pull request #13 from vladimirvivien/uniform-directive-params
+3cfaf0c Update README doc
+ba3e873 exec package supports named params
+370d43a Parser updated to support named params
+22ac1fc Start refactoring for all commands
+
+
+## v0.1.0-alpha.4
+This release sets up automated build and release with goreleaser and travis
+No new features introduced.
+
+#### Changelog
+4b6c1b7 Merge pull request #8 from vladimirvivien/fix-travis-encrypt-val-parsing
+ba8fe45 Fix for encrypted env in travis
+b7eab26 Merge pull request #7 from vladimirvivien/travis-fix
+a239215 (origin/travis-fix) Fixing encrypted global var
+8ca1f57 Merge pull request #6 from vladimirvivien/release-automation-fix
+f76f5ff (origin/release-automation-fix) Fix to travis encrypted values
+81b4c23 Merge pull request #3 from vladimirvivien/release-automation
+8aa0fd0 (origin/release-automation) Build and release automation with travis, gorelaser
+0f6b3f8 Merge pull request #2 from vladimirvivien/automated-build
+9a0ef20 (origin/automated-build) Initial CI setup for automatic build/test
+
 
 ## v0.1.0-alpha.0 (10/2/2019)
 Initial release.
@@ -24,6 +162,8 @@ WORKDIR
 * See [README.md](README.md) for detail
 
 ## Previous changes
+
+#### Changelog
 e805951 (HEAD -> alpha.0-migration-doc, upstream/master, upstream/HEAD, update-author-info, master) Migration to GitHub/VMware-Tanzu
 bd4846e OSS compliance docs and updates
 2f70416 Naming refactor, fixes, and tests

@@ -64,12 +64,12 @@ func (c *AsCommand) Args() map[string]string {
 
 // GetUserId returns the userid specified in AS
 func (c *AsCommand) GetUserId() string {
-	return os.ExpandEnv(c.cmd.args["userid"])
+	return ExpandEnv(c.cmd.args["userid"])
 }
 
 // GetGroupId returns the gid specified in AS
 func (c *AsCommand) GetGroupId() string {
-	return os.ExpandEnv(c.cmd.args["groupid"])
+	return ExpandEnv(c.cmd.args["groupid"])
 }
 
 // GetCredentials returns the uid and gid value extracted from Args

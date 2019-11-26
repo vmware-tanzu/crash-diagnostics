@@ -5,7 +5,6 @@ package script
 
 import (
 	"fmt"
-	"os"
 )
 
 // CopyCommand represents a COPY directive which may have
@@ -60,7 +59,7 @@ func (c *CopyCommand) Name() string {
 func (c *CopyCommand) Paths() []string {
 	paths := []string{}
 	for _, path := range spaceSep.Split(c.cmd.args["paths"], -1) {
-		paths = append(paths, os.ExpandEnv(path))
+		paths = append(paths, ExpandEnv(path))
 	}
 	return paths
 }

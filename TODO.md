@@ -35,8 +35,14 @@ This tag/version reflects migration to github
 * [x] Embedded quotes bug fix for `RUN` and `CAPTURE`
 
 # v0.1.0 Release
-* [ ] Doc udpdate
-* [ ] Todo and Roadmap updates
+* [x] Doc udpdate
+* [x] Todo and Roadmap updates
+
+# v0.1.1
+* [ ] Fix parameter expansion clash between tool parser and shell
+* [ ] Introduce ability to escape variable expansion
+* [ ] Update docs
+* [ ] Update changelog doc
 
 # v0.2.0-alpha.0
 * [ ] New directive `KUBEGET`
