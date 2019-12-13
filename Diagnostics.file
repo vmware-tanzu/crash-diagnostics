@@ -28,7 +28,7 @@ WORKDIR /tmp/crashdir
 # If not provided, the tool will attempt to get
 # the config file from env $KUBECONFIG or 
 # $HOME/.kube/config
-KUBECONFIG $HOME/.kube/kind-config-kind
+# KUBECONFIG $HOME/.kube/kind-config-kind
 
 # KUBEGET retrieves specified Kubenetes objects from API server.
 # It supports the followings:

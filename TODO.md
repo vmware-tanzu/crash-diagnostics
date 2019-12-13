@@ -39,13 +39,15 @@ This tag/version reflects migration to github
 * [x] Todo and Roadmap updates
 
 # v0.1.1
-* [ ] Fix parameter expansion clash between tool parser and shell
-* [ ] Introduce ability to escape variable expansion
-* [ ] Update docs
-* [ ] Update changelog doc
+* [x] Fix parameter expansion clash between tool parser and shell
+* [x] Introduce ability to escape variable expansion
+* [x] Update docs
+* [x] Update changelog doc
 
 # v0.2.0-alpha.0
 * [ ] New directive `KUBEGET`
+* [ ] Update doc
+
 
 # v0.2.1
 * [ ] Documentation update (tutorials and how tos)

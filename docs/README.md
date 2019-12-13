@@ -78,6 +78,7 @@ COPY
 ENV
 FROM
 KUBECONFIG
+KUBEGET
 OUTPUT
 RUN
 WORKDIR
@@ -218,36 +219,64 @@ FROM hosts:"10.10.100.2:22 10.10.100.3:22 10.10.100.4:22"
 By default the `crash-diagnostics` will use SSH as a runtime to interact with the specified remote hosts.
 
 ### KUBECONFIG
-This directive specifies the fully qualified path of the Kubernetes client configuration file. The
-tool will use this value to load the Kubernetes configuration file to communicate with the API server to retrieve vital cluster information if available.  
-
-`KUBECONFIG` is declared as shown below:
+This directive specifies the fully qualified path of the Kubernetes client configuration file or KUBECONFIG.  If the specified path does not exist, all subsquent command that uses this configuration will quietly fail (logged).
 
 ```
-KUBECONFIG /path/to/kube/config
+KUBECONFIG $HOME/.kube/kind-config-kind
+```
+The previous configures KUBECONFIG to use `$HOME/.kube/kind-config-kind`.
 
-# Or using its named parameter `path`
+### KUBEGET
+The `KUBEGET` directive allows a running diagnostic script to connect to an available API server and retrieve API resources such as objects and logs.  `KUBEGET` takes several parameters that can be combined to filter and select specific objects.  The command can get API server `objects`, `logs`, or `all` specified using optionally-named `what` parameter as shown below:
 
-KUBECONFIG path:"/path/to/kube/config"
+```
+# specifies to get objects
+KUBEGET objects
 ```
 
-By default, the following resources will be retrieved from the API server:
+Or, the long format of the same command:
 
- * Namespaces
- * Nodes
- * Events
- * Replication Controllers
- * Services
- * DaemonSets
- * Deployments
- * ReplicaSets
- * Pods
+```
+KUBEGET what:"objects"
+```
 
-If `KUBECONFIG` is not specified, the tool will attempt to search for:
- * Environment variable `KUBECONFIG`
- * If the `KUBECONFIG` env variable is not set, path $HOME/.kube/config will be used
+#### `KUBEGET` parameters:
+* `what` - an optionally-named parameter that specifies what to get inclusing `objects`, `logs`, or `all`.
+  * When `objects` - any API objects are retrieved (without logs)
+  * When `logs` - Pods are retrieved including associated logs
+  * When `all` - everything is retrieved including objects and logs.
+  * Example: `KUBEGET objects`
+* `groups` - a list specifying from which group to retrieve API objects.  For legacy core group, use `core`.
+  * Example: `KUBEGET objects groups:"core apps"` 
+  * Selects all objects from both `/api/v1` (core) and `/apis/apps`.
+  * When `what=logs`, groups is automatically set to `core`.
+* `kinds` - a list of object kinds to select.
+  * Example: `KUBEGET objects kinds:"pods deployments"`
+  * Retrieves objects of kind (or resource.Name) `pods` and `deployments`
+  * While the parameter is called `kinds`, the match is done on the resource's plural name (i.e. `pods`, `services`, `deployments`, etc).
+  * When `what=logs"`, kinds is preset to `pods`.
+* `namespaces` - specifies a list of namespaces from which to select objects.
+  * Example: `KUBEGET logs namespaces:"default kube-system"` 
+  * Retrieves logs from pods in namespace`default` or `kube-system`. 
+  * An empty value will get objects from all namespaces.
+* `versions` - a list of API versions used to select objects.
+  * Example: `KUBEGET objects groups:"apps" versions:"v1 v1alpha1"`
+  * Retrieves objects from group `apps` having versions `v1` or `v1alpha1`.
+* `names` - a list used to filter retrieved object names.
+  * Example:`KUBEGET logs names:"kindnet etcd"`
+  * Retrieves logs from pods with name matching `kindnet` or `etcd`.
+* `containers` - a list of container names used when to filter selected pod objects. 
+  * Example: `KUBEGET objects kinds:"pods" containers:"kindnet-cni"`
+  * Retrieves the pods that have containers named `kindnet-cni`
+* `labels` - the label selector expression used to filter selected objects.
+  * Example: `KUBEGET objects kinds:"services" labels:"app=website"`
+  * Retrieves all services with label `app:website`.
+  * Expression uses same format as that used in `kubectl`.
 
-If a Kubernetes configuration file is not found or the API server is unresponsive, cluster information will be skipped.
+Here is an example of `KUBEGET` that explicitly uses most of its parameters (assuming `KUBECONFIG` is declared properly):
+```
+KUBEGET objects groups:"core" kinds:"pods" namespaces:"kube-system default" containers:"kindnet-cni etcd"
+```
 
 ### OUTPUT
 This directive configures the location and file name of the generated archive file as shown in the following example:
