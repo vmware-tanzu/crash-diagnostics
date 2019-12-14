@@ -69,7 +69,7 @@ func NewFromCommand(index int, rawArgs string) (*FromCommand, error) {
 	}
 	argMap, err := mapArgs(rawArgs)
 	if err != nil {
-		return nil, fmt.Errorf("CAPTURE: %v", err)
+		return nil, fmt.Errorf("FROM: %v", err)
 	}
 
 	cmd := &FromCommand{cmd: cmd{index: index, name: CmdFrom, args: argMap}}

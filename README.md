@@ -2,10 +2,10 @@
 
 Crash Recovery and Diagnostics for Kubernetes (*Crash Diagnostics* for short) is designed to help human operators who are investigating and troubleshooting unhealthy or unresponsive Kubernetes clusters.  It is a project designed to automate the diagnosis of problem clusters that may be in an unstable state including completely inoperable.  In its introductory release, Crash Diagnostics provides cluster operators the ability to automatically collect machine states and other information from each node in a cluster.  The collected information is then bundled in a tar file for further analysis. 
 
-## Collecting troubleshooting information 
+## Collecting information for troubleshooting
 To specify the resources to collect from cluster machines, a series of commands are declared in a file called a diagnostics file.  Like a Dockerfile, the diagnostics file is a collection of line-by-line directives with commands that are executed on each specified cluster machine.  The output of the commands is then added to a tar file and saved for further analysis.    
 
-For instance, when the following diagnostics file (saved as Diagnostics.file) is executed, it will collect information from the two cluster machines specified with the FROM directive): 
+For instance, when the following diagnostics file (saved as Diagnostics.file) is executed, it will collect information from the two cluster machines (specified with the `FROM` directive): 
 
 ```
 FROM  192.168.176.100:22 192.168.176.102:22 
@@ -25,10 +25,16 @@ CAPTURE journalctl -l -u kube-apiserver
 
 # Collect docker-related logs 
 CAPTURE journalctl -l -u docker 
-CAPTURE /bin/sh -c "docker ps | grep apiserver" 
+CAPTURE /bin/sh -c "docker ps | grep apiserver"
+
+# Collect objects and logs from API server if available
+KUBECONFIG $HOME/.kube/kind-config-kind
+KUGEGET objects namespaces:"kube-system default" kind:"deployments" 
+KUBEGET logs namespaces:"default" containers:"hello-app"
 
 OUTPUT ./crash-out.tar.gz 
 ```
+Note that the tool can also collect resource data from the API server, if available, using `KUBECONFIG` and the `KUBEGET` command.
 
 ## Features
 * Simple declarative script with flexible format
@@ -37,6 +43,7 @@ OUTPUT ./crash-out.tar.gz
 * Easily transfer files from cluster machines
 * Execute commands on remote machines and captures the results
 * Automatically collect information from multiple machines
+* Collect resource data and pod logs from an available API server
 
 See the complete list of supported [directives here](./docs/README.md).
 

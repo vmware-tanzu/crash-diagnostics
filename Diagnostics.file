@@ -18,7 +18,7 @@ FROM local
 # specified in the FROM declaration above. Each remote connection 
 # will use the specified username and private-key.
 # When FROM local is used, this setting is ignored.
-AUTHCONFIG username:{{.Username}} private-key:{{.Home}}/.ssh/id_rsa
+AUTHCONFIG username:$USER private-key:$HOME/.ssh/id_rsa
 
 # WORKDIR specifies a location on disk
 # where the tool collects information
@@ -28,11 +28,25 @@ WORKDIR /tmp/crashdir
 # If not provided, the tool will attempt to get
 # the config file from env $KUBECONFIG or 
 # $HOME/.kube/config
-# KUBECONFIG {{.Home}}/.kube/kind-config-kind
+# KUBECONFIG $HOME/.kube/kind-config-kind
+
+# KUBEGET retrieves specified Kubenetes objects from API server.
+# It supports the followings:
+# `KUBEGET all`  - retrieves all objects
+# `KUBEGET objects` - retrieves specified objects using the following parameters:
+#  - namespaces:<space-sep namespaces> 
+#  - groups:<space-sep group names> 
+#  - kinds:<space-sep kind names> 
+#  - versions:<space-sep resource versions> 
+#  - names:<space-sep list of object name> 
+#  - labels:<space-sep label selectors>
+# KUBEGET objects groups:"core" kinds:"pods" namespaces:"kube-system default" containers:"kindnet-cni etcd"
+# KUBEGET logs namespaces:"default" containers:"kindnet-cni"
+KUBEGET all namespaces:"default"
 
 # Sample commands
-COPY /var/log/syslog
-CAPTURE df -i
-CAPTURE netstat -an
-CAPTURE ps -ef
-CAPTURE lsof -i
+#COPY /var/log/syslog
+#CAPTURE df -i
+#CAPTURE netstat -an
+#CAPTURE ps -ef
+#CAPTURE lsof -i

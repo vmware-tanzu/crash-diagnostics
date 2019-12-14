@@ -64,6 +64,7 @@ github.com/google/pprof v0.0.0-20181206194817-3ea8567a2e57/go.mod h1:zfwlbNMJ+OI
 github.com/google/uuid v1.1.1/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/googleapis/gax-go/v2 v2.0.4/go.mod h1:0Wqv26UfaUD9n4G6kQubkQ+KchISgw+vpHVxEJEs9eg=
 github.com/googleapis/gnostic v0.0.0-20170426233943-68f4ded48ba9/go.mod h1:sJBsCZ4ayReDTBIg8b9dl28c5xFWyhBTVRp3pOg5EKY=
+github.com/googleapis/gnostic v0.0.0-20170729233727-0c5108395e2d h1:7XGaL1e6bYS1yIonGp9761ExpPPV1ui0SAC59Yube9k=
 github.com/googleapis/gnostic v0.0.0-20170729233727-0c5108395e2d/go.mod h1:sJBsCZ4ayReDTBIg8b9dl28c5xFWyhBTVRp3pOg5EKY=
 github.com/gophercloud/gophercloud v0.1.0/go.mod h1:vxM41WHh5uqHVBMZHzuwNOHh8XEoIEcSTewFxm1c5g8=
 github.com/gregjones/httpcache v0.0.0-20170728041850-787624de3eb7/go.mod h1:FecbI9+v66THATjSRHfNgh1IVFe/9kFxbXtjV0ctIMA=
@@ -221,6 +222,7 @@ k8s.io/api v0.0.0-20190828114745-198695d0603e h1:0TxrZbch+2PHjvhjnua6sw8zyEnnuW1
 k8s.io/api v0.0.0-20190828114745-198695d0603e/go.mod h1:Ik8tfB+q7IZDY6j3l3XfCxTl8s2knJz66H5FNYIj4oI=
 k8s.io/apimachinery v0.0.0-20190828114620-4147c925140e h1:GngRNpgoY3brjrh2EolLMUPVZ4obCI7mfZ0KiC/vIVU=
 k8s.io/apimachinery v0.0.0-20190828114620-4147c925140e/go.mod h1:OOC7vMsHyCzra5xu6r1bRXkXMH76iww9BeHOAAJof4U=
+k8s.io/apimachinery v0.0.0-20191203211716-adc6f4cd9e7d h1:q+OZmYewHJeMCzwpHkXlNTtk5bvaUMPCikKvf77RBlo=
 k8s.io/cli-runtime v0.0.0-20190828120509-9a5048624be8 h1:c0/XXLZfWrLJKa+fsEaE7qUCB25UzXSuIxzi7SO0T/Y=
 k8s.io/cli-runtime v0.0.0-20190828120509-9a5048624be8/go.mod h1:MHPTyiuwsje/STRmczOtmp/++9c9zUm/UZj3jBQuMMA=
 k8s.io/client-go v0.0.0-20190828114957-b4d94f01600c h1:ov0BGPQk6p8H4tmfRiLw/9flSfePczv7mt5VYVZBhd8=

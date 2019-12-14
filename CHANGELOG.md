@@ -1,4 +1,23 @@
 # Changelog
+## v0.1.1
+This release fixes variable expansion clash whereby Crash Diagnostics would interpret variables early that are intended to be sent to remote servers.  For instance, the following `RUN` would not work properly since `$f` would be interpreted by Crash Diagnostics as empty:
+
+```
+RUN /bin/bash -c 'for f in $(find /var/logs/containers -type f); do cat $f; done'
+```
+This PR introduces the ability to escape the variable expansion, allowing it to be sent to the server as intended as shown below:
+
+```
+RUN /bin/bash -c 'for f in \$(find /var/logs/containers -type f); do cat \$f; done'
+``` 
+
+See [README](https://github.com/vmware-tanzu/crash-diagnostics/blob/master/docs/README.md#escaping-variable-expansion) for detail.
+
+## Changelog
+6fca28a Merge pull request #31 from vladimirvivien/variable-expansion-clash-fix
+79783de Documentation update for variable expansion escape
+b6ffd97 Fix for variable expansion clash with expansion escape
+
 ## v0.1.0
 This is the first release of the project.  It marks the end of the 0.1.0-alpha.x release series designed to get the project to a stable and usable place.  It includes the following high level features:
 

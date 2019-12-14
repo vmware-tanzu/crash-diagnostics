@@ -111,6 +111,12 @@ func Parse(reader io.Reader) (*Script, error) {
 				return nil, err
 			}
 			script.Actions = append(script.Actions, cmd)
+		case CmdKubeGet:
+			cmd, err := NewKubeGetCommand(line, rawArgs)
+			if err != nil {
+				return nil, err
+			}
+			script.Actions = append(script.Actions, cmd)
 		default:
 			return nil, fmt.Errorf("%s not supported", cmdName)
 		}
@@ -211,7 +217,7 @@ func makeNamedPram(name, value string) string {
 
 // enforceDefaults adds missing defaults to the script
 func enforceDefaults(script *Script) (*Script, error) {
-	logrus.Debug("Appling default values")
+	logrus.Debug("Applying default values")
 	if _, ok := script.Preambles[CmdAs]; !ok {
 		cmd, err := NewAsCommand(0, fmt.Sprintf("userid:%d groupid:%d", os.Getuid(), os.Getgid()))
 		if err != nil {
