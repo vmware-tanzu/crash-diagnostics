@@ -26,7 +26,7 @@ func CliRun(uid, gid uint32, cmd string, args ...string) (io.Reader, error) {
 		os.Setenv("CMD_EXITCODE", fmt.Sprintf("%d", command.ProcessState.ExitCode()))
 		os.Setenv("CMD_PID", fmt.Sprintf("%d", command.ProcessState.Pid()))
 		os.Setenv("CMD_SUCCESS", fmt.Sprintf("%t", command.ProcessState.Success()))
-		return nil, err
+		return output, err
 	}
 
 	// save process info

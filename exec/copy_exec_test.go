@@ -189,6 +189,56 @@ func TestExecLocalCOPY(t *testing.T) {
 			},
 		},
 		{
+			name: "COPY with globs",
+			source: func() string {
+				return `
+				COPY /tmp/test-dir/*.txt
+				COPY /tmp/test-dir/bazz.csv
+				`
+			},
+			exec: func(s *script.Script) error {
+
+				var paths []string
+				cpCmd0 := s.Actions[0].(*script.CopyCommand)
+				dir := filepath.Dir(cpCmd0.Paths()[0])
+
+				if err := makeTestDir(t, dir); err != nil {
+					return fmt.Errorf("failed to crete test dir: %s", err)
+				}
+
+				f0 := filepath.Join(dir, "foo.txt")
+				if err := makeTestFakeFile(t, f0, "Hello from Foo!"); err != nil {
+					return err
+				}
+				paths = append(paths, f0)
+
+				f1 := filepath.Join(dir, "bar.txt")
+				if err := makeTestFakeFile(t, f1, "Hello from Bar!"); err != nil {
+					return err
+				}
+				paths = append(paths, f1)
+
+				f2 := filepath.Join(dir, "bazz.csv")
+				if err := makeTestFakeFile(t, f2, "b, a, z, z"); err != nil {
+					return err
+				}
+				paths = append(paths, f2)
+				defer os.RemoveAll(dir)
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return fmt.Errorf("Test command exec failed: %s", err)
+				}
+
+				for _, srcFile := range paths {
+					if _, err := os.Stat(srcFile); err != nil {
+						return fmt.Errorf("Test unable to verify created file: %s", err)
+					}
+				}
+				return nil
+			},
+		},
+		{
 			name: "COPY bad source files",
 			source: func() string {
 				return "COPY /foo/bar.txt"
@@ -340,6 +390,61 @@ func TestExecRemoteCOPY(t *testing.T) {
 
 				for _, srcFile := range srcFiles {
 					fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), srcFile)
+					if _, err := os.Stat(fileName); err != nil {
+						return err
+					}
+				}
+				return nil
+			},
+		},
+		{
+			name: "COPY with globs",
+			source: func() string {
+				src := `FROM 127.0.0.1:22
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
+				COPY /tmp/test-dir/*.txt
+				COPY /tmp/test-dir/bazz.csv
+				`
+				return src
+			},
+			exec: func(s *script.Script) error {
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
+
+				var paths []string
+				cpCmd0 := s.Actions[0].(*script.CopyCommand)
+				dir := filepath.Dir(cpCmd0.Paths()[0])
+
+				if err := makeRemoteTestDir(t, machine, dir); err != nil {
+					return err
+				}
+
+				f0 := filepath.Join(dir, "foo.txt")
+				if err := makeRemoteTestFile(t, machine, f0, "Hello from Foo!"); err != nil {
+					return err
+				}
+				paths = append(paths, f0)
+
+				f1 := filepath.Join(dir, "bar.txt")
+				if err := makeRemoteTestFile(t, machine, f1, "Hello from Bar!"); err != nil {
+					return err
+				}
+				paths = append(paths, f1)
+
+				f2 := filepath.Join(dir, "bazz.csv")
+				if err := makeRemoteTestFile(t, machine, f2, "b, a, z, z"); err != nil {
+					return err
+				}
+				paths = append(paths, f2)
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+
+				for _, path := range paths {
+					defer removeRemoteTestFile(t, machine, path)
+					fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), path)
 					if _, err := os.Stat(fileName); err != nil {
 						return err
 					}

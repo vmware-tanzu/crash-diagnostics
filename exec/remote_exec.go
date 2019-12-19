@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -154,25 +155,34 @@ func copyRemotely(user, privKey string, machine *script.Machine, asCmd *script.A
 	for _, path := range cmd.Paths() {
 
 		remotePath := fmt.Sprintf("%s@%s:%s", user, host, path)
-		logrus.Debugf("Copying %s to %s", remotePath, dest)
 
+		// if path contains file pattern, adjust target
+		pathDir, pathFile := filepath.Split(path)
 		targetPath := filepath.Join(dest, path)
 		targetDir := filepath.Dir(targetPath)
-		if _, err := os.Stat(targetDir); err != nil {
-			if os.IsNotExist(err) {
-				if err := os.MkdirAll(targetDir, 0744); err != nil && !os.IsExist(err) {
-					return err
-				}
-				logrus.Debugf("Created dir %s", targetDir)
-			} else {
-				return err
-			}
+		if strings.Index(pathFile, "*") != -1 {
+			targetPath = filepath.Join(dest, pathDir)
+			targetDir = targetPath
 		}
 
+		if _, err := os.Stat(targetDir); err != nil {
+			if !os.IsNotExist(err) {
+				return err
+			}
+
+			if err := os.MkdirAll(targetDir, 0744); err != nil && !os.IsExist(err) {
+				return err
+			}
+			logrus.Debugf("Created dir %s", targetDir)
+		}
+
+		logrus.Debugf("Copying %s to %s", path, targetPath)
+
 		args := []string{cliScpArgs, "-o StrictHostKeyChecking=no", "-P", port, "-i", privKey, remotePath, targetPath}
-		_, err := CliRun(uint32(asUid), uint32(asGid), cliScpName, args...)
+		output, err := CliRun(uint32(asUid), uint32(asGid), cliScpName, args...)
 		if err != nil {
-			cliErr := fmt.Errorf("scp command failed: %s", err)
+			msgBytes, _ := ioutil.ReadAll(output)
+			cliErr := fmt.Errorf("scp command failed: %s: %s", err, string(msgBytes))
 			logrus.Warn(cliErr)
 			return writeError(cliErr, targetPath)
 		}
