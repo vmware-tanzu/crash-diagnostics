@@ -1,3 +1,5 @@
+![](https://github.com/vladimirvivien/crash-dianostics/workflows/Crash%20Diagnostics%20Build/badge.svg)
+
 # Crash Recovery and Diagnostics for Kubernetes
 
 Crash Recovery and Diagnostics for Kubernetes (*Crash Diagnostics* for short) is designed to help human operators who are investigating and troubleshooting unhealthy or unresponsive Kubernetes clusters.  It is a project designed to automate the diagnosis of problem clusters that may be in an unstable state including completely inoperable.  In its introductory release, Crash Diagnostics provides cluster operators the ability to automatically collect machine states and other information from each node in a cluster.  The collected information is then bundled in a tar file for further analysis. 
