@@ -1,4 +1,15 @@
 # Changelog
+## v0.2.0-alpha.0
+This release introduces new directive `KUBEGET` to retrieve API objects and pod logs from the API server.  When an API connection is configured properly using `KUBECONFIG`, KUBEGET can be used to retrieve any accessible arbitrary API objects or access logs for running pods as shown in the following example:
+
+```
+KUBEGET objects groups:"core" kinds:"pods" namespaces:"kube-system default" containers:"kindnet-cni etcd"
+```
+
+The previous command would retrieve all pods from namespace kube-system or default having containers named kindnet-cni or etcd.
+
+See [README](https://github.com/vmware-tanzu/crash-diagnostics/tree/master/docs#kubeget) for detail.
+
 ## v0.1.1
 This release fixes variable expansion clash whereby Crash Diagnostics would interpret variables early that are intended to be sent to remote servers.  For instance, the following `RUN` would not work properly since `$f` would be interpreted by Crash Diagnostics as empty:
 
