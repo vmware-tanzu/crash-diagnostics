@@ -1,0 +1,19 @@
+name: Crash Diagnostics Build
+on: [push]
+jobs:
+  go-build:
+    name: Build-Test-Binary
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Set up Go 1.13
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.13.x
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v1
+ 
+    - name: test
+      run: GO111MODULE=on go test -v ./...
