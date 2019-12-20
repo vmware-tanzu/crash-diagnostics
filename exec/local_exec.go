@@ -66,6 +66,7 @@ func captureLocally(asCmd *script.AsCommand, cmdCap *script.CaptureCommand, envs
 	if err != nil {
 		cliErr := fmt.Errorf("local command %s failed: %s", cliCmd, err)
 		logrus.Warn(cliErr)
+
 		return writeError(cliErr, filePath)
 	}
 
@@ -115,8 +116,10 @@ func runLocally(asCmd *script.AsCommand, cmdRun *script.RunCommand, workdir stri
 }
 
 var (
-	cliCpName = "cp"
-	cliCpArgs = "-Rp"
+	cliCpShell      = "/bin/sh"
+	cliCpShellParam = "-c"
+	cliCpName       = "cp"
+	cliCpArgs       = "-Rp"
 )
 
 func copyLocally(asCmd *script.AsCommand, cmd *script.CopyCommand, dest string) error {
@@ -135,25 +138,32 @@ func copyLocally(asCmd *script.AsCommand, cmd *script.CopyCommand, dest string) 
 			continue
 		}
 
-		logrus.Debugf("Copying %s to %s", path, dest)
-
+		// if path contains file pattern, adjust target
+		pathDir, pathFile := filepath.Split(path)
 		targetPath := filepath.Join(dest, path)
 		targetDir := filepath.Dir(targetPath)
-		if _, err := os.Stat(targetDir); err != nil {
-			if os.IsNotExist(err) {
-				if err := os.MkdirAll(targetDir, 0744); err != nil && !os.IsExist(err) {
-					return err
-				}
-				logrus.Debugf("Created dir %s", targetDir)
-			} else {
-				return err
-			}
+		if strings.Index(pathFile, "*") != -1 {
+			targetPath = filepath.Join(dest, pathDir)
+			targetDir = targetPath
 		}
 
-		args := []string{cliCpArgs, path, targetPath}
-		_, err := CliRun(uint32(asUid), uint32(asGid), cliCpName, args...)
+		if _, err := os.Stat(targetDir); err != nil {
+			if !os.IsNotExist(err) {
+				return err
+			}
+
+			if err := os.MkdirAll(targetDir, 0744); err != nil && !os.IsExist(err) {
+				return err
+			}
+			logrus.Debugf("Created dir %s", targetDir)
+		}
+
+		logrus.Debugf("Copying %s to %s", path, targetPath)
+		cpCmd := fmt.Sprintf("cp -Rp %s %s", path, targetPath)
+		output, err := CliRun(uint32(asUid), uint32(asGid), "/bin/sh", "-c", cpCmd)
 		if err != nil {
-			cliErr := fmt.Errorf("local file copy failed: %s (may not exist): %s", path, err)
+			msgBytes, _ := ioutil.ReadAll(output)
+			cliErr := fmt.Errorf("local file copy failed: %s: %s: %s", path, string(msgBytes), err)
 			logrus.Warn(cliErr)
 			return writeError(cliErr, targetPath)
 		}

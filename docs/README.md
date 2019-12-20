@@ -155,6 +155,12 @@ COPY paths:"/var/log/kube-proxy.log /var/log/containers"
 ```
 The previous command will copy file `/var/log/kube-proxy.log` and each file in directory `/var/log/containers` as part of the generated archive bundle.
 
+#### File name expansion
+The `COPY` command also supports file name expansion using patterns (or globbing).  For instance, the following will copy only log files whose names start with `kube` from the nodes:
+
+```
+COPY /var/log/kube*.log
+```
 
 ### ENV
 This directive is used to inject environment variables that are made available to other commands in the script file at runtime:
