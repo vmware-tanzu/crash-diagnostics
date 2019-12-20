@@ -1,4 +1,4 @@
-![](https://github.com/vladimirvivien/crash-dianostics/workflows/Crash%20Diagnostics%20Build/badge.svg)
+![](https://github.com/vladimirvivien/crash-diagnostics/workflows/Crash%20Diagnostics%20Build/badge.svg)
 
 # Crash Recovery and Diagnostics for Kubernetes
 
