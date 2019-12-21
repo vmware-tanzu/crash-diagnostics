@@ -1,5 +1,5 @@
 name: Crash Diagnostics Build
-on: [push]
+on: [push, pull_request]
 jobs:
   go-build:
     name: Build-Test-Binary

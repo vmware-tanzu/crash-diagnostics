@@ -2,8 +2,6 @@ name: Crash Diagnostics Release
 
 on:
   push:
-    branches:
-      - master
     tags:
       - 'v*.*.**'
 
