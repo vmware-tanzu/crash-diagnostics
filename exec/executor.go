@@ -74,9 +74,13 @@ func (e *Executor) Execute() error {
 			}
 		default:
 			for _, machine := range fromCmd.Machines() {
-				machineWorkdir, err := makeMachineWorkdir(workdir.Path(), machine)
-				if err != nil {
-					return err
+				machineWorkdir := "stdout"
+				if workdir.Path() != "stdout" {
+					wd, err := makeMachineWorkdir(workdir.Path(), machine)
+					if err != nil {
+						return err
+					}
+					machineWorkdir = wd
 				}
 
 				switch machine.Address() {
@@ -104,10 +108,12 @@ func (e *Executor) Execute() error {
 	}
 
 	// write result to output
-	if err := archiver.Tar(output.Path(), workdir.Path()); err != nil {
-		return err
+	if workdir.Path() != "stdout" {
+		if err := archiver.Tar(output.Path(), workdir.Path()); err != nil {
+			return err
+		}
+		logrus.Infof("Created output at path %s", output.Path())
 	}
-	logrus.Infof("Created output at path %s", output.Path())
 	logrus.Info("Done")
 
 	return nil

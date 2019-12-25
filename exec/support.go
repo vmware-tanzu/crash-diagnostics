@@ -5,11 +5,8 @@ package exec
 
 import (
 	"io"
-	"os"
 	"regexp"
 	"strings"
-
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -20,21 +17,14 @@ func sanitizeStr(cmd string) string {
 	return strSanitization.ReplaceAllString(cmd, "_")
 }
 
-func writeFile(source io.Reader, filePath string) error {
-	file, err := os.Create(filePath)
-	if err != nil {
+func writeFile(writer io.Writer, source io.Reader) error {
+	if _, err := io.Copy(writer, source); err != nil {
 		return err
 	}
-	defer file.Close()
-	if _, err := io.Copy(file, source); err != nil {
-		return err
-	}
-	logrus.Debugf("Wrote file %s", filePath)
-
 	return nil
 }
 
-func writeError(err error, filePath string) error {
+func writeError(writer io.Writer, err error) error {
 	errReader := strings.NewReader(err.Error())
-	return writeFile(errReader, filePath)
+	return writeFile(writer, errReader)
 }

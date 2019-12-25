@@ -5,6 +5,7 @@ package exec
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -18,7 +19,6 @@ import (
 // exeLocally runs script using locally installed tool
 func exeLocally(asCmd *script.AsCommand, action script.Command, workdir string) error {
 
-	//for _, action := range src.Actions {
 	switch cmd := action.(type) {
 	case *script.CopyCommand:
 		if err := copyLocally(asCmd, cmd, workdir); err != nil {
@@ -37,7 +37,6 @@ func exeLocally(asCmd *script.AsCommand, action script.Command, workdir string) 
 	default:
 		logrus.Errorf("Unsupported command %T", cmd)
 	}
-	//}
 
 	return nil
 }
@@ -62,15 +61,24 @@ func captureLocally(asCmd *script.AsCommand, cmdCap *script.CaptureCommand, envs
 	filePath := filepath.Join(workdir, fileName)
 	logrus.Debugf("Capturing local command [%s] -into-> %s", cmdStr, filePath)
 
+	file := os.Stdout
+	if workdir != "stdout" {
+		f, err := os.Create(filePath)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		file = f
+	}
+
 	cmdReader, err := CliRun(uint32(asUid), uint32(asGid), cliCmd, cliArgs...)
 	if err != nil {
 		cliErr := fmt.Errorf("local command %s failed: %s", cliCmd, err)
 		logrus.Warn(cliErr)
-
-		return writeError(cliErr, filePath)
+		return writeError(file, cliErr)
 	}
 
-	if err := writeFile(cmdReader, filePath); err != nil {
+	if err := writeFile(file, cmdReader); err != nil {
 		return err
 	}
 
@@ -102,14 +110,19 @@ func runLocally(asCmd *script.AsCommand, cmdRun *script.RunCommand, workdir stri
 		return nil
 	}
 
-	bytes, err := ioutil.ReadAll(cmdReader)
-	if err != nil {
+	var cmdOutput *strings.Builder
+	if _, err := io.Copy(cmdOutput, cmdReader); err != nil {
 		return fmt.Errorf("RUN: result: %s", err)
 	}
 
 	// save result of CMD
-	if err := os.Setenv("CMD_RESULT", strings.TrimSpace(string(bytes))); err != nil {
+	result := strings.TrimSpace(string(cmdOutput.String()))
+	if err := os.Setenv("CMD_RESULT", result); err != nil {
 		return fmt.Errorf("RUN: set CMD_RESULT: %s", err)
+	}
+
+	if workdir == "stdout" {
+		fmt.Printf("%s\n", result)
 	}
 
 	return nil
