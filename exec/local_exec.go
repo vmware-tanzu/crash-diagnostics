@@ -17,7 +17,7 @@ import (
 )
 
 // exeLocally runs script using locally installed tool
-func exeLocally(asCmd *script.AsCommand, action script.Command, workdir string) error {
+func exeLocally(asCmd *script.AsCommand, action script.Command, workdir, output string) error {
 
 	switch cmd := action.(type) {
 	case *script.CopyCommand:
@@ -26,12 +26,12 @@ func exeLocally(asCmd *script.AsCommand, action script.Command, workdir string) 
 		}
 	case *script.CaptureCommand:
 		// capture command output
-		if err := captureLocally(asCmd, cmd, nil, workdir); err != nil {
+		if err := captureLocally(asCmd, cmd, workdir, output); err != nil {
 			return err
 		}
 	case *script.RunCommand:
 		// run command and store result
-		if err := runLocally(asCmd, cmd, workdir); err != nil {
+		if err := runLocally(asCmd, cmd, output); err != nil {
 			return err
 		}
 	default:
@@ -41,7 +41,7 @@ func exeLocally(asCmd *script.AsCommand, action script.Command, workdir string) 
 	return nil
 }
 
-func captureLocally(asCmd *script.AsCommand, cmdCap *script.CaptureCommand, envs []string, workdir string) error {
+func captureLocally(asCmd *script.AsCommand, cmdCap *script.CaptureCommand, workdir, output string) error {
 	cmdStr := cmdCap.GetCmdString()
 	cliCmd, cliArgs, err := cmdCap.GetParsedCmd()
 	if err != nil {
@@ -57,18 +57,16 @@ func captureLocally(asCmd *script.AsCommand, cmdCap *script.CaptureCommand, envs
 		return err
 	}
 
-	fileName := fmt.Sprintf("%s.txt", sanitizeStr(cmdStr))
-	filePath := filepath.Join(workdir, fileName)
-	logrus.Debugf("Capturing local command [%s] -into-> %s", cmdStr, filePath)
+	file, err := getFileForCaptureCmd(cmdStr, workdir, output)
+	if err != nil {
+		return err
+	}
 
-	file := os.Stdout
-	if workdir != "stdout" {
-		f, err := os.Create(filePath)
-		if err != nil {
-			return err
-		}
+	// defer file close when not stdout/stderr
+	switch output {
+	case OutputStdout, OutputStderr:
+	default:
 		defer file.Close()
-		file = f
 	}
 
 	cmdReader, err := CliRun(uint32(asUid), uint32(asGid), cliCmd, cliArgs...)
@@ -85,7 +83,7 @@ func captureLocally(asCmd *script.AsCommand, cmdCap *script.CaptureCommand, envs
 	return nil
 }
 
-func runLocally(asCmd *script.AsCommand, cmdRun *script.RunCommand, workdir string) error {
+func runLocally(asCmd *script.AsCommand, cmdRun *script.RunCommand, output string) error {
 	cmdStr := cmdRun.GetCmdString()
 	cliCmd, cliArgs, err := cmdRun.GetParsedCmd()
 	if err != nil {
@@ -105,24 +103,27 @@ func runLocally(asCmd *script.AsCommand, cmdRun *script.RunCommand, workdir stri
 
 	cmdReader, err := CliRun(uint32(asUid), uint32(asGid), cliCmd, cliArgs...)
 	if err != nil {
-		cmdErr := fmt.Errorf("Command failed: [%s]: %s", cliCmd, err)
-		logrus.Error(cmdErr)
-		return nil
+		msgBytes, _ := ioutil.ReadAll(cmdReader)
+		cmdErr := fmt.Errorf("RUN failed: command %s : %s : %s", cliCmd, err, strings.TrimSpace(string(msgBytes)))
+		return cmdErr
 	}
 
-	var cmdOutput *strings.Builder
+	cmdOutput := new(strings.Builder)
 	if _, err := io.Copy(cmdOutput, cmdReader); err != nil {
-		return fmt.Errorf("RUN: result: %s", err)
+		return fmt.Errorf("RUN failed: reading result of %s", err)
 	}
 
 	// save result of CMD
 	result := strings.TrimSpace(string(cmdOutput.String()))
 	if err := os.Setenv("CMD_RESULT", result); err != nil {
-		return fmt.Errorf("RUN: set CMD_RESULT: %s", err)
+		return fmt.Errorf("RUN failed: setting CMD_RESULT: %s", err)
 	}
 
-	if workdir == "stdout" {
-		fmt.Printf("%s\n", result)
+	switch output {
+	case OutputStdout:
+		fmt.Fprintf(os.Stdout, "%s\n", result)
+	case OutputStderr:
+		fmt.Fprintf(os.Stderr, "%s\n", result)
 	}
 
 	return nil
@@ -173,12 +174,11 @@ func copyLocally(asCmd *script.AsCommand, cmd *script.CopyCommand, dest string) 
 
 		logrus.Debugf("Copying %s to %s", path, targetPath)
 		cpCmd := fmt.Sprintf("cp -Rp %s %s", path, targetPath)
-		output, err := CliRun(uint32(asUid), uint32(asGid), "/bin/sh", "-c", cpCmd)
+		output, err := CliRun(uint32(asUid), uint32(asGid), cliCpShell, cliCpShellParam, cpCmd)
 		if err != nil {
 			msgBytes, _ := ioutil.ReadAll(output)
 			cliErr := fmt.Errorf("local file copy failed: %s: %s: %s", path, string(msgBytes), err)
 			logrus.Warn(cliErr)
-			return writeError(cliErr, targetPath)
 		}
 	}
 

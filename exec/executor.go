@@ -14,6 +14,11 @@ import (
 	"github.com/vmware-tanzu/crash-diagnostics/script"
 )
 
+var (
+	OutputStdout = "stdout"
+	OutputStderr = "stderr"
+)
+
 // Executor represents a type that can execute a script
 type Executor struct {
 	script *script.Script
@@ -74,19 +79,16 @@ func (e *Executor) Execute() error {
 			}
 		default:
 			for _, machine := range fromCmd.Machines() {
-				machineWorkdir := "stdout"
-				if workdir.Path() != "stdout" {
-					wd, err := makeMachineWorkdir(workdir.Path(), machine)
-					if err != nil {
-						return err
-					}
-					machineWorkdir = wd
+
+				machineWorkdir, err := makeMachineWorkdir(workdir.Path(), machine)
+				if err != nil {
+					return err
 				}
 
 				switch machine.Address() {
 				case "local":
 					logrus.Debug("Executing commands on local machine")
-					if err := exeLocally(asCmd, action, machineWorkdir); err != nil {
+					if err := exeLocally(asCmd, action, machineWorkdir, output.Path()); err != nil {
 						return err
 					}
 				default:
@@ -98,7 +100,7 @@ func (e *Executor) Execute() error {
 						}
 						authCmd = auth
 					}
-					if err := exeRemotely(asCmd, authCmd, action, &machine, machineWorkdir); err != nil {
+					if err := exeRemotely(asCmd, authCmd, action, &machine, machineWorkdir, output.Path()); err != nil {
 						return err
 					}
 				}
@@ -107,8 +109,8 @@ func (e *Executor) Execute() error {
 		}
 	}
 
-	// write result to output
-	if workdir.Path() != "stdout" {
+	// build output only for and output tar file
+	if output.Path() != OutputStdout && output.Path() != OutputStderr {
 		if err := archiver.Tar(output.Path(), workdir.Path()); err != nil {
 			return err
 		}

@@ -154,6 +154,32 @@ func TestExecLocalCAPTURE(t *testing.T) {
 			},
 		},
 		{
+			name: "CAPTURE output to stdout",
+			source: func() string {
+				return `
+				OUTPUT stdout
+				CAPTURE "/bin/echo 'HELLO ALL'"
+				`
+			},
+			exec: func(s *script.Script) error {
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
+				capCmd := s.Actions[0].(*script.CaptureCommand)
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+
+				fileName := filepath.Join(workdir.Path(), machine, fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
+				if _, err := os.Stat(fileName); err != nil && !os.IsNotExist(err) {
+					return fmt.Errorf("`OUTPUT stdout` should not be creating an output file")
+				}
+
+				return nil
+			},
+		},
+		{
 			name: "CAPTURE command as unknown user",
 			source: func() string {
 				return "AS userid:foo \nCAPTURE /bin/echo 'HELLO WORLD'"
@@ -327,6 +353,33 @@ func TestExecRemoteCAPTURE(t *testing.T) {
 				return e.Execute()
 			},
 			shouldFail: true,
+		},
+		{
+			name: "CAPTURE with redirected output",
+			source: func() string {
+				src := `FROM 127.0.0.1:22
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
+				CAPTURE /bin/echo "HELLO WORLD"
+				OUTPUT stdout
+				`
+				return src
+			},
+			exec: func(s *script.Script) error {
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
+				capCmd := s.Actions[0].(*script.CaptureCommand)
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+
+				fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
+				if _, err := os.Stat(fileName); err != nil && !os.IsNotExist(err) {
+					return fmt.Errorf("`OUTPUT stdout` should not be creating an output file")
+				}
+				return nil
+			},
 		},
 		{
 			name: "CAPTURE remote command with bad AUTHCONFIG user",

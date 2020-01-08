@@ -20,7 +20,7 @@ import (
 )
 
 // exeRemotely executes script on remote machines
-func exeRemotely(asCmd *script.AsCommand, authCmd *script.AuthConfigCommand, action script.Command, machine *script.Machine, workdir string) error {
+func exeRemotely(asCmd *script.AsCommand, authCmd *script.AuthConfigCommand, action script.Command, machine *script.Machine, workdir, output string) error {
 
 	user := asCmd.GetUserId()
 	if authCmd.GetUsername() != "" {
@@ -40,11 +40,11 @@ func exeRemotely(asCmd *script.AsCommand, authCmd *script.AuthConfigCommand, act
 		}
 	case *script.CaptureCommand:
 		// capture command output
-		if err := captureRemotely(user, privKey, machine.Address(), cmd, workdir); err != nil {
+		if err := captureRemotely(user, privKey, machine.Address(), cmd, workdir, output); err != nil {
 			return err
 		}
 	case *script.RunCommand:
-		if err := runRemotely(user, privKey, machine.Address(), cmd, workdir); err != nil {
+		if err := runRemotely(user, privKey, machine.Address(), cmd, workdir, output); err != nil {
 			return err
 		}
 	default:
@@ -55,7 +55,7 @@ func exeRemotely(asCmd *script.AsCommand, authCmd *script.AuthConfigCommand, act
 	return nil
 }
 
-func captureRemotely(user, privKey, hostAddr string, cmdCap *script.CaptureCommand, workdir string) error {
+func captureRemotely(user, privKey, hostAddr string, cmdCap *script.CaptureCommand, workdir, output string) error {
 	sshc := ssh.New(user, privKey)
 	if err := sshc.Dial(hostAddr); err != nil {
 		return err
@@ -67,25 +67,33 @@ func captureRemotely(user, privKey, hostAddr string, cmdCap *script.CaptureComma
 		return err
 	}
 
-	fileName := fmt.Sprintf("%s.txt", sanitizeStr(cmdStr))
-	filePath := filepath.Join(workdir, fileName)
-	logrus.Debugf("CAPTURE command [%s] -into-> %s", cmdStr, filePath)
+	file, err := getFileForCaptureCmd(cmdStr, workdir, output)
+	if err != nil {
+		return err
+	}
+
+	// defer file close when not stdout/stderr
+	switch output {
+	case OutputStdout, OutputStderr:
+	default:
+		defer file.Close()
+	}
 
 	cmdReader, err := sshc.SSHRun(cmdStr)
 	if err != nil {
 		sshErr := fmt.Errorf("CAPTURE remote command %s failed: %s", cmdStr, err)
 		logrus.Warn(sshErr)
-		return writeError(sshErr, filePath)
+		return writeError(file, sshErr)
 	}
 
-	if err := writeFile(cmdReader, filePath); err != nil {
+	if err := writeFile(file, cmdReader); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func runRemotely(user, privKey, hostAddr string, cmdRun *script.RunCommand, workdir string) error {
+func runRemotely(user, privKey, hostAddr string, cmdRun *script.RunCommand, workdir, output string) error {
 	sshc := ssh.New(user, privKey)
 	if err := sshc.Dial(hostAddr); err != nil {
 		return err
@@ -99,27 +107,36 @@ func runRemotely(user, privKey, hostAddr string, cmdRun *script.RunCommand, work
 
 	cmdReader, err := sshc.SSHRun(cmdStr)
 	if err != nil {
-		sshErr := fmt.Errorf("RUN remote command failed: %s: %s", cmdStr, err)
-		logrus.Error(sshErr)
-		return nil
+		msgBytes, _ := ioutil.ReadAll(cmdReader)
+		cmdErr := fmt.Errorf("RUN failed: command %s : %s : %s", cmdStr, err, strings.TrimSpace(string(msgBytes)))
+		return cmdErr
 	}
 
+	// TODO - rethink this. A streaming and storing a large command output
+	// in memory could cause memory issues.
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, cmdReader); err != nil {
-		return fmt.Errorf("RUN: result: %s", err)
+		return fmt.Errorf("RUN failed: reading result: %s", err)
 	}
 
 	// save result
 	result := strings.TrimSpace(buf.String())
 	if len(result) < 1 {
 		if err := os.Unsetenv("CMD_RESULT"); err != nil {
-			return fmt.Errorf("RUN: unset CMD_RESULT: %s", err)
+			return fmt.Errorf("RUN failed: unsetting CMD_RESULT: %s", err)
 		}
 		return nil
 	}
 
 	if err := os.Setenv("CMD_RESULT", result); err != nil {
-		return fmt.Errorf("RUN: set CMD_RESULT: %s: %s", result, err)
+		return fmt.Errorf("RUN failed: setting CMD_RESULT: %s: %s", result, err)
+	}
+
+	switch output {
+	case OutputStdout:
+		fmt.Fprintf(os.Stdout, "%s\n", result)
+	case OutputStderr:
+		fmt.Fprintf(os.Stderr, "%s\n", result)
 	}
 
 	return nil
@@ -184,7 +201,6 @@ func copyRemotely(user, privKey string, machine *script.Machine, asCmd *script.A
 			msgBytes, _ := ioutil.ReadAll(output)
 			cliErr := fmt.Errorf("scp command failed: %s: %s", err, string(msgBytes))
 			logrus.Warn(cliErr)
-			return writeError(cliErr, targetPath)
 		}
 		logrus.Debug("Remote copy succeeded:", remotePath)
 	}

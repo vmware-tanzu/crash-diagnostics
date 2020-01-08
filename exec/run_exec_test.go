@@ -186,6 +186,37 @@ func TestExecLocalRUN(t *testing.T) {
 			},
 		},
 		{
+			name: "RUN redirected to stdout",
+			source: func() string {
+				return `
+				OUTPUT stdout
+				RUN "/bin/echo 'HELLO YALL"
+				`
+			},
+			exec: func(s *script.Script) error {
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+				pid := os.Getenv("CMD_PID")
+				if pid == "" {
+					return fmt.Errorf("RUN has unexpected pid %s", pid)
+				}
+
+				exitcode := os.Getenv("CMD_EXITCODE")
+				if exitcode != "0" {
+					return fmt.Errorf("RUN has unexpected exit code %s", exitcode)
+				}
+
+				result := os.Getenv("CMD_RESULT")
+				if result != "HELLO YALL" {
+					return fmt.Errorf("RUN has unexpected CMD_RESULT: %s", result)
+				}
+				return nil
+			},
+		},
+		{
 			name: "RUN with escaped var expansion",
 			source: func() string {
 				return `
@@ -356,6 +387,34 @@ func TestExecRemoteRUN(t *testing.T) {
 
 				result := os.Getenv("CMD_RESULT")
 				if strings.TrimSpace(result) != "Hello World" {
+					return fmt.Errorf("RUN has unexpected CMD_RESULT: %s", result)
+				}
+				return nil
+			},
+		},
+		{
+			name: "RUN with redirected output",
+			source: func() string {
+				return `FROM 127.0.0.1:22
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
+				RUN /bin/echo "HELLO YOU ALL"
+				OUTPUT stdout
+				`
+			},
+			exec: func(s *script.Script) error {
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+
+				exitcode := os.Getenv("CMD_EXITCODE")
+				if exitcode != "0" {
+					return fmt.Errorf("RUN has unexpected exit code %s", exitcode)
+				}
+
+				result := os.Getenv("CMD_RESULT")
+				if result != "HELLO YOU ALL" {
 					return fmt.Errorf("RUN has unexpected CMD_RESULT: %s", result)
 				}
 				return nil
