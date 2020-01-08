@@ -318,6 +318,28 @@ func TestCommandRUN(t *testing.T) {
 				return nil
 			},
 		},
+		{
+			name: "RUN with echo param",
+			source: func() string {
+				return `RUN shell:"/bin/bash -c" cmd:"echo 'HELLO WORLD'" echo:"true"`
+			},
+			script: func(s *Script) error {
+				if len(s.Actions) != 1 {
+					return fmt.Errorf("Script has unexpected actions, needs %d", len(s.Actions))
+				}
+				cmd := s.Actions[0].(*RunCommand)
+				if cmd.Args()["cmd"] != cmd.GetCmdString() {
+					return fmt.Errorf("RUN action with unexpected command string %s", cmd.GetCmdString())
+				}
+				if cmd.Args()["shell"] != cmd.GetCmdShell() {
+					return fmt.Errorf("RUN action with unexpected shell %s", cmd.GetCmdShell())
+				}
+				if cmd.Args()["echo"] != cmd.GetEcho() {
+					return fmt.Errorf("RUN action with unexpected echo param %s", cmd.GetCmdShell())
+				}
+				return nil
+			},
+		},
 	}
 
 	for _, test := range tests {

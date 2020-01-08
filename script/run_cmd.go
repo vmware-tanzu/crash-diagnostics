@@ -115,3 +115,10 @@ func (c *RunCommand) GetEffectiveCmdStr() (string, error) {
 	}
 	return cmdStr, nil
 }
+
+// GetEcho returns the echo param for command. When
+// set to {yes|true|on} the result of the command will be
+// redirected to the stdout|stderr
+func (c *RunCommand) GetEcho() string {
+	return ExpandEnv(c.cmd.args["echo"])
+}
