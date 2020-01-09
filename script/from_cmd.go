@@ -79,8 +79,18 @@ func NewFromCommand(index int, rawArgs string) (*FromCommand, error) {
 
 	// populate machine representations
 	for _, host := range spaceSep.Split(argMap["hosts"], -1) {
-		addrVal := ExpandEnv(host)
-		cmd.machines = append(cmd.machines, *NewMachine(addrVal))
+		hostAddr := ExpandEnv(host)
+
+		var machine *Machine
+		switch hostAddr {
+		case "local":
+			machine = NewMachine("127.0.0.1:22")
+		default:
+			machine = NewMachine(hostAddr)
+		}
+
+		cmd.machines = append(cmd.machines, *machine)
+
 	}
 
 	return cmd, nil
