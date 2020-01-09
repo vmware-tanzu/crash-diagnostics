@@ -154,6 +154,29 @@ func TestExecLocalCAPTURE(t *testing.T) {
 			},
 		},
 		{
+			name: "CAPTURE with echo on",
+			source: func() string {
+				return `CAPTURE cmd:"/bin/echo 'HELLO WORLD'" echo:"true"`
+			},
+			exec: func(s *script.Script) error {
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
+				capCmd := s.Actions[0].(*script.CaptureCommand)
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+
+				fileName := filepath.Join(workdir.Path(), machine, fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
+				if _, err := os.Stat(fileName); err != nil && !os.IsNotExist(err) {
+					return err
+				}
+
+				return nil
+			},
+		},
+		{
 			name: "CAPTURE command as unknown user",
 			source: func() string {
 				return "AS userid:foo \nCAPTURE /bin/echo 'HELLO WORLD'"
@@ -327,6 +350,31 @@ func TestExecRemoteCAPTURE(t *testing.T) {
 				return e.Execute()
 			},
 			shouldFail: true,
+		},
+		{
+			name: "CAPTURE with echo on",
+			source: func() string {
+				src := `FROM 127.0.0.1:22
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
+				CAPTURE cmd:'/bin/echo "HELLO WORLD"' echo:"on"`
+				return src
+			},
+			exec: func(s *script.Script) error {
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
+				capCmd := s.Actions[0].(*script.CaptureCommand)
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+
+				fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
+				if _, err := os.Stat(fileName); err != nil {
+					return err
+				}
+				return nil
+			},
 		},
 		{
 			name: "CAPTURE remote command with bad AUTHCONFIG user",

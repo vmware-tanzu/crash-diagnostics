@@ -204,6 +204,24 @@ func TestExecLocalRUN(t *testing.T) {
 				return nil
 			},
 		},
+		{
+			name: "RUN with echo on",
+			source: func() string {
+				return `RUN cmd:"/bin/echo 'HELLO WORLD'" echo:"true"`
+			},
+			exec: func(s *script.Script) error {
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+				result := os.Getenv("CMD_RESULT")
+				if result != "HELLO WORLD" {
+					return fmt.Errorf("RUN has unexpected CMD_RESULT: %s", result)
+				}
+				return nil
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -356,6 +374,28 @@ func TestExecRemoteRUN(t *testing.T) {
 
 				result := os.Getenv("CMD_RESULT")
 				if strings.TrimSpace(result) != "Hello World" {
+					return fmt.Errorf("RUN has unexpected CMD_RESULT: %s", result)
+				}
+				return nil
+			},
+		},
+		{
+			name: "RUN with echo on",
+			source: func() string {
+				return `FROM 127.0.0.1:22
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
+				RUN cmd:'/bin/echo "HELLO WORLD"' echo:"on"
+				`
+			},
+			exec: func(s *script.Script) error {
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+
+				result := os.Getenv("CMD_RESULT")
+				if result != "HELLO WORLD" {
 					return fmt.Errorf("RUN has unexpected CMD_RESULT: %s", result)
 				}
 				return nil

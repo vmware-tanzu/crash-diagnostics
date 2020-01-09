@@ -17,8 +17,6 @@ import (
 
 // exeLocally runs script using locally installed tool
 func exeLocally(asCmd *script.AsCommand, action script.Command, workdir string) error {
-
-	//for _, action := range src.Actions {
 	switch cmd := action.(type) {
 	case *script.CopyCommand:
 		if err := copyLocally(asCmd, cmd, workdir); err != nil {
@@ -37,7 +35,6 @@ func exeLocally(asCmd *script.AsCommand, action script.Command, workdir string) 
 	default:
 		logrus.Errorf("Unsupported command %T", cmd)
 	}
-	//}
 
 	return nil
 }
@@ -67,10 +64,16 @@ func captureLocally(asCmd *script.AsCommand, cmdCap *script.CaptureCommand, envs
 		cliErr := fmt.Errorf("local command %s failed: %s", cliCmd, err)
 		logrus.Warn(cliErr)
 
-		return writeError(cliErr, filePath)
+		return writeCmdError(cliErr, filePath, cmdStr)
 	}
 
-	if err := writeFile(cmdReader, filePath); err != nil {
+	echo := false
+	switch cmdCap.GetEcho() {
+	case "true", "yes", "on":
+		echo = true
+	}
+
+	if err := writeCmdOutput(cmdReader, filePath, echo, cmdStr); err != nil {
 		return err
 	}
 
@@ -108,8 +111,14 @@ func runLocally(asCmd *script.AsCommand, cmdRun *script.RunCommand, workdir stri
 	}
 
 	// save result of CMD
-	if err := os.Setenv("CMD_RESULT", strings.TrimSpace(string(bytes))); err != nil {
+	result := strings.TrimSpace(string(bytes))
+	if err := os.Setenv("CMD_RESULT", result); err != nil {
 		return fmt.Errorf("RUN: set CMD_RESULT: %s", err)
+	}
+
+	switch cmdRun.GetEcho() {
+	case "true", "yes", "on":
+		fmt.Printf("%s\n%s\n", cmdRun.GetCmdString(), result)
 	}
 
 	return nil
@@ -165,7 +174,7 @@ func copyLocally(asCmd *script.AsCommand, cmd *script.CopyCommand, dest string) 
 			msgBytes, _ := ioutil.ReadAll(output)
 			cliErr := fmt.Errorf("local file copy failed: %s: %s: %s", path, string(msgBytes), err)
 			logrus.Warn(cliErr)
-			return writeError(cliErr, targetPath)
+			return writeCmdError(cliErr, targetPath, cpCmd)
 		}
 	}
 
