@@ -59,3 +59,10 @@ func (c *CaptureCommand) GetEffectiveCmdStr() (string, error) {
 	}
 	return cmdStr, nil
 }
+
+// GetEcho returns the echo param for command. When
+// set to {yes|true|on} the result of the command will be
+// redirected to the stdout|stderr
+func (c *CaptureCommand) GetEcho() string {
+	return c.RunCommand.GetEcho()
+}

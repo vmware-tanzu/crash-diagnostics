@@ -232,10 +232,6 @@ func TestCommandCAPTURE(t *testing.T) {
 				}
 				cmd := s.Actions[0].(*CaptureCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
-					return fmt.Errorf("CAPTURE action with unexpected CLI string %s", cmd.GetCmdString())
-				}
-
-				if cmd.Args()["cmd"] != cmd.GetCmdString() {
 					return fmt.Errorf("CAPTURE action with unexpected command string %s", cmd.GetCmdString())
 				}
 				if cmd.Args()["shell"] != cmd.GetCmdShell() {
@@ -257,6 +253,28 @@ func TestCommandCAPTURE(t *testing.T) {
 				}
 				if cliArgs[1] != "echo 'HELLO WORLD'" {
 					return fmt.Errorf("CAPTURE has unexpected shell argument: expecting -c, got %s", cliArgs[0])
+				}
+				return nil
+			},
+		},
+		{
+			name: "CAPTURE with echo param",
+			source: func() string {
+				return `CAPTURE shell:"/bin/bash -c" cmd:"echo 'HELLO WORLD'" echo:"true"`
+			},
+			script: func(s *Script) error {
+				if len(s.Actions) != 1 {
+					return fmt.Errorf("Script has unexpected actions, needs %d", len(s.Actions))
+				}
+				cmd := s.Actions[0].(*CaptureCommand)
+				if cmd.Args()["cmd"] != cmd.GetCmdString() {
+					return fmt.Errorf("CAPTURE action with unexpected CLI string %s", cmd.GetCmdString())
+				}
+				if cmd.Args()["shell"] != cmd.GetCmdShell() {
+					return fmt.Errorf("CAPTURE action with unexpected shell %s", cmd.GetCmdShell())
+				}
+				if cmd.Args()["echo"] != cmd.GetEcho() {
+					return fmt.Errorf("CAPTURE action with unexpected echo param %s", cmd.GetCmdShell())
 				}
 				return nil
 			},

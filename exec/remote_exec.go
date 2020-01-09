@@ -75,10 +75,16 @@ func captureRemotely(user, privKey, hostAddr string, cmdCap *script.CaptureComma
 	if err != nil {
 		sshErr := fmt.Errorf("CAPTURE remote command %s failed: %s", cmdStr, err)
 		logrus.Warn(sshErr)
-		return writeError(sshErr, filePath)
+		return writeCmdError(sshErr, filePath, cmdStr)
 	}
 
-	if err := writeFile(cmdReader, filePath); err != nil {
+	echo := false
+	switch cmdCap.GetEcho() {
+	case "true", "yes", "on":
+		echo = true
+	}
+
+	if err := writeCmdOutput(cmdReader, filePath, echo, cmdStr); err != nil {
 		return err
 	}
 
@@ -120,6 +126,11 @@ func runRemotely(user, privKey, hostAddr string, cmdRun *script.RunCommand, work
 
 	if err := os.Setenv("CMD_RESULT", result); err != nil {
 		return fmt.Errorf("RUN: set CMD_RESULT: %s: %s", result, err)
+	}
+
+	switch cmdRun.GetEcho() {
+	case "true", "yes", "on":
+		fmt.Printf("%s\n%s\n", cmdRun.GetCmdString(), result)
 	}
 
 	return nil
@@ -184,7 +195,7 @@ func copyRemotely(user, privKey string, machine *script.Machine, asCmd *script.A
 			msgBytes, _ := ioutil.ReadAll(output)
 			cliErr := fmt.Errorf("scp command failed: %s: %s", err, string(msgBytes))
 			logrus.Warn(cliErr)
-			return writeError(cliErr, targetPath)
+			return writeCmdError(cliErr, targetPath, fmt.Sprintf("%s %s", cliScpName, strings.Join(args, " ")))
 		}
 		logrus.Debug("Remote copy succeeded:", remotePath)
 	}
