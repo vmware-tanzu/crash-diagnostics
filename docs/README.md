@@ -135,12 +135,21 @@ Or, with its named parameter `cmd:`:
 CAPTURE cmd:"/bin/journalctl -l -u kube-apiserver"
 ```
 
-### CAPTURE file names
+#### CAPTURE file names
 The captured output will be written to a file whose name is derived from the command string as follows:
 
 ```
 _bin_journalctl__l__u_kube-api-server.txt
 ```
+
+#### CAPTURE Echo output
+The CAPTURE command can also copy its result to standard output using the `echo` parameter:
+
+```
+CAPTURE cmd:"/bin/journalctl -l -u kube-apiserver" echo:"true"
+```
+
+Note that you have to use the named parameter format.
 
 ### COPY
 This directive specifies one or more files (and/or directories) as data sources that are copied
@@ -323,6 +332,15 @@ COPY /tmp/containers
 # clean up
 RUN /usr/bin/rm -rf /tmp/containers
 ```
+
+#### RUN Echo output
+The RUJN command can also copy its result to standard output using the `echo` parameter:
+
+```
+RUN cmd:"/bin/journalctl -l -u kube-apiserver" echo:"true"
+```
+
+Note that you have to use the named parameter format.
 
 ### WORKDIR
 In a Diagnostics.file, `WORKDIR` specifies the working directory used when building the archive bundle as shown in the following example:
