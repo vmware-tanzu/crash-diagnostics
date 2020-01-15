@@ -204,7 +204,7 @@ func TestExecutor(t *testing.T) {
 				}
 				defer os.RemoveAll(scriptName)
 
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 				defer os.RemoveAll(workdir.Path())
 

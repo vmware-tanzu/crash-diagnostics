@@ -232,7 +232,7 @@ func enforceDefaults(script *Script) (*Script, error) {
 		if err != nil {
 			return nil, err
 		}
-		logrus.Debugf("FROM %v (as default)", cmd.Machines())
+		logrus.Debugf("FROM %v (as default)", cmd.Nodes())
 		script.Preambles[CmdFrom] = []Command{cmd}
 	}
 

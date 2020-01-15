@@ -9,23 +9,23 @@ import (
 	"strings"
 )
 
-// Machine represents a machine as defined in FROM
-type Machine struct {
+// Node represents a machine as defined in FROM
+type Node struct {
 	address string
 }
 
-// NewMachine returns a new *Machine
-func NewMachine(addr string) *Machine {
-	return &Machine{address: addr}
+// NewNode returns a new *Node
+func NewNode(addr string) *Node {
+	return &Node{address: addr}
 }
 
 // Address returns the host:port address
-func (m *Machine) Address() string {
+func (m *Node) Address() string {
 	return m.address
 }
 
-// Host returns the host of the address
-func (m *Machine) Host() (string, error) {
+// Host returns the host of the node address
+func (m *Node) Host() (string, error) {
 	h, _, err := net.SplitHostPort(m.Address())
 	if err != nil {
 		return "", err
@@ -33,8 +33,8 @@ func (m *Machine) Host() (string, error) {
 	return h, nil
 }
 
-// Port returns the port of the address
-func (m *Machine) Port() (string, error) {
+// Port returns the port of the node address
+func (m *Node) Port() (string, error) {
 	_, p, err := net.SplitHostPort(m.Address())
 	if err != nil {
 		return "", err
@@ -51,7 +51,7 @@ func (m *Machine) Port() (string, error) {
 // Each host must be specified as an address endpoint with host:port.
 type FromCommand struct {
 	cmd
-	machines []Machine
+	machines []Node
 }
 
 // NewFromCommand parses the args and returns *FromCommand
@@ -81,12 +81,12 @@ func NewFromCommand(index int, rawArgs string) (*FromCommand, error) {
 	for _, host := range spaceSep.Split(argMap["hosts"], -1) {
 		hostAddr := ExpandEnv(host)
 
-		var machine *Machine
+		var machine *Node
 		switch hostAddr {
 		case "local":
-			machine = NewMachine("127.0.0.1:22")
+			machine = NewNode(Defaults.LocalSSHAddr)
 		default:
-			machine = NewMachine(hostAddr)
+			machine = NewNode(hostAddr)
 		}
 
 		cmd.machines = append(cmd.machines, *machine)
@@ -111,7 +111,7 @@ func (c *FromCommand) Args() map[string]string {
 	return c.cmd.args
 }
 
-// Machines returns a slice of Machines to which to connect
-func (c *FromCommand) Machines() []Machine {
+// Nodes returns a slice of Nodes to which to connect
+func (c *FromCommand) Nodes() []Node {
 	return c.machines
 }

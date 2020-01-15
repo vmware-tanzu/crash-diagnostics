@@ -25,12 +25,12 @@ func TestCommandFROM(t *testing.T) {
 				if !ok {
 					return fmt.Errorf("Unexpected type %T in script", froms[0])
 				}
-				if len(fromCmd.Machines()) != 1 {
-					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Machines()))
+				if len(fromCmd.Nodes()) != 1 {
+					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Nodes()))
 				}
-				m := fromCmd.Machines()[0]
-				if m.Address() != "local" {
-					return fmt.Errorf("FROM has unexpected machine %s", m)
+				m := fromCmd.Nodes()[0]
+				if m.Address() != Defaults.LocalSSHAddr {
+					return fmt.Errorf("FROM has unexpected host address %s", m)
 				}
 				return nil
 			},
@@ -47,10 +47,10 @@ func TestCommandFROM(t *testing.T) {
 				}
 				fromCmd := froms[0].(*FromCommand)
 
-				if len(fromCmd.Machines()) != 1 {
-					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Machines()))
+				if len(fromCmd.Nodes()) != 1 {
+					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Nodes()))
 				}
-				m := fromCmd.Machines()[0]
+				m := fromCmd.Nodes()[0]
 				if m.Address() != "foo.bar:1234" {
 					return fmt.Errorf("FROM has unexpected machine address %s", m.Address())
 				}
@@ -71,13 +71,13 @@ func TestCommandFROM(t *testing.T) {
 					return fmt.Errorf("Script has unexpected number of FROM %d", len(froms))
 				}
 				fromCmd := froms[0].(*FromCommand)
-				if len(fromCmd.Machines()) != 2 {
-					t.Log("Machines:", fromCmd.Machines())
-					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Machines()))
+				if len(fromCmd.Nodes()) != 2 {
+					t.Log("Nodes:", fromCmd.Nodes())
+					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Nodes()))
 				}
-				m0 := fromCmd.Machines()[0]
-				m1 := fromCmd.Machines()[1]
-				if m0.Address() != "local" {
+				m0 := fromCmd.Nodes()[0]
+				m1 := fromCmd.Nodes()[1]
+				if m0.Address() != Defaults.LocalSSHAddr {
 					return fmt.Errorf("FROM arg 0 has unexpected host value: %s", m0.Address())
 				}
 				if m1.Address() != "127.0.0.1:1234" {
@@ -98,14 +98,14 @@ func TestCommandFROM(t *testing.T) {
 					return fmt.Errorf("Script has unexpected number of FROM %d", len(froms))
 				}
 				fromCmd := froms[0].(*FromCommand)
-				if len(fromCmd.Machines()) != 2 {
-					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Machines()))
+				if len(fromCmd.Nodes()) != 2 {
+					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Nodes()))
 				}
-				m0 := fromCmd.Machines()[0]
+				m0 := fromCmd.Nodes()[0]
 				if m0.Address() != "local.1:123" {
 					return fmt.Errorf("FROM arg 0 has unexpected machine arguments: %s", m0.Address())
 				}
-				m1 := fromCmd.Machines()[1]
+				m1 := fromCmd.Nodes()[1]
 				if m1.Address() != "local.2:456" {
 					return fmt.Errorf("FROM arg 1 has unexpected machine arguments: %s", m1.Address())
 				}
@@ -126,11 +126,11 @@ func TestCommandFROM(t *testing.T) {
 				if !ok {
 					return fmt.Errorf("Unexpected type %T in script", froms[0])
 				}
-				if len(fromCmd.Machines()) != 1 {
-					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Machines()))
+				if len(fromCmd.Nodes()) != 1 {
+					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Nodes()))
 				}
-				m := fromCmd.Machines()[0]
-				if m.Address() != "local" {
+				m := fromCmd.Nodes()[0]
+				if m.Address() != Defaults.LocalSSHAddr {
 					return fmt.Errorf("FROM has unexpected machine %s", m)
 				}
 				return nil
@@ -148,10 +148,10 @@ func TestCommandFROM(t *testing.T) {
 				}
 				fromCmd := froms[0].(*FromCommand)
 
-				if len(fromCmd.Machines()) != 1 {
-					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Machines()))
+				if len(fromCmd.Nodes()) != 1 {
+					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Nodes()))
 				}
-				m := fromCmd.Machines()[0]
+				m := fromCmd.Nodes()[0]
 				if m.Address() != "foo.bar:1234" {
 					return fmt.Errorf("FROM has unexpected machine address %s", m.Address())
 				}
@@ -175,10 +175,10 @@ func TestCommandFROM(t *testing.T) {
 				}
 				fromCmd := froms[0].(*FromCommand)
 
-				if len(fromCmd.Machines()) != 1 {
-					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Machines()))
+				if len(fromCmd.Nodes()) != 1 {
+					return fmt.Errorf("FROM has unexpected number of machines %d", len(fromCmd.Nodes()))
 				}
-				m := fromCmd.Machines()[0]
+				m := fromCmd.Nodes()[0]
 				if m.Address() != "foo.bar:1234" {
 					return fmt.Errorf("FROM has unexpected machine address %s", m.Address())
 				}

@@ -20,7 +20,7 @@ import (
 )
 
 // exeRemotely executes script on remote machines
-func exeRemotely(asCmd *script.AsCommand, authCmd *script.AuthConfigCommand, action script.Command, machine *script.Machine, workdir string) error {
+func exeRemotely(asCmd *script.AsCommand, authCmd *script.AuthConfigCommand, action script.Command, machine *script.Node, workdir string) error {
 
 	user := asCmd.GetUserId()
 	if authCmd.GetUsername() != "" {
@@ -142,7 +142,7 @@ var (
 )
 
 // copyRemotely uses rsync and requires both rsync and ssh to be installed
-func copyRemotely(user, privKey string, machine *script.Machine, asCmd *script.AsCommand, cmd *script.CopyCommand, dest string) error {
+func copyRemotely(user, privKey string, machine *script.Node, asCmd *script.AsCommand, cmd *script.CopyCommand, dest string) error {
 	if _, err := exec.LookPath(cliScpName); err != nil {
 		return fmt.Errorf("remote copy: %s", err)
 	}

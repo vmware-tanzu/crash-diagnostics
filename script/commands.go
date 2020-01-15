@@ -27,6 +27,7 @@ var (
 		KubeConfigValue string
 		AuthPKValue     string
 		OutputValue     string
+		LocalSSHAddr    string
 	}{
 		FromValue:    "local",
 		WorkdirValue: "/tmp/crashdir",
@@ -40,7 +41,8 @@ var (
 		AuthPKValue: func() string {
 			return filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa")
 		}(),
-		OutputValue: "out.tar.gz",
+		OutputValue:  "out.tar.gz",
+		LocalSSHAddr: "127.0.0.1:22",
 	}
 )
 

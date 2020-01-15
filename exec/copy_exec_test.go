@@ -20,7 +20,7 @@ func TestExecLocalCOPY(t *testing.T) {
 				return "COPY /tmp/foo0.txt"
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 
 				cpCmd := s.Actions[0].(*script.CopyCommand)
@@ -53,7 +53,7 @@ func TestExecLocalCOPY(t *testing.T) {
 				return "COPY /tmp/foo0.txt\nCOPY /tmp/foo1.txt /tmp/foo2.txt"
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 
 				var srcFiles []string
@@ -96,7 +96,7 @@ func TestExecLocalCOPY(t *testing.T) {
 				return "COPY /tmp/foodir0\nCOPY /tmp/foodir1 /tmp/foo2.txt"
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 
 				var srcFiles []string
@@ -151,7 +151,7 @@ func TestExecLocalCOPY(t *testing.T) {
 				return "COPY /tmp/${foofile0}\nCOPY ${foofile1} /tmp/${foo2}.txt"
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 
 				var srcFiles []string
@@ -280,7 +280,7 @@ func TestExecRemoteCOPY(t *testing.T) {
 				return src
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 
 				cpCmd := s.Actions[0].(*script.CopyCommand)
@@ -313,7 +313,7 @@ func TestExecRemoteCOPY(t *testing.T) {
 				return src
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 
 				var srcFiles []string
@@ -356,7 +356,7 @@ func TestExecRemoteCOPY(t *testing.T) {
 				return src
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 
 				var srcFiles []string
@@ -408,7 +408,7 @@ func TestExecRemoteCOPY(t *testing.T) {
 				return src
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 
 				var paths []string

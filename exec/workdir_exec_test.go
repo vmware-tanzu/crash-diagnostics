@@ -20,7 +20,7 @@ func TestExecWORKDIR(t *testing.T) {
 		// 		return "WORKDIR /tmp/foodir\nCAPTURE /bin/echo HELLO"
 		// 	},
 		// 	exec: func(s *script.Script) error {
-		// 		machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+		// 		machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
 		// 		workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 		// 		defer os.RemoveAll(workdir.Path())
 		// 		capCmd := s.Actions[0].(*script.CaptureCommand)
@@ -42,7 +42,7 @@ func TestExecWORKDIR(t *testing.T) {
 		// 		return "CAPTURE /bin/echo HELLO"
 		// 	},
 		// 	exec: func(s *script.Script) error {
-		// 		machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+		// 		machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
 		// 		workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 		// 		capCmd := s.Actions[0].(*script.CaptureCommand)
 
@@ -66,7 +66,7 @@ func TestExecWORKDIR(t *testing.T) {
 				CAPTURE /bin/echo "HELLO"`
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 				outdir := s.Preambles[script.CmdOutput][0].(*script.OutputCommand)
 				defer os.RemoveAll(workdir.Path())
