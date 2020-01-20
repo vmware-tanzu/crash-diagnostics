@@ -9,10 +9,12 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
-
 	"golang.org/x/crypto/ssh"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // SSHClient represents a client used to connect to an SSH server
@@ -35,8 +37,8 @@ func New(user string, privateKeyPath string) *SSHClient {
 	return client
 }
 
-// newInsecure
-func newInsecure(user string) *SSHClient {
+// NewInsecure
+func NewInsecure(user string) *SSHClient {
 	client := &SSHClient{
 		user:     user,
 		insecure: true,
@@ -53,7 +55,7 @@ func (c *SSHClient) Dial(addr string) error {
 	}
 
 	if !c.insecure {
-		logrus.Debug("Connecting using private key file", c.privateKey)
+		logrus.Debugf("Connecting using private key file %s@%s", c.user, c.privateKey)
 		cfg, err := c.privateKeyConfig()
 		if err != nil {
 			return err
@@ -66,11 +68,26 @@ func (c *SSHClient) Dial(addr string) error {
 		}
 	}
 
-	sshc, err := ssh.Dial("tcp", addr, c.cfg)
-	if err != nil {
+	// SSH connections with retries
+	maxRetries := 10
+	retries := wait.Backoff{Steps: maxRetries, Duration: time.Millisecond * 70, Jitter: 0.1}
+	if err := wait.ExponentialBackoff(retries, func() (bool, error) {
+		sshc, err := ssh.Dial("tcp", addr, c.cfg)
+		if err != nil {
+			if strings.Contains(err.Error(), "EOF") {
+				logrus.Debug("SSH connection got EOF, will try again")
+				return false, nil
+			}
+			return false, err
+		}
+		logrus.Debug("SSH connection establised")
+		c.sshc = sshc
+		return true, nil
+	}); err != nil {
+		logrus.Debugf("SSH connection failed after %d tries", maxRetries)
 		return err
 	}
-	c.sshc = sshc
+
 	return nil
 }
 

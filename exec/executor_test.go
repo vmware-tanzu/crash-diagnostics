@@ -4,7 +4,6 @@
 package exec
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,24 +14,27 @@ import (
 	"testing"
 
 	"github.com/sirupsen/logrus"
-
 	"github.com/vmware-tanzu/crash-diagnostics/script"
 	"github.com/vmware-tanzu/crash-diagnostics/ssh"
+	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
 
 func TestMain(m *testing.M) {
-	loglevel := "debug"
-	flag.StringVar(&loglevel, "loglevel", loglevel, "Sets log level")
-	flag.Parse()
+	testcrashd.Init()
 
-	if parsed, err := logrus.ParseLevel(loglevel); err != nil {
-		logrus.SetLevel(logrus.DebugLevel)
-	} else {
-		logrus.SetLevel(parsed)
+	if err := testcrashd.StartSSHServer(); err != nil {
+		logrus.Error(err)
 	}
-	logrus.SetOutput(os.Stdout)
 
-	os.Exit(m.Run())
+	testResult := m.Run()
+
+	logrus.Debug("Stopping SSH server...")
+	if err := testcrashd.StopSSHServer(); err != nil {
+		logrus.Error(err)
+	}
+
+	os.Exit(testResult)
+
 }
 
 type execTest struct {

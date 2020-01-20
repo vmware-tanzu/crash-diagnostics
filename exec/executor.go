@@ -84,7 +84,7 @@ func (e *Executor) Execute() error {
 				}
 
 				logrus.Debugf("Executing command %s/%s: ", node.Address(), cmd.Name())
-				if err := exeRemotely(asCmd, authCmd, action, &node, nodeWorkdir); err != nil {
+				if err := cmdExec(asCmd, authCmd, action, &node, nodeWorkdir); err != nil {
 					return err
 				}
 			}
