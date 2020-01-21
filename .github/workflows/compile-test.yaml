@@ -17,7 +17,11 @@ jobs:
  
     - name: test
       run: |
+        sudo ufw allow 2222
+        sudo ufw allow 2424
+        sudo ufw enable
+        sudo ufw status verbose
         mkdir -p ~/.ssh
-        chmod 700 ~/.ssh
+        chmod 765 ~/.ssh
         cp testing/keys/* ~/.ssh/
-        GO111MODULE=on go test -v ./...
+        GO111MODULE=on go test -timeout 120s -v ./...

@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/vmware-tanzu/crash-diagnostics/script"
-	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
 
 func TestExecCAPTURE(t *testing.T) {
@@ -22,7 +21,7 @@ func TestExecCAPTURE(t *testing.T) {
 			source: func() string {
 				src := fmt.Sprintf(`FROM 127.0.0.1:%s
 				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
-				CAPTURE /bin/echo "HELLO WORLD"`, testcrashd.DefaultSSHPort())
+				CAPTURE /bin/echo "HELLO WORLD"`, testSSHPort)
 				return src
 			},
 			exec: func(s *script.Script) error {
@@ -45,10 +44,10 @@ func TestExecCAPTURE(t *testing.T) {
 		{
 			name: "CAPTURE multiple commands",
 			source: func() string {
-				src := `FROM 127.0.0.1:2222
+				src := fmt.Sprintf(`FROM 127.0.0.1:%s
 				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
 				CAPTURE /bin/echo HELLO!
-				CAPTURE ls /tmp`
+				CAPTURE ls /tmp`, testSSHPort)
 				return src
 			},
 			exec: func(s *script.Script) error {
@@ -76,10 +75,10 @@ func TestExecCAPTURE(t *testing.T) {
 		{
 			name: "CAPTURE remote command AS user",
 			source: func() string {
-				src := `FROM 127.0.0.1:2222
+				src := fmt.Sprintf(`FROM 127.0.0.1:%s
 				AS userid:${USER}
 				AUTHCONFIG private-key:${HOME}/.ssh/id_rsa
-				CAPTURE /bin/echo "HELLO WORLD"`
+				CAPTURE /bin/echo "HELLO WORLD"`, testSSHPort)
 				return src
 			},
 			exec: func(s *script.Script) error {
@@ -102,10 +101,10 @@ func TestExecCAPTURE(t *testing.T) {
 		{
 			name: "CAPTURE unquoted default with quoted subcommand",
 			source: func() string {
-				return `
-				FROM 127.0.0.1:2222
+				return fmt.Sprintf(`
+				FROM 127.0.0.1:%s
 				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
-				CAPTURE /bin/bash -c 'echo "Hello to the World!"'`
+				CAPTURE /bin/bash -c 'echo "Hello to the World!"'`, testSSHPort)
 			},
 			exec: func(s *script.Script) error {
 				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
@@ -134,10 +133,10 @@ func TestExecCAPTURE(t *testing.T) {
 		{
 			name: "CAPTURE remote command AS bad user",
 			source: func() string {
-				src := `FROM 127.0.0.1:2222
+				src := fmt.Sprintf(`FROM 127.0.0.1:%s
 				AS userid:foo
 				AUTHCONFIG private-key:${HOME}/.ssh/id_rsa
-				CAPTURE /bin/echo "HELLO WORLD"`
+				CAPTURE /bin/echo "HELLO WORLD"`, testSSHPort)
 				return src
 			},
 			exec: func(s *script.Script) error {
@@ -149,9 +148,9 @@ func TestExecCAPTURE(t *testing.T) {
 		{
 			name: "CAPTURE with echo on",
 			source: func() string {
-				src := `FROM 127.0.0.1:2222
+				src := fmt.Sprintf(`FROM 127.0.0.1:%s
 				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
-				CAPTURE cmd:'/bin/echo "HELLO WORLD"' echo:"on"`
+				CAPTURE cmd:'/bin/echo "HELLO WORLD"' echo:"on"`, testSSHPort)
 				return src
 			},
 			exec: func(s *script.Script) error {
@@ -174,9 +173,9 @@ func TestExecCAPTURE(t *testing.T) {
 		{
 			name: "CAPTURE remote command with bad AUTHCONFIG user",
 			source: func() string {
-				src := `FROM 127.0.0.1:22
+				src := fmt.Sprintf(`FROM 127.0.0.1:%s
 				AUTHCONFIG username:_foouser private-key:$HOME/.ssh/id_rsa
-				CAPTURE /bin/echo "HELLO WORLD"`
+				CAPTURE /bin/echo "HELLO WORLD"`, testSSHPort)
 				return src
 			},
 			exec: func(s *script.Script) error {
@@ -188,9 +187,9 @@ func TestExecCAPTURE(t *testing.T) {
 		{
 			name: "CAPTURE bad remote command",
 			source: func() string {
-				src := `FROM 127.0.0.1:2222
+				src := fmt.Sprintf(`FROM 127.0.0.1:%s
 				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
-				CAPTURE _foo_ _bar_`
+				CAPTURE _foo_ _bar_`, testSSHPort)
 				return src
 			},
 			exec: func(s *script.Script) error {

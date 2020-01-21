@@ -17,9 +17,9 @@ func TestExecCOPY(t *testing.T) {
 		{
 			name: "COPY single files",
 			source: func() string {
-				src := `FROM 127.0.0.1:2222
+				src := fmt.Sprintf(`FROM 127.0.0.1:%s
 				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
-				COPY foo.txt`
+				COPY foo.txt`, testSSHPort)
 				return src
 			},
 			exec: func(s *script.Script) error {
@@ -58,10 +58,10 @@ func TestExecCOPY(t *testing.T) {
 		{
 			name: "COPY multiple files",
 			source: func() string {
-				src := `FROM 127.0.0.1:2222
+				src := fmt.Sprintf(`FROM 127.0.0.1:%s
 				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
 				COPY foo0.txt
-				COPY foo1.txt foo2.txt`
+				COPY foo1.txt foo2.txt`, testSSHPort)
 				return src
 			},
 			exec: func(s *script.Script) error {
@@ -109,10 +109,10 @@ func TestExecCOPY(t *testing.T) {
 		{
 			name: "COPY directories and files",
 			source: func() string {
-				src := `FROM 127.0.0.1:2222
+				src := fmt.Sprintf(`FROM 127.0.0.1:%s
 				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
 				COPY foodir0
-				COPY foodir1 foo2.txt`
+				COPY foodir1 foo2.txt`, testSSHPort)
 				return src
 			},
 			exec: func(s *script.Script) error {
@@ -174,11 +174,11 @@ func TestExecCOPY(t *testing.T) {
 		{
 			name: "COPY with globs",
 			source: func() string {
-				src := `FROM 127.0.0.1:2222
+				src := fmt.Sprintf(`FROM 127.0.0.1:%s
 				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
 				COPY /tmp/test-dir/*.txt
 				COPY /tmp/test-dir/bazz.csv
-				`
+				`, testSSHPort)
 				return src
 			},
 			exec: func(s *script.Script) error {
@@ -237,9 +237,9 @@ func TestExecCOPY(t *testing.T) {
 		{
 			name: "COPY bad source files",
 			source: func() string {
-				src := `FROM 127.0.0.1:2222
+				src := fmt.Sprintf(`FROM 127.0.0.1:%s
 				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
-				COPY foodir0`
+				COPY foodir0`, testSSHPort)
 				return src
 			},
 			exec: func(s *script.Script) error {

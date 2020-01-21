@@ -19,18 +19,26 @@ import (
 	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
 
+const (
+	testSSHPort = "2222"
+)
+
 func TestMain(m *testing.M) {
 	testcrashd.Init()
 
-	if err := testcrashd.StartSSHServer(); err != nil {
+	sshSvr := testcrashd.NewSSHServer("test-sshd-exec", testSSHPort)
+	logrus.Debug("Attempting to start SSH server")
+	if err := sshSvr.Start(); err != nil {
 		logrus.Error(err)
+		os.Exit(1)
 	}
 
 	testResult := m.Run()
 
 	logrus.Debug("Stopping SSH server...")
-	if err := testcrashd.StopSSHServer(); err != nil {
+	if err := sshSvr.Stop(); err != nil {
 		logrus.Error(err)
+		os.Exit(1)
 	}
 
 	os.Exit(testResult)
@@ -197,7 +205,7 @@ func TestExecutor(t *testing.T) {
 				var src strings.Builder
 				src.WriteString("# This is a sample comment\n")
 				src.WriteString("#### START\n")
-				src.WriteString("FROM 127.0.0.1:2222\n")
+				src.WriteString(fmt.Sprintf("FROM 127.0.0.1:%s\n", testSSHPort))
 				src.WriteString("WORKDIR /tmp/${USER}\n")
 				src.WriteString("CAPTURE /bin/echo \"HELLO\"\n")
 				src.WriteString("COPY /tmp/buzz.txt\n")

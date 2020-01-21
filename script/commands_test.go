@@ -5,9 +5,17 @@ package script
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
+
+	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
+
+func TestMain(m *testing.M) {
+	testcrashd.Init()
+	os.Exit(m.Run())
+}
 
 type commandTest struct {
 	name       string

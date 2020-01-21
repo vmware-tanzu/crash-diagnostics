@@ -17,10 +17,10 @@ func TestExecRUN(t *testing.T) {
 		{
 			name: "RUN single command",
 			source: func() string {
-				return `FROM 127.0.0.1:2222
+				return fmt.Sprintf(`FROM 127.0.0.1:%s
 				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
 				RUN /bin/echo "HELLO WORLD"
-				`
+				`, testSSHPort)
 			},
 			exec: func(s *script.Script) error {
 
@@ -44,12 +44,12 @@ func TestExecRUN(t *testing.T) {
 		{
 			name: "RUN multiple commands",
 			source: func() string {
-				return `
-				FROM 127.0.0.1:2222
+				return fmt.Sprintf(`
+				FROM 127.0.0.1:%s
 				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
 				RUN "/bin/echo 'HELLO WORLD'"
 				RUN "/bin/echo 'FROM SPACE'"
-				`
+				`, testSSHPort)
 			},
 			exec: func(s *script.Script) error {
 
@@ -73,12 +73,12 @@ func TestExecRUN(t *testing.T) {
 		{
 			name: "RUN chain command result",
 			source: func() string {
-				return `
-				FROM 127.0.0.1:2222
+				return fmt.Sprintf(`
+				FROM 127.0.0.1:%s
 				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
 				RUN "/bin/echo 'HELLO WORLD'"
 				RUN "/bin/echo '${CMD_RESULT} ALL'"
-				`
+				`, testSSHPort)
 			},
 			exec: func(s *script.Script) error {
 
@@ -102,10 +102,10 @@ func TestExecRUN(t *testing.T) {
 		{
 			name: "RUN default param with quoted subcommand",
 			source: func() string {
-				return `
-				FROM 127.0.0.1:2222
+				return fmt.Sprintf(`
+				FROM 127.0.0.1:%s
 				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
-				RUN /bin/bash -c 'echo "Hello World"'`
+				RUN /bin/bash -c 'echo "Hello World"'`, testSSHPort)
 			},
 			exec: func(s *script.Script) error {
 
@@ -129,10 +129,10 @@ func TestExecRUN(t *testing.T) {
 		{
 			name: "RUN with shell and wrapped quoted subcommand",
 			source: func() string {
-				return `
-				FROM 127.0.0.1:2222
+				return fmt.Sprintf(`
+				FROM 127.0.0.1:%s
 				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
-				RUN shell:"/bin/bash -c" cmd:'echo "Hello World"'`
+				RUN shell:"/bin/bash -c" cmd:'echo "Hello World"'`, testSSHPort)
 			},
 			exec: func(s *script.Script) error {
 
@@ -156,10 +156,10 @@ func TestExecRUN(t *testing.T) {
 		{
 			name: "RUN with echo on",
 			source: func() string {
-				return `FROM 127.0.0.1:2222
+				return fmt.Sprintf(`FROM 127.0.0.1:%s
 				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
 				RUN cmd:'/bin/echo "HELLO WORLD"' echo:"on"
-				`
+				`, testSSHPort)
 			},
 			exec: func(s *script.Script) error {
 

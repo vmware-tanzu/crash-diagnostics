@@ -17,7 +17,7 @@ func TestExecWORKDIR(t *testing.T) {
 		{
 			name: "exec with WORKDIR",
 			source: func() string {
-				return "FROM 127.0.0.1:2222\nWORKDIR /tmp/foodir\nCAPTURE /bin/echo HELLO"
+				return fmt.Sprintf("FROM 127.0.0.1:%s\nWORKDIR /tmp/foodir\nCAPTURE /bin/echo HELLO", testSSHPort)
 			},
 			exec: func(s *script.Script) error {
 				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
@@ -39,7 +39,7 @@ func TestExecWORKDIR(t *testing.T) {
 		{
 			name: "exec with default WORKDIR",
 			source: func() string {
-				return "FROM 127.0.0.1:2222\nCAPTURE /bin/echo HELLO"
+				return fmt.Sprintf("FROM 127.0.0.1:%s\nCAPTURE /bin/echo HELLO", testSSHPort)
 			},
 			exec: func(s *script.Script) error {
 				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
@@ -60,11 +60,11 @@ func TestExecWORKDIR(t *testing.T) {
 		{
 			name: "exec WORKDIR with var expansion",
 			source: func() string {
-				return `
-				FROM 127.0.0.1:2222
+				return fmt.Sprintf(`
+				FROM 127.0.0.1:%s
 				ENV foodir=/tmp/foodir
 				WORKDIR ${foodir}
-				CAPTURE /bin/echo "HELLO"`
+				CAPTURE /bin/echo "HELLO"`, testSSHPort)
 			},
 			exec: func(s *script.Script) error {
 				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()

@@ -9,7 +9,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -69,16 +68,13 @@ func (c *SSHClient) Dial(addr string) error {
 	}
 
 	// SSH connections with retries
-	maxRetries := 10
-	retries := wait.Backoff{Steps: maxRetries, Duration: time.Millisecond * 70, Jitter: 0.1}
+	maxRetries := 30
+	retries := wait.Backoff{Steps: maxRetries, Duration: time.Millisecond * 80, Jitter: 0.1}
 	if err := wait.ExponentialBackoff(retries, func() (bool, error) {
 		sshc, err := ssh.Dial("tcp", addr, c.cfg)
 		if err != nil {
-			if strings.Contains(err.Error(), "EOF") {
-				logrus.Debug("SSH connection got EOF, will try again")
-				return false, nil
-			}
-			return false, err
+			logrus.Errorf("Failed to dial %s (ssh): %s: will retry connection again", addr, err)
+			return false, nil
 		}
 		logrus.Debug("SSH connection establised")
 		c.sshc = sshc
