@@ -16,4 +16,8 @@ jobs:
       uses: actions/checkout@v1
  
     - name: test
-      run: GO111MODULE=on go test -v ./...
+      run: |
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        cp testing/keys/* ~/.ssh/
+        GO111MODULE=on go test -v ./...
