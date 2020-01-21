@@ -4,6 +4,7 @@
 package exec
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -42,175 +43,214 @@ func TestExecCOPY(t *testing.T) {
 					return err
 				}
 
+				content, err := getTestFileContent(fileName)
+				if err != nil {
+					return err
+				}
+
+				if content != "HelloFoo" {
+					t.Errorf("Failed to copy file, expecting HelloFoo, got %s", content)
+				}
+
 				return nil
 			},
 		},
-		// {
-		// 	name: "COPY multiple files",
-		// 	source: func() string {
-		// 		src := `FROM 127.0.0.1:2222
-		// 		AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
-		// 		COPY foo0.txt
-		// 		COPY foo1.txt foo2.txt`
-		// 		return src
-		// 	},
-		// 	exec: func(s *script.Script) error {
-		// 		machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
-		// 		workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
+		{
+			name: "COPY multiple files",
+			source: func() string {
+				src := `FROM 127.0.0.1:2222
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
+				COPY foo0.txt
+				COPY foo1.txt foo2.txt`
+				return src
+			},
+			exec: func(s *script.Script) error {
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
+				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 
-		// 		var srcFiles []string
-		// 		cpCmd0 := s.Actions[0].(*script.CopyCommand)
-		// 		srcFiles = append(srcFiles, cpCmd0.Paths()[0])
-		// 		cpCmd1 := s.Actions[1].(*script.CopyCommand)
-		// 		srcFiles = append(srcFiles, cpCmd1.Paths()[0])
-		// 		srcFiles = append(srcFiles, cpCmd1.Paths()[1])
+				var srcFiles []string
+				cpCmd0 := s.Actions[0].(*script.CopyCommand)
+				srcFiles = append(srcFiles, cpCmd0.Paths()[0])
+				cpCmd1 := s.Actions[1].(*script.CopyCommand)
+				srcFiles = append(srcFiles, cpCmd1.Paths()[0])
+				srcFiles = append(srcFiles, cpCmd1.Paths()[1])
 
-		// 		for i, srcFile := range srcFiles {
-		// 			if err := makeRemoteTestFile(t, machine, srcFile, fmt.Sprintf("HelloFoo-%d", i)); err != nil {
-		// 				return err
-		// 			}
+				for i, srcFile := range srcFiles {
+					if err := makeRemoteTestFile(t, machine, srcFile, fmt.Sprintf("HelloFoo-%d", i)); err != nil {
+						return err
+					}
 
-		// 			defer removeRemoteTestFile(t, machine, srcFile)
-		// 		}
+					defer removeRemoteTestFile(t, machine, srcFile)
+				}
 
-		// 		e := New(s)
-		// 		if err := e.Execute(); err != nil {
-		// 			return err
-		// 		}
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
 
-		// 		for _, srcFile := range srcFiles {
-		// 			fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), srcFile)
-		// 			if _, err := os.Stat(fileName); err != nil {
-		// 				return err
-		// 			}
-		// 		}
+				for i, srcFile := range srcFiles {
+					fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), srcFile)
+					if _, err := os.Stat(fileName); err != nil {
+						return err
+					}
+					content, err := getTestFileContent(fileName)
+					if err != nil {
+						return err
+					}
 
-		// 		return nil
-		// 	},
-		// },
-		// {
-		// 	name: "COPY directories and files",
-		// 	source: func() string {
-		// 		src := `FROM 127.0.0.1:2222
-		// 		AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
-		// 		COPY foodir0
-		// 		COPY foodir1 foo2.txt`
-		// 		return src
-		// 	},
-		// 	exec: func(s *script.Script) error {
-		// 		machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
-		// 		workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
+					if content != fmt.Sprintf("HelloFoo-%d", i) {
+						t.Errorf("Failed to copy file, expecting HelloFoo, got %s", content)
+					}
+				}
 
-		// 		var srcFiles []string
-		// 		cpCmd0 := s.Actions[0].(*script.CopyCommand)
-		// 		srcFiles = append(srcFiles, cpCmd0.Paths()[0])
-		// 		cpCmd1 := s.Actions[1].(*script.CopyCommand)
-		// 		srcFiles = append(srcFiles, cpCmd1.Paths()[0])
-		// 		srcFiles = append(srcFiles, cpCmd1.Paths()[1])
+				return nil
+			},
+		},
+		{
+			name: "COPY directories and files",
+			source: func() string {
+				src := `FROM 127.0.0.1:2222
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
+				COPY foodir0
+				COPY foodir1 foo2.txt`
+				return src
+			},
+			exec: func(s *script.Script) error {
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
+				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 
-		// 		for i, srcFile := range srcFiles {
-		// 			if i == 0 || i == 1 {
-		// 				if err := makeRemoteTestDir(t, machine, srcFile); err != nil {
-		// 					return err
-		// 				}
-		// 				file := filepath.Join(srcFile, fmt.Sprintf("file-%d.txt", i))
-		// 				if err := makeRemoteTestFile(t, machine, file, fmt.Sprintf("HelloFoo-%d", i)); err != nil {
-		// 					return err
-		// 				}
-		// 			} else {
-		// 				if err := makeRemoteTestFile(t, machine, srcFile, fmt.Sprintf("HelloFoo-%d", i)); err != nil {
-		// 					return err
-		// 				}
-		// 			}
-		// 			defer removeRemoteTestFile(t, machine, srcFile)
-		// 		}
+				var srcFiles []string
+				cpCmd0 := s.Actions[0].(*script.CopyCommand)
+				srcFiles = append(srcFiles, cpCmd0.Paths()[0])
+				cpCmd1 := s.Actions[1].(*script.CopyCommand)
+				srcFiles = append(srcFiles, cpCmd1.Paths()[0])
+				srcFiles = append(srcFiles, cpCmd1.Paths()[1])
 
-		// 		e := New(s)
-		// 		if err := e.Execute(); err != nil {
-		// 			return err
-		// 		}
+				for i, srcFile := range srcFiles {
+					if i == 0 || i == 1 {
+						if err := makeRemoteTestDir(t, machine, srcFile); err != nil {
+							return err
+						}
+						file := filepath.Join(srcFile, fmt.Sprintf("file-%d.txt", i))
+						if err := makeRemoteTestFile(t, machine, file, fmt.Sprintf("HelloFoo-%d", i)); err != nil {
+							return err
+						}
+					} else {
+						if err := makeRemoteTestFile(t, machine, srcFile, fmt.Sprintf("HelloFoo-%d", i)); err != nil {
+							return err
+						}
+					}
+					defer removeRemoteTestFile(t, machine, srcFile)
+				}
 
-		// 		for _, srcFile := range srcFiles {
-		// 			fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), srcFile)
-		// 			if _, err := os.Stat(fileName); err != nil {
-		// 				return err
-		// 			}
-		// 		}
-		// 		return nil
-		// 	},
-		// },
-		// {
-		// 	name: "COPY with globs",
-		// 	source: func() string {
-		// 		src := `FROM 127.0.0.1:2222
-		// 		AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
-		// 		COPY /tmp/test-dir/*.txt
-		// 		COPY /tmp/test-dir/bazz.csv
-		// 		`
-		// 		return src
-		// 	},
-		// 	exec: func(s *script.Script) error {
-		// 		machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
-		// 		workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
 
-		// 		var paths []string
-		// 		cpCmd0 := s.Actions[0].(*script.CopyCommand)
-		// 		dir := filepath.Dir(cpCmd0.Paths()[0])
+				for i, srcFile := range srcFiles {
+					fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), srcFile)
+					info, err := os.Stat(fileName)
+					if err != nil {
+						return err
+					}
+					if info.IsDir() {
+						continue
+					}
 
-		// 		if err := makeRemoteTestDir(t, machine, dir); err != nil {
-		// 			return err
-		// 		}
+					content, err := getTestFileContent(fileName)
+					if err != nil {
+						return err
+					}
 
-		// 		f0 := filepath.Join(dir, "foo.txt")
-		// 		if err := makeRemoteTestFile(t, machine, f0, "Hello from Foo!"); err != nil {
-		// 			return err
-		// 		}
-		// 		paths = append(paths, f0)
+					if content != fmt.Sprintf("HelloFoo-%d", i) {
+						t.Errorf("Failed to copy file, expecting HelloFoo, got %s", content)
+					}
+				}
+				return nil
+			},
+		},
 
-		// 		f1 := filepath.Join(dir, "bar.txt")
-		// 		if err := makeRemoteTestFile(t, machine, f1, "Hello from Bar!"); err != nil {
-		// 			return err
-		// 		}
-		// 		paths = append(paths, f1)
+		{
+			name: "COPY with globs",
+			source: func() string {
+				src := `FROM 127.0.0.1:2222
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
+				COPY /tmp/test-dir/*.txt
+				COPY /tmp/test-dir/bazz.csv
+				`
+				return src
+			},
+			exec: func(s *script.Script) error {
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
+				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 
-		// 		f2 := filepath.Join(dir, "bazz.csv")
-		// 		if err := makeRemoteTestFile(t, machine, f2, "b, a, z, z"); err != nil {
-		// 			return err
-		// 		}
-		// 		paths = append(paths, f2)
+				var paths []string
+				cpCmd0 := s.Actions[0].(*script.CopyCommand)
+				dir := filepath.Dir(cpCmd0.Paths()[0])
 
-		// 		e := New(s)
-		// 		if err := e.Execute(); err != nil {
-		// 			return err
-		// 		}
+				if err := makeRemoteTestDir(t, machine, dir); err != nil {
+					return err
+				}
 
-		// 		for _, path := range paths {
-		// 			defer removeRemoteTestFile(t, machine, path)
-		// 			fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), path)
-		// 			if _, err := os.Stat(fileName); err != nil {
-		// 				return err
-		// 			}
-		// 		}
-		// 		return nil
-		// 	},
-		// },
-		// {
-		// 	name: "COPY bad source files",
-		// 	source: func() string {
-		// 		src := `FROM 127.0.0.1:2222
-		// 		AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
-		// 		COPY foodir0`
-		// 		return src
-		// 	},
-		// 	exec: func(s *script.Script) error {
-		// 		e := New(s)
-		// 		if err := e.Execute(); err != nil {
-		// 			return err
-		// 		}
-		// 		return nil
-		// 	},
-		// 	shouldFail: true,
-		// },
+				f0 := filepath.Join(dir, "foo.txt")
+				if err := makeRemoteTestFile(t, machine, f0, "HelloFoo-0"); err != nil {
+					return err
+				}
+				paths = append(paths, f0)
+
+				f1 := filepath.Join(dir, "bar.txt")
+				if err := makeRemoteTestFile(t, machine, f1, "HelloFoo-1"); err != nil {
+					return err
+				}
+				paths = append(paths, f1)
+
+				f2 := filepath.Join(dir, "bazz.csv")
+				if err := makeRemoteTestFile(t, machine, f2, "HelloFoo-2"); err != nil {
+					return err
+				}
+				paths = append(paths, f2)
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+
+				for i, path := range paths {
+					defer removeRemoteTestFile(t, machine, path)
+					fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), path)
+					if _, err := os.Stat(fileName); err != nil {
+						return err
+					}
+					content, err := getTestFileContent(fileName)
+					if err != nil {
+						return err
+					}
+
+					if content != fmt.Sprintf("HelloFoo-%d", i) {
+						t.Errorf("Failed to copy file, expecting HelloFoo, got %s", content)
+					}
+				}
+				return nil
+			},
+		},
+		{
+			name: "COPY bad source files",
+			source: func() string {
+				src := `FROM 127.0.0.1:2222
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
+				COPY foodir0`
+				return src
+			},
+			exec: func(s *script.Script) error {
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+				return nil
+			},
+			shouldFail: true,
+		},
 	}
 
 	for _, test := range tests {

@@ -15,7 +15,7 @@ func TestExecOUTPUT(t *testing.T) {
 		{
 			name: "exec with OUTPUT",
 			source: func() string {
-				return "OUTPUT path:/tmp/crashout/out.tar.gz\nCAPTURE /bin/echo HELLO"
+				return "FROM 127.0.0.1:2222\nOUTPUT path:/tmp/crashout/out.tar.gz\nCAPTURE /bin/echo HELLO"
 			},
 			exec: func(s *script.Script) error {
 				output := s.Preambles[script.CmdOutput][0].(*script.OutputCommand)
@@ -35,6 +35,7 @@ func TestExecOUTPUT(t *testing.T) {
 			name: "exec OUTPUT with var expansion",
 			source: func() string {
 				return `
+				FROM 127.0.0.1:2222
 				ENV outfile=out.tar.gz
 				CAPTURE /bin/echo HELLO
 				OUTPUT path:/tmp/crashout/${outfile}
@@ -57,7 +58,7 @@ func TestExecOUTPUT(t *testing.T) {
 		{
 			name: "exec with missing OUTPUT",
 			source: func() string {
-				return "CAPTURE /bin/echo HELLO"
+				return "FROM 127.0.0.1:2222\nCAPTURE /bin/echo HELLO"
 			},
 			exec: func(s *script.Script) error {
 				e := New(s)

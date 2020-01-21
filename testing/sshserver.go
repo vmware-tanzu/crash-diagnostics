@@ -28,7 +28,7 @@ docker create \
 */
 func StartSSHServer() error {
 	e := echo.New()
-	if len(e.Run("which docker")) == 0 {
+	if len(e.Prog.Avail("docker")) == 0 {
 		return fmt.Errorf("unable to find docker binary")
 	}
 
@@ -40,7 +40,7 @@ func StartSSHServer() error {
 
 	e.SetVar("CONTAINER_NAME", sshContainerName)
 	e.SetVar("SSH_PORT", fmt.Sprintf("%s:2222", sshPort))
-	e.SetVar("SSH_DOCKER_IMAGE", "linuxserver/openssh-server")
+	e.SetVar("SSH_DOCKER_IMAGE", "vladimirvivien/openssh-server")
 	cmd := e.Eval("docker run --rm --detach --name=$CONTAINER_NAME -p $SSH_PORT -e PUBLIC_KEY_FILE=/config/id_rsa.pub -e USER_NAME=$USER -e SUDO_ACCESS=true -v $HOME/.ssh:/config $SSH_DOCKER_IMAGE")
 	logrus.Debugf("Starting SSH server: %s", cmd)
 	proc := e.RunProc(cmd)

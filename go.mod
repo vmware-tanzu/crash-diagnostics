@@ -3,11 +3,10 @@ module github.com/vmware-tanzu/crash-diagnostics
 go 1.12
 
 require (
-	github.com/coreos/etcd v3.3.10+incompatible
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.5
-	github.com/vladimirvivien/echo v0.0.1-alpha.3
+	github.com/vladimirvivien/echo v0.0.1-alpha.4
 	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
 	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297 // indirect
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
