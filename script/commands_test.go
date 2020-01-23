@@ -5,9 +5,17 @@ package script
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
+
+	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
+
+func TestMain(m *testing.M) {
+	testcrashd.Init()
+	os.Exit(m.Run())
+}
 
 type commandTest struct {
 	name       string
@@ -143,7 +151,7 @@ func TestCommandParse(t *testing.T) {
 					return fmt.Errorf("Script has unexpected number of actions %d", len(actions))
 				}
 				preambles := s.Preambles
-				if len(preambles) != 5 {
+				if len(preambles) != 6 {
 					return fmt.Errorf("Script has unexpected number of preambles %d", len(preambles))
 				}
 				return nil

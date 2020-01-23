@@ -64,7 +64,11 @@ func (e *Executor) Execute() error {
 	}
 
 	// Execute each action as appeared in script
-	var authCmd *script.AuthConfigCommand
+	authCmd, err := exeAuthConfig(e.script)
+	if err != nil {
+		return err
+	}
+
 	for _, action := range e.script.Actions {
 		switch cmd := action.(type) {
 		case *script.KubeGetCommand:
@@ -73,32 +77,16 @@ func (e *Executor) Execute() error {
 				return fmt.Errorf("KUBEGET: %s", err)
 			}
 		default:
-			for _, machine := range fromCmd.Machines() {
-				machineWorkdir, err := makeMachineWorkdir(workdir.Path(), machine)
+			for _, node := range fromCmd.Nodes() {
+				nodeWorkdir, err := makeNodeWorkdir(workdir.Path(), node)
 				if err != nil {
 					return err
 				}
 
-				switch machine.Address() {
-				case "local":
-					logrus.Debug("Executing commands on local machine")
-					if err := exeLocally(asCmd, action, machineWorkdir); err != nil {
-						return err
-					}
-				default:
-					logrus.Debug("Executing remote commands at ", machine.Address())
-					if authCmd == nil {
-						auth, err := exeAuthConfig(e.script)
-						if err != nil {
-							return err
-						}
-						authCmd = auth
-					}
-					if err := exeRemotely(asCmd, authCmd, action, &machine, machineWorkdir); err != nil {
-						return err
-					}
+				logrus.Debugf("Executing command %s/%s: ", node.Address(), cmd.Name())
+				if err := cmdExec(asCmd, authCmd, action, &node, nodeWorkdir); err != nil {
+					return err
 				}
-
 			}
 		}
 	}
@@ -113,7 +101,7 @@ func (e *Executor) Execute() error {
 	return nil
 }
 
-func makeMachineWorkdir(workdir string, machine script.Machine) (string, error) {
+func makeNodeWorkdir(workdir string, machine script.Node) (string, error) {
 	machineAddr := machine.Address()
 	machineWorkdir := filepath.Join(workdir, sanitizeStr(machineAddr))
 	if err := os.MkdirAll(machineWorkdir, 0744); err != nil && !os.IsExist(err) {

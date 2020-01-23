@@ -13,14 +13,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/vmware-tanzu/crash-diagnostics/ssh"
-
 	"github.com/sirupsen/logrus"
 	"github.com/vmware-tanzu/crash-diagnostics/script"
+	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 )
 
-// exeRemotely executes script on remote machines
-func exeRemotely(asCmd *script.AsCommand, authCmd *script.AuthConfigCommand, action script.Command, machine *script.Machine, workdir string) error {
+// cmdExec executes script on remote machines
+func cmdExec(asCmd *script.AsCommand, authCmd *script.AuthConfigCommand, action script.Command, machine *script.Node, workdir string) error {
 
 	user := asCmd.GetUserId()
 	if authCmd.GetUsername() != "" {
@@ -35,16 +34,16 @@ func exeRemotely(asCmd *script.AsCommand, authCmd *script.AuthConfigCommand, act
 	//for _, action := range src.Actions {
 	switch cmd := action.(type) {
 	case *script.CopyCommand:
-		if err := copyRemotely(user, privKey, machine, asCmd, cmd, workdir); err != nil {
+		if err := execCopy(user, privKey, machine, asCmd, cmd, workdir); err != nil {
 			return err
 		}
 	case *script.CaptureCommand:
 		// capture command output
-		if err := captureRemotely(user, privKey, machine.Address(), cmd, workdir); err != nil {
+		if err := execCapture(user, privKey, machine.Address(), cmd, workdir); err != nil {
 			return err
 		}
 	case *script.RunCommand:
-		if err := runRemotely(user, privKey, machine.Address(), cmd, workdir); err != nil {
+		if err := execRun(user, privKey, machine.Address(), cmd, workdir); err != nil {
 			return err
 		}
 	default:
@@ -55,7 +54,7 @@ func exeRemotely(asCmd *script.AsCommand, authCmd *script.AuthConfigCommand, act
 	return nil
 }
 
-func captureRemotely(user, privKey, hostAddr string, cmdCap *script.CaptureCommand, workdir string) error {
+func execCapture(user, privKey, hostAddr string, cmdCap *script.CaptureCommand, workdir string) error {
 	sshc := ssh.New(user, privKey)
 	if err := sshc.Dial(hostAddr); err != nil {
 		return err
@@ -91,7 +90,7 @@ func captureRemotely(user, privKey, hostAddr string, cmdCap *script.CaptureComma
 	return nil
 }
 
-func runRemotely(user, privKey, hostAddr string, cmdRun *script.RunCommand, workdir string) error {
+func execRun(user, privKey, hostAddr string, cmdRun *script.RunCommand, workdir string) error {
 	sshc := ssh.New(user, privKey)
 	if err := sshc.Dial(hostAddr); err != nil {
 		return err
@@ -141,8 +140,8 @@ var (
 	cliScpArgs = "-rpq"
 )
 
-// copyRemotely uses rsync and requires both rsync and ssh to be installed
-func copyRemotely(user, privKey string, machine *script.Machine, asCmd *script.AsCommand, cmd *script.CopyCommand, dest string) error {
+// execCopy uses rsync and requires both rsync and ssh to be installed
+func execCopy(user, privKey string, machine *script.Node, asCmd *script.AsCommand, cmd *script.CopyCommand, dest string) error {
 	if _, err := exec.LookPath(cliScpName); err != nil {
 		return fmt.Errorf("remote copy: %s", err)
 	}

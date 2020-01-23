@@ -5,7 +5,6 @@ package ssh
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -15,37 +14,40 @@ import (
 	"testing"
 
 	"github.com/sirupsen/logrus"
+	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
+)
+
+const (
+	testSSHPort = "2424"
 )
 
 func TestMain(m *testing.M) {
-	loglevel := "debug"
-	flag.StringVar(&loglevel, "loglevel", loglevel, "Sets log level")
-	flag.Parse()
+	testcrashd.Init()
 
-	if parsed, err := logrus.ParseLevel(loglevel); err != nil {
-		logrus.SetLevel(logrus.DebugLevel)
-	} else {
-		logrus.SetLevel(parsed)
+	sshSvr := testcrashd.NewSSHServer("test-sshd-sshclient", testSSHPort)
+	logrus.Debug("Attempting to start SSH server")
+	if err := sshSvr.Start(); err != nil {
+		logrus.Error(err)
+		os.Exit(1)
 	}
-	logrus.SetOutput(os.Stdout)
 
-	os.Exit(m.Run())
+	testResult := m.Run()
+
+	logrus.Debug("Stopping SSH server...")
+	if err := sshSvr.Stop(); err != nil {
+		logrus.Error(err)
+		os.Exit(1)
+	}
+
+	os.Exit(testResult)
 }
-
-// There is no good/simple way to mock the ssh.Server (without tons of code 😭)
-// This test assumes its environment has sshd running configured with a
-// known public key (i.e. id_rsa.pub) added to the server's known hosts.
-// TODO add script to automate this for testing later.
 func TestSSHClient(t *testing.T) {
-	sshHost := "127.0.0.1:22"
+	sshHost := fmt.Sprintf("127.0.0.1:%s", testSSHPort)
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		t.Fatal(err)
 	}
 	privKey := filepath.Join(homeDir, ".ssh/id_rsa")
-
-	t.Skip(fmt.Sprintf(`Skipping: test requires ssh daemon setup at %s for
-		passwordless connection using public key for %s`, sshHost, privKey))
 
 	usr, err := user.Current()
 	if err != nil {

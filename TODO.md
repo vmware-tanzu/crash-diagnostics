@@ -10,7 +10,7 @@ This tag/version reflects migration to github
 # v0.1.0-alpha.4
 * [x] Add automated build (Makefile etc)
 * [x] Git describe version reporting (i.e. `crash-diagnostics --version`)
-* [ ] Add project badges to README
+* [x] Add project badges to README
 * [x] Apply tag v0.1.0-alpha.4
 
 * Translate identified TODOs to issues.
@@ -45,11 +45,25 @@ This tag/version reflects migration to github
 * [x] Update changelog doc
 
 # v0.2.0-alpha.0
-* [ ] New directive `KUBEGET`
-* [ ] Update doc
+* [x] New directive `KUBEGET`
+* [x] Update doc
 
 
-# v0.2.1
+# v0.2.1-alpha.0
+* [x] Introduce support for command echo parameter
+* [x] Documentation update
+
+# v0.2.1-alpha.1
+* [x] Remove support for local execution model
+* [x] The default executor will use SSH/SCP even when targeting local machine
+* [x] Update test for new executor backend
+* [x] Update CI/CD to automate end-to-end tests using SSH server
+* [x] Documentation update
+
+# v0.2.2-alpha.0
+* [ ] Initial CloudAPI support
+
+# Other Tasks
 * [ ] Documentation update (tutorials and how tos)
 * [ ] Recipes (i.e. Diagnostics.file files for different well known debg)
 * [ ] Cloud API recipes (i.e. recipes to debug CAPV)

@@ -4,6 +4,7 @@
 package exec
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -15,7 +16,7 @@ func TestExecOUTPUT(t *testing.T) {
 		{
 			name: "exec with OUTPUT",
 			source: func() string {
-				return "OUTPUT path:/tmp/crashout/out.tar.gz\nCAPTURE /bin/echo HELLO"
+				return fmt.Sprintf("FROM 127.0.0.1:%s\nOUTPUT path:/tmp/crashout/out.tar.gz\nCAPTURE /bin/echo HELLO", testSSHPort)
 			},
 			exec: func(s *script.Script) error {
 				output := s.Preambles[script.CmdOutput][0].(*script.OutputCommand)
@@ -34,11 +35,12 @@ func TestExecOUTPUT(t *testing.T) {
 		{
 			name: "exec OUTPUT with var expansion",
 			source: func() string {
-				return `
+				return fmt.Sprintf(`
+				FROM 127.0.0.1:%s
 				ENV outfile=out.tar.gz
 				CAPTURE /bin/echo HELLO
 				OUTPUT path:/tmp/crashout/${outfile}
-				`
+				`, testSSHPort)
 			},
 			exec: func(s *script.Script) error {
 				output := s.Preambles[script.CmdOutput][0].(*script.OutputCommand)
@@ -57,7 +59,7 @@ func TestExecOUTPUT(t *testing.T) {
 		{
 			name: "exec with missing OUTPUT",
 			source: func() string {
-				return "CAPTURE /bin/echo HELLO"
+				return fmt.Sprintf("FROM 127.0.0.1:%s\nCAPTURE /bin/echo HELLO", testSSHPort)
 			},
 			exec: func(s *script.Script) error {
 				e := New(s)

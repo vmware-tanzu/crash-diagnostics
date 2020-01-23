@@ -4,7 +4,6 @@
 package exec
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,24 +14,35 @@ import (
 	"testing"
 
 	"github.com/sirupsen/logrus"
-
 	"github.com/vmware-tanzu/crash-diagnostics/script"
 	"github.com/vmware-tanzu/crash-diagnostics/ssh"
+	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
+)
+
+const (
+	testSSHPort = "2222"
 )
 
 func TestMain(m *testing.M) {
-	loglevel := "debug"
-	flag.StringVar(&loglevel, "loglevel", loglevel, "Sets log level")
-	flag.Parse()
+	testcrashd.Init()
 
-	if parsed, err := logrus.ParseLevel(loglevel); err != nil {
-		logrus.SetLevel(logrus.DebugLevel)
-	} else {
-		logrus.SetLevel(parsed)
+	sshSvr := testcrashd.NewSSHServer("test-sshd-exec", testSSHPort)
+	logrus.Debug("Attempting to start SSH server")
+	if err := sshSvr.Start(); err != nil {
+		logrus.Error(err)
+		os.Exit(1)
 	}
-	logrus.SetOutput(os.Stdout)
 
-	os.Exit(m.Run())
+	testResult := m.Run()
+
+	logrus.Debug("Stopping SSH server...")
+	if err := sshSvr.Stop(); err != nil {
+		logrus.Error(err)
+		os.Exit(1)
+	}
+
+	os.Exit(testResult)
+
 }
 
 type execTest struct {
@@ -155,6 +165,19 @@ func makeRemoteTestDir(t *testing.T, addr, path string) error {
 	return nil
 }
 
+func getTestFileContent(fileName string) (string, error) {
+	file, err := os.Open(fileName)
+	if err != nil {
+		return "", err
+	}
+
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(data)), nil
+}
+
 func TestExecutor_New(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -182,7 +205,7 @@ func TestExecutor(t *testing.T) {
 				var src strings.Builder
 				src.WriteString("# This is a sample comment\n")
 				src.WriteString("#### START\n")
-				src.WriteString("FROM local\n")
+				src.WriteString(fmt.Sprintf("FROM 127.0.0.1:%s\n", testSSHPort))
 				src.WriteString("WORKDIR /tmp/${USER}\n")
 				src.WriteString("CAPTURE /bin/echo \"HELLO\"\n")
 				src.WriteString("COPY /tmp/buzz.txt\n")
@@ -204,7 +227,7 @@ func TestExecutor(t *testing.T) {
 				}
 				defer os.RemoveAll(scriptName)
 
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 				defer os.RemoveAll(workdir.Path())
 
@@ -215,15 +238,15 @@ func TestExecutor(t *testing.T) {
 					for i, path := range cpCmd.Paths() {
 						srcPaths = append(srcPaths, path)
 						if strings.HasSuffix(path, "dir") { // create dir/file
-							if err := makeTestDir(t, path); err != nil {
+							if err := makeRemoteTestDir(t, machine, path); err != nil {
 								return fmt.Errorf("failed to make test dir %s: %s", path, err)
 							}
 							file := filepath.Join(path, fmt.Sprintf("file-%d.txt", i))
-							if err := makeTestFakeFile(t, file, fmt.Sprintf("HelloFoo-%d", i)); err != nil {
+							if err := makeRemoteTestFile(t, machine, file, fmt.Sprintf("HelloFoo-%d", i)); err != nil {
 								return fmt.Errorf("failed to make fake file %s:%s", file, err)
 							}
 						} else { // create just file
-							if err := makeTestFakeFile(t, path, "HelloFoo"); err != nil {
+							if err := makeRemoteTestFile(t, machine, path, fmt.Sprintf("HelloFoo-%d", i)); err != nil {
 								return fmt.Errorf("failed to make fake file %s: %s", path, err)
 							}
 						}
@@ -239,7 +262,7 @@ func TestExecutor(t *testing.T) {
 				// validate cap cmds
 				for _, cmd := range []script.Command{s.Actions[0], s.Actions[2]} {
 					capCmd := cmd.(*script.CaptureCommand)
-					fileName := filepath.Join(workdir.Path(), machine, fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
+					fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
 					if _, err := os.Stat(fileName); err != nil {
 						return fmt.Errorf("CAPTURE file validation failed stat for %s: %s", fileName, err)
 					}
@@ -261,119 +284,9 @@ func TestExecutor(t *testing.T) {
 					if err != nil {
 						return err
 					}
-					fileName := filepath.Join(workdir.Path(), machine, relPath)
+					fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), relPath)
 					if _, err := os.Stat(fileName); err != nil {
 						return fmt.Errorf("COPY failed stat file %s: %s", fileName, err)
-					}
-				}
-
-				return nil
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			runExecutorTest(t, test)
-		})
-	}
-}
-
-// TestExecutorWithRemote test COPY command on a remote machine.
-// It assumes running account has $HOME/.ssh/id_rsa private key and
-// that the remote machine has public key in authorized_keys.
-// If setup properly, comment out t.Skip()
-
-func TestExecutorWithRemote(t *testing.T) {
-	t.Skip(`Skipping: test requires an ssh daemon running and a
-		passwordless setup using private key specified by SSHCONFIG command`)
-
-	tests := []execTest{
-		{
-			name: "Executing all commands",
-			source: func() string {
-				src := `# This is a sample comment
-				#### START
-				FROM local 127.0.0.1:22
-				SSHCONFIG {{.Username}}:{{.Home}}/.ssh/id_rsa
-				WORKDIR /tmp/{{.Username}}
-				CAPTURE echo HELLO
-				COPY buzz.txt
-				COPY foodir bardir buzz.txt
-				##### END`
-				return src
-			},
-			exec: func(s *script.Script) error {
-
-				addr := "127.0.0.1:22"
-				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
-				defer os.RemoveAll(workdir.Path())
-
-				// create fake files and dirs to copy
-				var srcPaths []string
-				for _, cmd := range []script.Command{s.Actions[1], s.Actions[2]} {
-					cpCmd := cmd.(*script.CopyCommand)
-					for i, path := range cpCmd.Paths() {
-						srcPaths = append(srcPaths, path)
-						if strings.HasSuffix(path, "dir") { // create dir/file
-
-							t.Log("Creating local test files")
-							if err := makeTestDir(t, path); err != nil {
-								return err
-							}
-							file := filepath.Join(path, fmt.Sprintf("file-%d.txt", i))
-							if err := makeTestFakeFile(t, file, fmt.Sprintf("HelloFoo-%d", i)); err != nil {
-								return err
-							}
-							defer os.RemoveAll(path)
-
-							t.Log("Creating remote test files")
-							if err := makeRemoteTestDir(t, addr, path); err != nil {
-								return err
-							}
-							file = filepath.Join(path, fmt.Sprintf("file-%d.txt", i))
-							if err := makeRemoteTestFile(t, addr, file, fmt.Sprintf("HelloFoo-%d", i)); err != nil {
-								return err
-							}
-							defer removeRemoteTestFile(t, addr, file)
-
-						} else {
-							if err := makeTestFakeFile(t, path, "HelloFoo"); err != nil {
-								return err
-							}
-							defer os.RemoveAll(path)
-
-							if err := makeRemoteTestFile(t, addr, path, "HelloFooRemote"); err != nil {
-								return err
-							}
-							defer removeRemoteTestFile(t, addr, path)
-						}
-					}
-				}
-
-				e := New(s)
-				if err := e.Execute(); err != nil {
-					return err
-				}
-
-				// validate cap cmds
-				for _, fromAddr := range []string{"local", "127.0.0.1:22"} {
-					for _, cmd := range []script.Command{s.Actions[0]} {
-						capCmd := cmd.(*script.CaptureCommand)
-						fileName := filepath.Join(workdir.Path(), sanitizeStr(fromAddr), fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
-						if _, err := os.Stat(fileName); err != nil {
-							return err
-						}
-					}
-				}
-
-				// validate cp cmds
-				for _, fromAddr := range []string{"local", "127.0.0.1:22"} {
-					for _, path := range srcPaths {
-						fileName := filepath.Join(workdir.Path(), sanitizeStr(fromAddr), path)
-						if _, err := os.Stat(fileName); err != nil {
-							return err
-						}
 					}
 				}
 

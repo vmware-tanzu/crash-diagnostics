@@ -16,4 +16,12 @@ jobs:
       uses: actions/checkout@v1
  
     - name: test
-      run: GO111MODULE=on go test -v ./...
+      run: |
+        sudo ufw allow 2222
+        sudo ufw allow 2424
+        sudo ufw enable
+        sudo ufw status verbose
+        mkdir -p ~/.ssh
+        chmod 765 ~/.ssh
+        cp testing/keys/* ~/.ssh/
+        GO111MODULE=on go test -timeout 120s -v ./...

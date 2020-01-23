@@ -232,10 +232,17 @@ func enforceDefaults(script *Script) (*Script, error) {
 		if err != nil {
 			return nil, err
 		}
-		logrus.Debugf("FROM %v (as default)", cmd.Machines())
+		logrus.Debugf("FROM %v (as default)", cmd.Nodes())
 		script.Preambles[CmdFrom] = []Command{cmd}
 	}
-
+	if _, ok := script.Preambles[CmdAuthConfig]; !ok {
+		cmd, err := NewAuthConfigCommand(0, fmt.Sprintf("username:${USER} private-key:${HOME}/.ssh/id_rsa"))
+		if err != nil {
+			return nil, err
+		}
+		logrus.Debug("AUTHCONFIG set with default")
+		script.Preambles[CmdAuthConfig] = []Command{cmd}
+	}
 	if _, ok := script.Preambles[CmdWorkDir]; !ok {
 		cmd, err := NewWorkdirCommand(0, fmt.Sprintf("path:%s", Defaults.WorkdirValue))
 		if err != nil {

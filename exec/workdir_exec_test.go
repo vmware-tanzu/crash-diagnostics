@@ -14,59 +14,60 @@ import (
 
 func TestExecWORKDIR(t *testing.T) {
 	tests := []execTest{
-		// {
-		// 	name: "exec with WORKDIR",
-		// 	source: func() string {
-		// 		return "WORKDIR /tmp/foodir\nCAPTURE /bin/echo HELLO"
-		// 	},
-		// 	exec: func(s *script.Script) error {
-		// 		machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
-		// 		workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
-		// 		defer os.RemoveAll(workdir.Path())
-		// 		capCmd := s.Actions[0].(*script.CaptureCommand)
+		{
+			name: "exec with WORKDIR",
+			source: func() string {
+				return fmt.Sprintf("FROM 127.0.0.1:%s\nWORKDIR /tmp/foodir\nCAPTURE /bin/echo HELLO", testSSHPort)
+			},
+			exec: func(s *script.Script) error {
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
+				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
+				defer os.RemoveAll(workdir.Path())
+				capCmd := s.Actions[0].(*script.CaptureCommand)
 
-		// 		e := New(s)
-		// 		if err := e.Execute(); err != nil {
-		// 			return err
-		// 		}
-		// 		fileName := filepath.Join(workdir.Path(), machine, fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
-		// 		if _, err := os.Stat(fileName); err != nil {
-		// 			return err
-		// 		}
-		// 		return nil
-		// 	},
-		// },
-		// {
-		// 	name: "exec with default WORKDIR",
-		// 	source: func() string {
-		// 		return "CAPTURE /bin/echo HELLO"
-		// 	},
-		// 	exec: func(s *script.Script) error {
-		// 		machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
-		// 		workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
-		// 		capCmd := s.Actions[0].(*script.CaptureCommand)
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+				fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
+				if _, err := os.Stat(fileName); err != nil {
+					return err
+				}
+				return nil
+			},
+		},
+		{
+			name: "exec with default WORKDIR",
+			source: func() string {
+				return fmt.Sprintf("FROM 127.0.0.1:%s\nCAPTURE /bin/echo HELLO", testSSHPort)
+			},
+			exec: func(s *script.Script) error {
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
+				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
+				capCmd := s.Actions[0].(*script.CaptureCommand)
 
-		// 		e := New(s)
-		// 		if err := e.Execute(); err != nil {
-		// 			return err
-		// 		}
-		// 		fileName := filepath.Join(workdir.Path(), machine, fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
-		// 		if _, err := os.Stat(fileName); err != nil {
-		// 			return err
-		// 		}
-		// 		return nil
-		// 	},
-		// },
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+				fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
+				if _, err := os.Stat(fileName); err != nil {
+					return err
+				}
+				return nil
+			},
+		},
 		{
 			name: "exec WORKDIR with var expansion",
 			source: func() string {
-				return `
+				return fmt.Sprintf(`
+				FROM 127.0.0.1:%s
 				ENV foodir=/tmp/foodir
 				WORKDIR ${foodir}
-				CAPTURE /bin/echo "HELLO"`
+				CAPTURE /bin/echo "HELLO"`, testSSHPort)
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Machines()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 				outdir := s.Preambles[script.CmdOutput][0].(*script.OutputCommand)
 				defer os.RemoveAll(workdir.Path())
@@ -77,7 +78,7 @@ func TestExecWORKDIR(t *testing.T) {
 				if err := e.Execute(); err != nil {
 					return err
 				}
-				fileName := filepath.Join(workdir.Path(), machine, fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
+				fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
 				if _, err := os.Stat(fileName); err != nil {
 					return err
 				}
