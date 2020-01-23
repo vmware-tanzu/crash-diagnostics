@@ -231,7 +231,17 @@ FROM 10.10.100.2:22 10.10.100.3:22 10.10.100.4:22
 FROM hosts:"10.10.100.2:22 10.10.100.3:22 10.10.100.4:22"
 ```
 
-By default the `crash-diagnostics` will use SSH as a runtime to interact with the specified remote hosts.
+The `FROM` directive will also accept a machine named `local` which is an alias for the local machine as shown below:
+```
+FROM local 10.10.100.2:22
+```
+Which is equivalent to:
+
+```
+FROM 127.0.0.1:22 10.10.100.2:22
+```
+
+It should be noted that by default the `crash-diagnostics` executor uses `SSH` and `SCP` protocols at runtime to interact with the specified remote hosts. 
 
 ### KUBECONFIG
 This directive specifies the fully qualified path of the Kubernetes client configuration file or KUBECONFIG.  If the specified path does not exist, all subsquent command that uses this configuration will quietly fail (logged).
