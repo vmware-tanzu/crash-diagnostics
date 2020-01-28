@@ -96,22 +96,20 @@ func (c *SSHClient) SSHRun(cmdStr string) (io.Reader, error) {
 	}
 	defer session.Close()
 
-	output := new(bytes.Buffer)
-	session.Stdout = output
-	// TODO figure out a way to get output from stderr
-	// The following was causing unpredicatiable behavior
-	// wher it seems the content would be overwritten by stderr
-	// even when stdout returned something.
-	//session.Stderr = output
+	stdout := new(bytes.Buffer)
+	stderr := new(bytes.Buffer)
+	session.Stdout = stdout
+	session.Stderr = stderr
+	output := io.MultiReader(stdout, stderr)
 
 	if err := session.Start(cmdStr); err != nil {
-		return nil, err
+		return output, err
 	}
 
 	if err := session.Wait(); err != nil {
 		os.Setenv("CMD_EXITCODE", fmt.Sprintf("%d", 1))
 		os.Setenv("CMD_SUCCESS", "false")
-		return nil, fmt.Errorf("SSH: error waiting for response: %s", err)
+		return output, fmt.Errorf("SSH: error waiting for response: %s", err)
 	}
 
 	os.Setenv("CMD_EXITCODE", fmt.Sprintf("%d", 0))

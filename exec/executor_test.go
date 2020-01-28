@@ -158,9 +158,11 @@ func makeRemoteTestDir(t *testing.T, addr, path string) error {
 	}
 	defer sshc.Hangup()
 	t.Logf("creating remote test  dir %s", path)
-	_, err = sshc.SSHRun(fmt.Sprintf("mkdir -p %s", path))
+	output, err := sshc.SSHRun(fmt.Sprintf("mkdir -p %s", path))
 	if err != nil {
-		return err
+		msgBytes, _ := ioutil.ReadAll(output)
+		sshErr := fmt.Errorf("ssh command failed: %s: %s", err, string(msgBytes))
+		return sshErr
 	}
 	return nil
 }
@@ -227,7 +229,7 @@ func TestExecutor(t *testing.T) {
 				}
 				defer os.RemoveAll(scriptName)
 
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Hosts()[0]
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 				defer os.RemoveAll(workdir.Path())
 

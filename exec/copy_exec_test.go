@@ -23,7 +23,7 @@ func TestExecCOPY(t *testing.T) {
 				return src
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Hosts()[0]
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 
 				cpCmd := s.Actions[0].(*script.CopyCommand)
@@ -65,7 +65,7 @@ func TestExecCOPY(t *testing.T) {
 				return src
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Hosts()[0]
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 
 				var srcFiles []string
@@ -116,7 +116,7 @@ func TestExecCOPY(t *testing.T) {
 				return src
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Hosts()[0]
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 
 				var srcFiles []string
@@ -176,13 +176,13 @@ func TestExecCOPY(t *testing.T) {
 			source: func() string {
 				src := fmt.Sprintf(`FROM 127.0.0.1:%s
 				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
-				COPY /tmp/test-dir/*.txt
-				COPY /tmp/test-dir/bazz.csv
+				COPY test-dir/*.txt
+				COPY test-dir/bazz.csv
 				`, testSSHPort)
 				return src
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Hosts()[0]
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 
 				var paths []string
@@ -217,7 +217,7 @@ func TestExecCOPY(t *testing.T) {
 				}
 
 				for i, path := range paths {
-					defer removeRemoteTestFile(t, machine, path)
+					//defer removeRemoteTestFile(t, machine, path)
 					fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), path)
 					if _, err := os.Stat(fileName); err != nil {
 						return err

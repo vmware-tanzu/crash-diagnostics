@@ -40,7 +40,7 @@ func (e *Executor) Execute() error {
 	}
 
 	// exec FROM
-	fromCmd, err := exeFrom(e.script)
+	_, machines, err := exeFrom(e.script)
 	if err != nil {
 		return err
 	}
@@ -77,14 +77,14 @@ func (e *Executor) Execute() error {
 				return fmt.Errorf("KUBEGET: %s", err)
 			}
 		default:
-			for _, node := range fromCmd.Nodes() {
-				nodeWorkdir, err := makeNodeWorkdir(workdir.Path(), node)
+			for _, machine := range machines {
+				nodeWorkdir, err := makeMachineWorkdir(workdir.Path(), machine)
 				if err != nil {
 					return err
 				}
 
-				logrus.Debugf("Executing command %s/%s: ", node.Address(), cmd.Name())
-				if err := cmdExec(asCmd, authCmd, action, &node, nodeWorkdir); err != nil {
+				logrus.Debugf("Executing command %s/%s: ", machine.Address(), cmd.Name())
+				if err := cmdExec(asCmd, authCmd, action, machine, nodeWorkdir); err != nil {
 					return err
 				}
 			}
@@ -101,9 +101,9 @@ func (e *Executor) Execute() error {
 	return nil
 }
 
-func makeNodeWorkdir(workdir string, machine script.Node) (string, error) {
-	machineAddr := machine.Address()
-	machineWorkdir := filepath.Join(workdir, sanitizeStr(machineAddr))
+func makeMachineWorkdir(workdir string, machine *script.Machine) (string, error) {
+	machineName := machine.Name()
+	machineWorkdir := filepath.Join(workdir, sanitizeStr(machineName))
 	if err := os.MkdirAll(machineWorkdir, 0744); err != nil && !os.IsExist(err) {
 		return "", err
 	}

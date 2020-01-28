@@ -19,7 +19,7 @@ import (
 )
 
 // cmdExec executes script on remote machines
-func cmdExec(asCmd *script.AsCommand, authCmd *script.AuthConfigCommand, action script.Command, machine *script.Node, workdir string) error {
+func cmdExec(asCmd *script.AsCommand, authCmd *script.AuthConfigCommand, action script.Command, machine *script.Machine, workdir string) error {
 
 	user := asCmd.GetUserId()
 	if authCmd.GetUsername() != "" {
@@ -141,20 +141,17 @@ var (
 )
 
 // execCopy uses rsync and requires both rsync and ssh to be installed
-func execCopy(user, privKey string, machine *script.Node, asCmd *script.AsCommand, cmd *script.CopyCommand, dest string) error {
+func execCopy(user, privKey string, machine *script.Machine, asCmd *script.AsCommand, cmd *script.CopyCommand, dest string) error {
 	if _, err := exec.LookPath(cliScpName); err != nil {
 		return fmt.Errorf("remote copy: %s", err)
 	}
 
 	logrus.Debugf("Entering remote COPY command: %s", cmd.Args())
 
-	host, err := machine.Host()
-	if err != nil {
-		return fmt.Errorf("COPY: %s", err)
-	}
-	port, err := machine.Port()
-	if err != nil {
-		return fmt.Errorf("COPY: %s", err)
+	host := machine.Host()
+	port := machine.Port()
+	if len(host) == 0 || len(port) == 0 {
+		return fmt.Errorf("COPY: missing host or port")
 	}
 
 	asUid, asGid, err := asCmd.GetCredentials()

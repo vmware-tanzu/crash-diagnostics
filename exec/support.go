@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	strSanitization = regexp.MustCompile(`[\s\"\'/\.\:]`)
+	strSanitization = regexp.MustCompile(`[^a-zA-Z0-9]`)
 )
 
 func sanitizeStr(cmd string) string {
