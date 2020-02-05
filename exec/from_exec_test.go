@@ -5,17 +5,24 @@ package exec
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
+	"github.com/vmware-tanzu/crash-diagnostics/k8s"
 	"github.com/vmware-tanzu/crash-diagnostics/script"
+	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
 
 func TestExecFROMFunc(t *testing.T) {
+	clusterName := "crashd-test-from"
+	kindNodeName := fmt.Sprintf("%s-control-plane", clusterName)
+	k8sconfig := fmt.Sprintf("/tmp/%s", clusterName)
+
 	tests := []struct {
 		name   string
 		script func() *script.Script
-		exec   func(*script.Script) error
+		exec   func(*k8s.Client, *script.Script) error
 	}{
 		{
 			name: "FROM with host:port",
@@ -23,8 +30,8 @@ func TestExecFROMFunc(t *testing.T) {
 				script, _ := script.Parse(strings.NewReader("FROM 1.1.1.1:4444"))
 				return script
 			},
-			exec: func(src *script.Script) error {
-				fromCmd, machines, err := exeFrom(src)
+			exec: func(k8s *k8s.Client, src *script.Script) error {
+				fromCmd, machines, err := exeFrom(nil, src)
 				if err != nil {
 					return err
 				}
@@ -48,8 +55,8 @@ func TestExecFROMFunc(t *testing.T) {
 				script, _ := script.Parse(strings.NewReader("FROM 1.1.1.1"))
 				return script
 			},
-			exec: func(src *script.Script) error {
-				fromCmd, machines, err := exeFrom(src)
+			exec: func(k8s *k8s.Client, src *script.Script) error {
+				fromCmd, machines, err := exeFrom(nil, src)
 				if err != nil {
 					return err
 				}
@@ -73,8 +80,8 @@ func TestExecFROMFunc(t *testing.T) {
 				script, _ := script.Parse(strings.NewReader(`FROM hosts:"1.1.1.1 10.10.10.10:2222" port:2121`))
 				return script
 			},
-			exec: func(src *script.Script) error {
-				fromCmd, machines, err := exeFrom(src)
+			exec: func(k8s *k8s.Client, src *script.Script) error {
+				fromCmd, machines, err := exeFrom(nil, src)
 				if err != nil {
 					return err
 				}
@@ -93,14 +100,146 @@ func TestExecFROMFunc(t *testing.T) {
 				return nil
 			},
 		},
+		{
+			name: "FROM with all nodes",
+			script: func() *script.Script {
+				script, _ := script.Parse(strings.NewReader("FROM nodes:'all'"))
+				return script
+			},
+			exec: func(k8sc *k8s.Client, src *script.Script) error {
+				fromCmd, machines, err := exeFrom(k8sc, src)
+				if err != nil {
+					return err
+				}
+				if len(machines) != 1 {
+					return fmt.Errorf("FROM %#v: expecting 1 machine got %d", fromCmd.Args(), len(machines))
+				}
+
+				machine := machines[0]
+				t.Logf("Machine found: %#v", machine)
+
+				if machine.Port() != fromCmd.Port() {
+					return fmt.Errorf("FROM machine has unexpected port %s", machine.Port())
+				}
+
+				if machine.Name() != kindNodeName {
+					return fmt.Errorf("FROM machine has unexpected node name %s", machine.Name())
+				}
+
+				return nil
+			},
+		},
+		{
+			name: "FROM with specific nodes",
+			script: func() *script.Script {
+				script, _ := script.Parse(strings.NewReader(fmt.Sprintf("FROM nodes:'%s'", kindNodeName)))
+				return script
+			},
+			exec: func(k8sc *k8s.Client, src *script.Script) error {
+				fromCmd, machines, err := exeFrom(k8sc, src)
+				if err != nil {
+					return err
+				}
+				if len(machines) != 1 {
+					return fmt.Errorf("FROM %#v: expecting 1 machine got %d", fromCmd.Args(), len(machines))
+				}
+
+				machine := machines[0]
+
+				if machine.Name() != kindNodeName {
+					return fmt.Errorf("FROM machine has unexpected node name %s", machine.Name())
+				}
+
+				return nil
+			},
+		},
+		{
+			name: "FROM with bad node name",
+			script: func() *script.Script {
+				script, _ := script.Parse(strings.NewReader("FROM nodes:'bad-node-name'"))
+				return script
+			},
+			exec: func(k8sc *k8s.Client, src *script.Script) error {
+				_, machines, err := exeFrom(k8sc, src)
+				if err != nil {
+					return err
+				}
+				if len(machines) != 0 {
+					return fmt.Errorf("FROM: expecting 0 machine, got %d", len(machines))
+				}
+				return nil
+			},
+		},
+		{
+			name: "FROM with node labels",
+			script: func() *script.Script {
+				script, _ := script.Parse(strings.NewReader(fmt.Sprintf(`FROM nodes:'all' labels:'kubernetes.io/hostname=%s'`, kindNodeName)))
+				return script
+			},
+			exec: func(k8sc *k8s.Client, src *script.Script) error {
+				fromCmd, machines, err := exeFrom(k8sc, src)
+				if err != nil {
+					return err
+				}
+				if len(machines) != 1 {
+					return fmt.Errorf("FROM %#v: expecting 1 machine got %d", fromCmd.Args(), len(machines))
+				}
+
+				machine := machines[0]
+
+				if machine.Name() != kindNodeName {
+					return fmt.Errorf("FROM machine has unexpected node name %s", machine.Name())
+				}
+
+				return nil
+			},
+		},
+		{
+			name: "FROM with bad node labels",
+			script: func() *script.Script {
+				script, _ := script.Parse(strings.NewReader(`FROM nodes:'all' labels:'foo/bar=mycluster-control-plane'`))
+				return script
+			},
+			exec: func(k8sc *k8s.Client, src *script.Script) error {
+				_, machines, err := exeFrom(k8sc, src)
+				if err != nil {
+					return err
+				}
+				if len(machines) != 0 {
+					return fmt.Errorf("FROM: expecting 0 machine got %d", len(machines))
+				}
+				return nil
+			},
+		},
+	}
+
+	// create kind cluster
+	kind := testcrashd.NewKindCluster("../testing/kind-cluster-docker.yaml", clusterName)
+	if err := kind.Create(); err != nil {
+		t.Fatal(err)
+	}
+	defer kind.Destroy()
+
+	if err := kind.MakeKubeConfigFile(k8sconfig); err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(k8sconfig)
+
+	k8sc, err := k8s.New(k8sconfig)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if err := test.exec(test.script()); err != nil {
+			if err := test.exec(k8sc, test.script()); err != nil {
 				t.Error(err)
 			}
 		})
+	}
+
+	if err := kind.Destroy(); err != nil {
+		t.Fatal(err)
 	}
 }
 

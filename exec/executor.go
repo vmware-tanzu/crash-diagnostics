@@ -39,8 +39,14 @@ func (e *Executor) Execute() error {
 		return fmt.Errorf("exec: %s", err)
 	}
 
+	// attempt to create client from KUBECONFIG
+	k8sClient, err := exeKubeConfig(e.script)
+	if err != nil {
+		logrus.Warnf("Failed to load KUBECONFIG: %s", err)
+	}
+
 	// exec FROM
-	_, machines, err := exeFrom(e.script)
+	_, machines, err := exeFrom(k8sClient, e.script)
 	if err != nil {
 		return err
 	}
@@ -55,12 +61,6 @@ func (e *Executor) Execute() error {
 	output, err := exeOutput(e.script)
 	if err != nil {
 		return err
-	}
-
-	// attempt to create client from KUBECONFIG
-	k8sClient, err := exeKubeConfig(e.script)
-	if err != nil {
-		logrus.Warnf("Failed to load KUBECONFIG: %s", err)
 	}
 
 	// Execute each action as appeared in script
