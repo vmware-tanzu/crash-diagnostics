@@ -220,28 +220,54 @@ With the escape slashes in place, the correct shell command will be sent to the 
 ```
 
 ### FROM
-`FROM` specifies a space-separated list of nodes from which data is collected.  Each 
-host is specified by an address endpoint consisting of `<host-address>:<port>` as shown in the following example:
+`FROM` specifies the source machines from which data is collected.  Machines (virtual or otherwise) are specified by directly by providing a space-separated list of address endpoints consisting of `<host-address>:<port>` as shown in the following example:
 
 ```
 FROM 10.10.100.2:22 10.10.100.3:22 10.10.100.4:22
-
-# Or using its named parameter `hosts`
-
+```
+Or using its named parameter `hosts:`
+```
 FROM hosts:"10.10.100.2:22 10.10.100.3:22 10.10.100.4:22"
 ```
-
-The `FROM` directive will also accept a machine named `local` which is an alias for the local machine as shown below:
-```
-FROM local 10.10.100.2:22
-```
-Which is equivalent to:
+#### FROM Default Port Setting
+By default the `crash-diagnostics` internal executor uses `SSH/SCP` protocols to connect to remote machines. If a specified machine address does not include a port, port 22 will be used as shown below:
 
 ```
-FROM 127.0.0.1:22 10.10.100.2:22
+FROM 10.10.100.2 10.10.100.4:2244
+```
+In the previous example, machine `10.10.100.2` will be connected using port 22.  The default port can be specified using the `port:` named parameter as shown below:
+```
+FROM hosts:"10.10.100.2 10.10.100.3 10.10.100.4:2244" port:"2211"
+```
+In the previous example, `crash-diagnostics` will connect to machines `10.10.100.2` and `10.10.100.3` on port `2211`
+
+#### FROM Maximum Connection Retries
+Because `crash-diagnostics` uses network protocols (i.e. SSH/SCP) to connect to remote machines, it will automatically retry a remote command upon failure.  The number of retries can be configured using the `retries:` named parameter.  The following will retry each remote command attempt up to 10 times before giving up:
+```
+FROM hosts:"10.10.100.2 10.10.100.3 10.10.100.4:2244" port:"2211" retries:"10"
 ```
 
-It should be noted that by default the `crash-diagnostics` executor uses `SSH` and `SCP` protocols at runtime to interact with the specified remote hosts. 
+#### Sourcing from Kubernetes Node Objects
+Instead of directly specifying machine addresses as shown above, source machines information can be extracted from Kubernetes Node objects (if a cluster is available).  The following example will get machine information stored in cluster Node objects and use default port 2222 to remotely connect to each machine:
+
+```
+KUBECONFIG $HOME/.kube/kind-config-kind
+FROM nodes:"all" port:"2222"
+```
+In the previous example, `crash-diagnostics` uses the specified KUBECONFIG to connect to the API server to retrieve available Node objects.  These objects are used to determine the IP of the cluster machines to which `crash-diagnositcs` will connect using the specified port.
+
+The `nodes:` parameter can also be used to specified a list of node names to match when retrieving Node objects as shown:
+```
+KUBECONFIG $HOME/.kube/kind-config-kind
+FROM nodes:"worker-node-1 worker-node-2" port:"2222"
+```
+In the previous example, `crash-diagnostics` will extract IP address information from Node objects with names matching `workder-node-1` and `worker-node-2`.
+
+The Node objects can be further filtered using labels.  For instance, the following will only select nodes where label `kubernetes.io/hostname` has a value of `control-plane`:
+```
+KUBECONFIG $HOME/.kube/kind-config-kind
+FROM nodes:"all" labels="kubernetes.io/hostname=control-plane" port:"2222"
+```
 
 ### KUBECONFIG
 This directive specifies the fully qualified path of the Kubernetes client configuration file or KUBECONFIG.  If the specified path does not exist, all subsquent command that uses this configuration will quietly fail (logged).
