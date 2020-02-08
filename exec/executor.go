@@ -46,7 +46,7 @@ func (e *Executor) Execute() error {
 	}
 
 	// exec FROM
-	_, machines, err := exeFrom(k8sClient, e.script)
+	fromCmd, machines, err := exeFrom(k8sClient, e.script)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func (e *Executor) Execute() error {
 				}
 
 				logrus.Debugf("Executing command %s/%s: ", machine.Address(), cmd.Name())
-				if err := cmdExec(asCmd, authCmd, action, machine, nodeWorkdir); err != nil {
+				if err := cmdExec(fromCmd, asCmd, authCmd, action, machine, nodeWorkdir); err != nil {
 					return err
 				}
 			}

@@ -18,20 +18,25 @@ import (
 
 // SSHClient represents a client used to connect to an SSH server
 type SSHClient struct {
-	user       string
-	privateKey string
-	insecure   bool
-	cfg        *ssh.ClientConfig
-	sshc       *ssh.Client
-	hostKey    ssh.PublicKey
+	user           string
+	privateKey     string
+	insecure       bool
+	cfg            *ssh.ClientConfig
+	sshc           *ssh.Client
+	hostKey        ssh.PublicKey
+	connMaxRetries int
 }
 
 // New creates uses the user and privateKeyPath to create an *SSHClient
-func New(user string, privateKeyPath string) *SSHClient {
+func New(user string, privateKeyPath string, maxRetries int) *SSHClient {
+	if maxRetries <= 0 {
+		maxRetries = 30
+	}
 	client := &SSHClient{
-		user:       user,
-		privateKey: privateKeyPath,
-		insecure:   false,
+		user:           user,
+		privateKey:     privateKeyPath,
+		insecure:       false,
+		connMaxRetries: maxRetries,
 	}
 	return client
 }

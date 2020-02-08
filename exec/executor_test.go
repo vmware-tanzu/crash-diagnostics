@@ -107,7 +107,7 @@ func maketTestSSHClient() (*ssh.SSHClient, error) {
 	}
 
 	privKey := filepath.Join(usr.HomeDir, ".ssh/id_rsa")
-	return ssh.New(usr.Username, privKey), nil
+	return ssh.New(usr.Username, privKey, 30), nil
 }
 
 func makeRemoteTestFile(t *testing.T, addr, fileName, content string) error {
