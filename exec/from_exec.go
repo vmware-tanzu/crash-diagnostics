@@ -47,13 +47,18 @@ func exeFrom(k8s *k8s.Client, src *script.Script) (*script.FromCommand, []*scrip
 		machines = append(machines, script.NewMachine(addr, port, name))
 	}
 
-	// continue on only with a valid K8s client
+	// check for valid K8s client
 	if k8s == nil {
 		return fromCmd, machines, nil
 	}
 
-	logrus.Debugf("Building machine list: 'FROM nodes:%s'", fromCmd.Nodes())
+	// continue only if nodes specified
 	fromNodes := fromCmd.Nodes()
+	if len(fromNodes) == 0 {
+		return fromCmd, machines, nil
+	}
+
+	logrus.Debugf("Building machine list: 'FROM nodes:%s'", fromCmd.Nodes())
 	var allNodes []*coreV1.Node
 
 	nodeStr := strings.Join(fromNodes, " ")

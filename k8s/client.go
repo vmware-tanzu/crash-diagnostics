@@ -101,7 +101,9 @@ func (k8sc *Client) Search(groups, kinds, namespaces, versions, names, labels, c
 		if len(groups) > 0 && !strings.Contains(groups, strings.ToLower(grpName)) {
 			continue
 		}
+
 		// filter by group version
+		logrus.Debugf("Searching resources in Group %s", grpName)
 		for _, discoGV := range grp.Versions {
 			if len(versions) > 0 && !strings.Contains(versions, strings.ToLower(discoGV.Version)) {
 				continue
@@ -138,9 +140,10 @@ func (k8sc *Client) Search(groups, kinds, namespaces, versions, names, labels, c
 					LabelSelector: labels,
 				}
 
+				logrus.Debugf("Searching GroupVersionResource %#v", gvr)
 				var resList []*unstructured.UnstructuredList
 				if len(namespaces) > 0 {
-					logrus.Debugf("Searching %s in namespace [%s]", res.Name, namespaces)
+					logrus.Debugf("Searching for %s in namespace [%s]", res.Name, namespaces)
 					for _, ns := range splitParamList(namespaces) {
 						list, err := k8sc.Client.Resource(gvr).Namespace(ns).List(listOptions)
 						if err != nil {

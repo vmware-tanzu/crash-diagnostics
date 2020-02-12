@@ -19,6 +19,19 @@ func TestExecFROMFunc(t *testing.T) {
 	kindNodeName := fmt.Sprintf("%s-control-plane", clusterName)
 	k8sconfig := fmt.Sprintf("/tmp/%s", clusterName)
 
+	// create kind cluster
+	kind := testcrashd.NewKindCluster("../testing/kind-cluster-docker.yaml", clusterName)
+	if err := kind.Create(); err != nil {
+		t.Fatal(err)
+	}
+	defer kind.Destroy()
+
+	if err := kind.MakeKubeConfigFile(k8sconfig); err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(k8sconfig)
+
+	// tests
 	tests := []struct {
 		name   string
 		script func() *script.Script
@@ -30,8 +43,8 @@ func TestExecFROMFunc(t *testing.T) {
 				script, _ := script.Parse(strings.NewReader("FROM 1.1.1.1:4444"))
 				return script
 			},
-			exec: func(k8s *k8s.Client, src *script.Script) error {
-				fromCmd, machines, err := exeFrom(nil, src)
+			exec: func(k8sc *k8s.Client, src *script.Script) error {
+				fromCmd, machines, err := exeFrom(k8sc, src)
 				if err != nil {
 					return err
 				}
@@ -55,8 +68,8 @@ func TestExecFROMFunc(t *testing.T) {
 				script, _ := script.Parse(strings.NewReader("FROM 1.1.1.1"))
 				return script
 			},
-			exec: func(k8s *k8s.Client, src *script.Script) error {
-				fromCmd, machines, err := exeFrom(nil, src)
+			exec: func(k8sc *k8s.Client, src *script.Script) error {
+				fromCmd, machines, err := exeFrom(k8sc, src)
 				if err != nil {
 					return err
 				}
@@ -80,8 +93,8 @@ func TestExecFROMFunc(t *testing.T) {
 				script, _ := script.Parse(strings.NewReader(`FROM hosts:"1.1.1.1 10.10.10.10:2222" port:2121`))
 				return script
 			},
-			exec: func(k8s *k8s.Client, src *script.Script) error {
-				fromCmd, machines, err := exeFrom(nil, src)
+			exec: func(k8sc *k8s.Client, src *script.Script) error {
+				fromCmd, machines, err := exeFrom(k8sc, src)
 				if err != nil {
 					return err
 				}
@@ -103,7 +116,11 @@ func TestExecFROMFunc(t *testing.T) {
 		{
 			name: "FROM with all nodes",
 			script: func() *script.Script {
-				script, _ := script.Parse(strings.NewReader("FROM nodes:'all'"))
+				src := fmt.Sprintf(`
+					KUBECONFIG %s
+					FROM nodes:'all'
+				`, k8sconfig)
+				script, _ := script.Parse(strings.NewReader(src))
 				return script
 			},
 			exec: func(k8sc *k8s.Client, src *script.Script) error {
@@ -132,7 +149,11 @@ func TestExecFROMFunc(t *testing.T) {
 		{
 			name: "FROM with specific nodes",
 			script: func() *script.Script {
-				script, _ := script.Parse(strings.NewReader(fmt.Sprintf("FROM nodes:'%s'", kindNodeName)))
+				src := fmt.Sprintf(`
+					KUBECONFIG %s
+					FROM nodes:'%s'
+				`, k8sconfig, kindNodeName)
+				script, _ := script.Parse(strings.NewReader(src))
 				return script
 			},
 			exec: func(k8sc *k8s.Client, src *script.Script) error {
@@ -156,7 +177,11 @@ func TestExecFROMFunc(t *testing.T) {
 		{
 			name: "FROM with bad node name",
 			script: func() *script.Script {
-				script, _ := script.Parse(strings.NewReader("FROM nodes:'bad-node-name'"))
+				src := fmt.Sprintf(`
+					KUBECONFIG %s
+					FROM nodes:'bad-node-name'
+				`, k8sconfig)
+				script, _ := script.Parse(strings.NewReader(src))
 				return script
 			},
 			exec: func(k8sc *k8s.Client, src *script.Script) error {
@@ -173,7 +198,11 @@ func TestExecFROMFunc(t *testing.T) {
 		{
 			name: "FROM with node labels",
 			script: func() *script.Script {
-				script, _ := script.Parse(strings.NewReader(fmt.Sprintf(`FROM nodes:'all' labels:'kubernetes.io/hostname=%s'`, kindNodeName)))
+				src := fmt.Sprintf(`
+					KUBECONFIG %s
+					FROM nodes:'all' labels:'kubernetes.io/hostname=%s'
+				`, k8sconfig, kindNodeName)
+				script, _ := script.Parse(strings.NewReader(src))
 				return script
 			},
 			exec: func(k8sc *k8s.Client, src *script.Script) error {
@@ -197,7 +226,11 @@ func TestExecFROMFunc(t *testing.T) {
 		{
 			name: "FROM with bad node labels",
 			script: func() *script.Script {
-				script, _ := script.Parse(strings.NewReader(`FROM nodes:'all' labels:'foo/bar=mycluster-control-plane'`))
+				src := fmt.Sprintf(`
+					KUBECONFIG %s
+					FROM nodes:'all' labels:'foo/bar=mycluster-control-plane'
+				`, k8sconfig)
+				script, _ := script.Parse(strings.NewReader(src))
 				return script
 			},
 			exec: func(k8sc *k8s.Client, src *script.Script) error {
@@ -213,34 +246,19 @@ func TestExecFROMFunc(t *testing.T) {
 		},
 	}
 
-	// create kind cluster
-	kind := testcrashd.NewKindCluster("../testing/kind-cluster-docker.yaml", clusterName)
-	if err := kind.Create(); err != nil {
-		t.Fatal(err)
-	}
-	defer kind.Destroy()
-
-	if err := kind.MakeKubeConfigFile(k8sconfig); err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(k8sconfig)
-
-	k8sc, err := k8s.New(k8sconfig)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if err := test.exec(k8sc, test.script()); err != nil {
+			src := test.script()
+			k8sc, err := exeKubeConfig(src)
+			if err != nil {
+				t.Logf("Failed to get KubeConfig: %s", err)
+			}
+			if err := test.exec(k8sc, src); err != nil {
 				t.Error(err)
 			}
 		})
 	}
 
-	if err := kind.Destroy(); err != nil {
-		t.Fatal(err)
-	}
 }
 
 func TestExecFROM(t *testing.T) {

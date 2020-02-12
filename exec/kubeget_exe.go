@@ -15,9 +15,9 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
-func exeKubeGet(k8sc *k8s.Client, cmd *script.KubeGetCommand, workdir string) error {
+func exeKubeGet(k8sc *k8s.Client, cmd *script.KubeGetCommand) ([]runtime.Object, error) {
 	if k8sc == nil {
-		return fmt.Errorf("K8s client not initialized")
+		return nil, fmt.Errorf("K8s client not initialized")
 	}
 	var objects []runtime.Object
 
@@ -26,42 +26,29 @@ func exeKubeGet(k8sc *k8s.Client, cmd *script.KubeGetCommand, workdir string) er
 		logrus.Debug("KUBEGET what:objects")
 		objs, err := k8sc.Search(cmd.Groups(), cmd.Kinds(), cmd.Namespaces(), cmd.Versions(), cmd.Names(), cmd.Labels(), cmd.Containers())
 		if err != nil {
-			return err
+			return nil, err
 		}
 		objects = append(objects, objs...)
 	case "logs":
 		logrus.Debug("KUBEGET what:logs")
 		objs, err := k8sc.Search("core", "pods", cmd.Namespaces(), "", cmd.Names(), cmd.Labels(), cmd.Containers())
 		if err != nil {
-			return err
+			return nil, err
 		}
 		objects = append(objects, objs...)
 	case "all", "*":
 		logrus.Debug("KUBEGET what:all")
 		objs, err := k8sc.Search(cmd.Groups(), cmd.Kinds(), cmd.Namespaces(), cmd.Versions(), cmd.Names(), cmd.Labels(), cmd.Containers())
 		if err != nil {
-			return err
+			return nil, err
 		}
 		objects = append(objects, objs...)
 
 	default:
-		return fmt.Errorf("don't know how to get: %s", cmd.What())
+		return nil, fmt.Errorf("don't know how to get: %s", cmd.What())
 	}
 
-	// print object lists
-	for _, obj := range objects {
-		objList, ok := obj.(*unstructured.UnstructuredList)
-		if !ok {
-			logrus.Errorf("KUBEGET: unexpected object type for %T", obj)
-			continue
-		}
-		if err := writeObjectList(k8sc, cmd.What(), objList, workdir); err != nil {
-			logrus.Errorf("KUBEGET: %s", err)
-			continue
-		}
-	}
-
-	return nil
+	return objects, nil
 }
 
 func writeObjectList(k8sc *k8s.Client, what string, objList *unstructured.UnstructuredList, workdir string) error {
