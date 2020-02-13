@@ -12,14 +12,16 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/vmware-tanzu/crash-diagnostics/script"
 	"github.com/vmware-tanzu/crash-diagnostics/ssh"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // cmdExec executes script on remote machines
-func cmdExec(asCmd *script.AsCommand, authCmd *script.AuthConfigCommand, action script.Command, machine *script.Node, workdir string) error {
+func cmdExec(fromCmd *script.FromCommand, asCmd *script.AsCommand, authCmd *script.AuthConfigCommand, action script.Command, machine *script.Machine, workdir string) error {
 
 	user := asCmd.GetUserId()
 	if authCmd.GetUsername() != "" {
@@ -31,31 +33,29 @@ func cmdExec(asCmd *script.AsCommand, authCmd *script.AuthConfigCommand, action 
 		return fmt.Errorf("missing private key file")
 	}
 
-	//for _, action := range src.Actions {
 	switch cmd := action.(type) {
 	case *script.CopyCommand:
-		if err := execCopy(user, privKey, machine, asCmd, cmd, workdir); err != nil {
+		if err := execCopy(user, privKey, fromCmd, machine, asCmd, cmd, workdir); err != nil {
 			return err
 		}
 	case *script.CaptureCommand:
 		// capture command output
-		if err := execCapture(user, privKey, machine.Address(), cmd, workdir); err != nil {
+		if err := execCapture(user, privKey, machine.Address(), cmd, workdir, fromCmd); err != nil {
 			return err
 		}
 	case *script.RunCommand:
-		if err := execRun(user, privKey, machine.Address(), cmd, workdir); err != nil {
+		if err := execRun(user, privKey, machine.Address(), cmd, workdir, fromCmd); err != nil {
 			return err
 		}
 	default:
 		logrus.Errorf("Unsupported command %T", cmd)
 	}
-	//}
 
 	return nil
 }
 
-func execCapture(user, privKey, hostAddr string, cmdCap *script.CaptureCommand, workdir string) error {
-	sshc := ssh.New(user, privKey)
+func execCapture(user, privKey, hostAddr string, cmdCap *script.CaptureCommand, workdir string, fromCmd *script.FromCommand) error {
+	sshc := ssh.New(user, privKey, fromCmd.ConnectionRetries())
 	if err := sshc.Dial(hostAddr); err != nil {
 		return err
 	}
@@ -90,8 +90,8 @@ func execCapture(user, privKey, hostAddr string, cmdCap *script.CaptureCommand, 
 	return nil
 }
 
-func execRun(user, privKey, hostAddr string, cmdRun *script.RunCommand, workdir string) error {
-	sshc := ssh.New(user, privKey)
+func execRun(user, privKey, hostAddr string, cmdRun *script.RunCommand, workdir string, fromCmd *script.FromCommand) error {
+	sshc := ssh.New(user, privKey, fromCmd.ConnectionRetries())
 	if err := sshc.Dial(hostAddr); err != nil {
 		return err
 	}
@@ -141,20 +141,17 @@ var (
 )
 
 // execCopy uses rsync and requires both rsync and ssh to be installed
-func execCopy(user, privKey string, machine *script.Node, asCmd *script.AsCommand, cmd *script.CopyCommand, dest string) error {
+func execCopy(user, privKey string, fromCmd *script.FromCommand, machine *script.Machine, asCmd *script.AsCommand, cmd *script.CopyCommand, dest string) error {
 	if _, err := exec.LookPath(cliScpName); err != nil {
 		return fmt.Errorf("remote copy: %s", err)
 	}
 
 	logrus.Debugf("Entering remote COPY command: %s", cmd.Args())
 
-	host, err := machine.Host()
-	if err != nil {
-		return fmt.Errorf("COPY: %s", err)
-	}
-	port, err := machine.Port()
-	if err != nil {
-		return fmt.Errorf("COPY: %s", err)
+	host := machine.Host()
+	port := machine.Port()
+	if len(host) == 0 || len(port) == 0 {
+		return fmt.Errorf("COPY: missing host or port")
 	}
 
 	asUid, asGid, err := asCmd.GetCredentials()
@@ -189,14 +186,24 @@ func execCopy(user, privKey string, machine *script.Node, asCmd *script.AsComman
 		logrus.Debugf("Copying %s to %s", path, targetPath)
 
 		args := []string{cliScpArgs, "-o StrictHostKeyChecking=no", "-P", port, "-i", privKey, remotePath, targetPath}
-		output, err := CliRun(uint32(asUid), uint32(asGid), cliScpName, args...)
-		if err != nil {
-			msgBytes, _ := ioutil.ReadAll(output)
-			cliErr := fmt.Errorf("scp command failed: %s: %s", err, string(msgBytes))
-			logrus.Warn(cliErr)
-			return writeCmdError(cliErr, targetPath, fmt.Sprintf("%s %s", cliScpName, strings.Join(args, " ")))
+
+		maxRetries := fromCmd.ConnectionRetries()
+		retries := wait.Backoff{Steps: maxRetries, Duration: time.Millisecond * 80, Jitter: 0.1}
+		if err := wait.ExponentialBackoff(retries, func() (bool, error) {
+			output, err := CliRun(uint32(asUid), uint32(asGid), cliScpName, args...)
+			if err != nil {
+				msgBytes, _ := ioutil.ReadAll(output)
+				cliErr := fmt.Errorf("scp command failed (will try again): %s: %s", err, string(msgBytes))
+				logrus.Warn(cliErr)
+				return false, nil // try again
+			}
+			return true, nil // worked
+		}); err != nil {
+			logrus.Debugf("SCP failed after %d tries", maxRetries)
+			return writeCmdError(err, targetPath, fmt.Sprintf("%s %s", cliScpName, strings.Join(args, " ")))
 		}
-		logrus.Debug("Remote copy succeeded:", remotePath)
+
+		logrus.Debug("Copy succeeded:", remotePath)
 	}
 
 	return nil

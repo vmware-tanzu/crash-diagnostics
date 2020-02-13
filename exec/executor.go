@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/vmware-tanzu/crash-diagnostics/archiver"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/sirupsen/logrus"
 	"github.com/vmware-tanzu/crash-diagnostics/script"
@@ -39,8 +40,14 @@ func (e *Executor) Execute() error {
 		return fmt.Errorf("exec: %s", err)
 	}
 
+	// attempt to create client from KUBECONFIG
+	k8sClient, err := exeKubeConfig(e.script)
+	if err != nil {
+		logrus.Warnf("Failed to load KUBECONFIG: %s", err)
+	}
+
 	// exec FROM
-	fromCmd, err := exeFrom(e.script)
+	fromCmd, machines, err := exeFrom(k8sClient, e.script)
 	if err != nil {
 		return err
 	}
@@ -57,12 +64,6 @@ func (e *Executor) Execute() error {
 		return err
 	}
 
-	// attempt to create client from KUBECONFIG
-	k8sClient, err := exeKubeConfig(e.script)
-	if err != nil {
-		logrus.Warnf("Failed to load KUBECONFIG: %s", err)
-	}
-
 	// Execute each action as appeared in script
 	authCmd, err := exeAuthConfig(e.script)
 	if err != nil {
@@ -73,18 +74,33 @@ func (e *Executor) Execute() error {
 		switch cmd := action.(type) {
 		case *script.KubeGetCommand:
 			logrus.Infof("KUBEGET: getting API objects (this may take a while)")
-			if err := exeKubeGet(k8sClient, cmd, workdir.Path()); err != nil {
-				return fmt.Errorf("KUBEGET: %s", err)
+			objects, err := exeKubeGet(k8sClient, cmd)
+			if err != nil {
+				logrus.Errorf("KUBEGET: %s", err)
+				continue
 			}
+			// print objects
+			for _, obj := range objects {
+				objList, ok := obj.(*unstructured.UnstructuredList)
+				if !ok {
+					logrus.Errorf("KUBEGET: unexpected object type for %T", obj)
+					continue
+				}
+				if err := writeObjectList(k8sClient, cmd.What(), objList, workdir.Path()); err != nil {
+					logrus.Errorf("KUBEGET: %s", err)
+					continue
+				}
+			}
+
 		default:
-			for _, node := range fromCmd.Nodes() {
-				nodeWorkdir, err := makeNodeWorkdir(workdir.Path(), node)
+			for _, machine := range machines {
+				nodeWorkdir, err := makeMachineWorkdir(workdir.Path(), machine)
 				if err != nil {
 					return err
 				}
 
-				logrus.Debugf("Executing command %s/%s: ", node.Address(), cmd.Name())
-				if err := cmdExec(asCmd, authCmd, action, &node, nodeWorkdir); err != nil {
+				logrus.Debugf("Executing command %s/%s: ", machine.Address(), cmd.Name())
+				if err := cmdExec(fromCmd, asCmd, authCmd, action, machine, nodeWorkdir); err != nil {
 					return err
 				}
 			}
@@ -101,9 +117,9 @@ func (e *Executor) Execute() error {
 	return nil
 }
 
-func makeNodeWorkdir(workdir string, machine script.Node) (string, error) {
-	machineAddr := machine.Address()
-	machineWorkdir := filepath.Join(workdir, sanitizeStr(machineAddr))
+func makeMachineWorkdir(workdir string, machine *script.Machine) (string, error) {
+	machineName := machine.Name()
+	machineWorkdir := filepath.Join(workdir, sanitizeStr(machineName))
 	if err := os.MkdirAll(machineWorkdir, 0744); err != nil && !os.IsExist(err) {
 		return "", err
 	}

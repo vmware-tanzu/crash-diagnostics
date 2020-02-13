@@ -60,6 +60,12 @@ This tag/version reflects migration to github
 * [x] Update CI/CD to automate end-to-end tests using SSH server
 * [x] Documentation update
 
+# v0.2.1-alpha.1
+* [ ] Update FROM to accept node related params
+* [ ] Update test code for FROM command and execution
+* [ ] Integrate kind for end-to-end tests
+* [ ] Update docs
+
 # v0.2.2-alpha.0
 * [ ] Initial CloudAPI support
 

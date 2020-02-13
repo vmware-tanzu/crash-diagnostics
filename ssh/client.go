@@ -18,20 +18,25 @@ import (
 
 // SSHClient represents a client used to connect to an SSH server
 type SSHClient struct {
-	user       string
-	privateKey string
-	insecure   bool
-	cfg        *ssh.ClientConfig
-	sshc       *ssh.Client
-	hostKey    ssh.PublicKey
+	user           string
+	privateKey     string
+	insecure       bool
+	cfg            *ssh.ClientConfig
+	sshc           *ssh.Client
+	hostKey        ssh.PublicKey
+	connMaxRetries int
 }
 
 // New creates uses the user and privateKeyPath to create an *SSHClient
-func New(user string, privateKeyPath string) *SSHClient {
+func New(user string, privateKeyPath string, maxRetries int) *SSHClient {
+	if maxRetries <= 0 {
+		maxRetries = 30
+	}
 	client := &SSHClient{
-		user:       user,
-		privateKey: privateKeyPath,
-		insecure:   false,
+		user:           user,
+		privateKey:     privateKeyPath,
+		insecure:       false,
+		connMaxRetries: maxRetries,
 	}
 	return client
 }
@@ -96,22 +101,20 @@ func (c *SSHClient) SSHRun(cmdStr string) (io.Reader, error) {
 	}
 	defer session.Close()
 
-	output := new(bytes.Buffer)
-	session.Stdout = output
-	// TODO figure out a way to get output from stderr
-	// The following was causing unpredicatiable behavior
-	// wher it seems the content would be overwritten by stderr
-	// even when stdout returned something.
-	//session.Stderr = output
+	stdout := new(bytes.Buffer)
+	stderr := new(bytes.Buffer)
+	session.Stdout = stdout
+	session.Stderr = stderr
+	output := io.MultiReader(stdout, stderr)
 
 	if err := session.Start(cmdStr); err != nil {
-		return nil, err
+		return output, err
 	}
 
 	if err := session.Wait(); err != nil {
 		os.Setenv("CMD_EXITCODE", fmt.Sprintf("%d", 1))
 		os.Setenv("CMD_SUCCESS", "false")
-		return nil, fmt.Errorf("SSH: error waiting for response: %s", err)
+		return output, fmt.Errorf("SSH: error waiting for response: %s", err)
 	}
 
 	os.Setenv("CMD_EXITCODE", fmt.Sprintf("%d", 0))

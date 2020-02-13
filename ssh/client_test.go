@@ -63,7 +63,7 @@ func TestSSHClient(t *testing.T) {
 		{
 			name: "dial 127.0.0.1",
 			prepare: func() (*SSHClient, error) {
-				return New(usr.Username, privKey), nil
+				return New(usr.Username, privKey, 10), nil
 			},
 			run: func(sshClient *SSHClient) error {
 				if err := sshClient.Dial(sshHost); err != nil {
@@ -78,7 +78,7 @@ func TestSSHClient(t *testing.T) {
 		{
 			name: "ssh run echo hello",
 			prepare: func() (*SSHClient, error) {
-				return New(usr.Username, privKey), nil
+				return New(usr.Username, privKey, 10), nil
 			},
 			run: func(sshClient *SSHClient) error {
 				if err := sshClient.Dial(sshHost); err != nil {
@@ -104,7 +104,7 @@ func TestSSHClient(t *testing.T) {
 		{
 			name: "ssh run bad command",
 			prepare: func() (*SSHClient, error) {
-				return New(usr.Username, privKey), nil
+				return New(usr.Username, privKey, 10), nil
 			},
 			run: func(sshClient *SSHClient) error {
 				if err := sshClient.Dial(sshHost); err != nil {

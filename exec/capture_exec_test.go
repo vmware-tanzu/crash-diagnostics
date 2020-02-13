@@ -25,7 +25,7 @@ func TestExecCAPTURE(t *testing.T) {
 				return src
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Hosts()[0]
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 				capCmd := s.Actions[0].(*script.CaptureCommand)
 
@@ -51,7 +51,7 @@ func TestExecCAPTURE(t *testing.T) {
 				return src
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Hosts()[0]
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 				cmd0 := s.Actions[0].(*script.CaptureCommand)
 				cmd1 := s.Actions[1].(*script.CaptureCommand)
@@ -82,7 +82,7 @@ func TestExecCAPTURE(t *testing.T) {
 				return src
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Hosts()[0]
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 				capCmd := s.Actions[0].(*script.CaptureCommand)
 
@@ -107,7 +107,7 @@ func TestExecCAPTURE(t *testing.T) {
 				CAPTURE /bin/bash -c 'echo "Hello to the World!"'`, testSSHPort)
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Hosts()[0]
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 				capCmd := s.Actions[0].(*script.CaptureCommand)
 
@@ -154,7 +154,7 @@ func TestExecCAPTURE(t *testing.T) {
 				return src
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Hosts()[0]
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 				capCmd := s.Actions[0].(*script.CaptureCommand)
 

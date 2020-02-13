@@ -22,12 +22,15 @@ var (
 	CmdWorkDir    = "WORKDIR"
 
 	Defaults = struct {
-		FromValue       string
-		WorkdirValue    string
-		KubeConfigValue string
-		AuthPKValue     string
-		OutputValue     string
-		LocalSSHAddr    string
+		FromValue         string
+		WorkdirValue      string
+		KubeConfigValue   string
+		AuthPKValue       string
+		OutputValue       string
+		HostAddr          string
+		ServicePort       string
+		ConnectionRetries string
+		ConnectionTimeout string
 	}{
 		FromValue:    "local",
 		WorkdirValue: "/tmp/crashdir",
@@ -41,8 +44,11 @@ var (
 		AuthPKValue: func() string {
 			return filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa")
 		}(),
-		OutputValue:  "out.tar.gz",
-		LocalSSHAddr: "127.0.0.1:22",
+		OutputValue:       "out.tar.gz",
+		HostAddr:          "127.0.0.1",
+		ServicePort:       "22",
+		ConnectionRetries: "30",
+		ConnectionTimeout: "2m",
 	}
 )
 

@@ -2,11 +2,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-# FROM specifies cluster nodes from which to source collected info.
-# FROM supports one or more values separated by spaces where `local` 
-# indicates the current machine running the tool. For remote machines
-# specify the host address and port:
-# FROM local node0.test-cluster.internal:22 192.168.250.1:2222
+# FROM specifies machines from which to source collected information.
+# FROM can specify host end points directly using the hosts parameter (default):
+# FROM 10.10.20.100:22 174.123.33.200 192.168.250.1:2222
+# Or,
+# FROM hosts:"10.10.20.100:22 174.123.33.200 192.168.250.1:2222"
+# Machine information can be imported from a running K8s cluster API-server:
+# FROM nodes:"all" labels:"app=foobar"
+# See docs/README.md for detail.
+# By default the local value points to the local machine (port 22) where crashd is running:
 FROM local
 
 # AS specifies a userid:groupid to use when 
@@ -42,7 +46,7 @@ WORKDIR /tmp/crashdir
 #  - labels:<space-sep label selectors>
 # KUBEGET objects groups:"core" kinds:"pods" namespaces:"kube-system default" containers:"kindnet-cni etcd"
 # KUBEGET logs namespaces:"default" containers:"kindnet-cni"
-KUBEGET all namespaces:"default"
+KUBEGET objects group:"core" kinds:"pods" namespaces:"kube-system"
 
 # Sample commands
 #COPY /var/log/syslog

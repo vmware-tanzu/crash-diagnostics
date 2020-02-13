@@ -20,7 +20,7 @@ func TestExecWORKDIR(t *testing.T) {
 				return fmt.Sprintf("FROM 127.0.0.1:%s\nWORKDIR /tmp/foodir\nCAPTURE /bin/echo HELLO", testSSHPort)
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Hosts()[0]
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 				defer os.RemoveAll(workdir.Path())
 				capCmd := s.Actions[0].(*script.CaptureCommand)
@@ -42,7 +42,7 @@ func TestExecWORKDIR(t *testing.T) {
 				return fmt.Sprintf("FROM 127.0.0.1:%s\nCAPTURE /bin/echo HELLO", testSSHPort)
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Hosts()[0]
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 				capCmd := s.Actions[0].(*script.CaptureCommand)
 
@@ -67,7 +67,7 @@ func TestExecWORKDIR(t *testing.T) {
 				CAPTURE /bin/echo "HELLO"`, testSSHPort)
 			},
 			exec: func(s *script.Script) error {
-				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Nodes()[0].Address()
+				machine := s.Preambles[script.CmdFrom][0].(*script.FromCommand).Hosts()[0]
 				workdir := s.Preambles[script.CmdWorkDir][0].(*script.WorkdirCommand)
 				outdir := s.Preambles[script.CmdOutput][0].(*script.OutputCommand)
 				defer os.RemoveAll(workdir.Path())
