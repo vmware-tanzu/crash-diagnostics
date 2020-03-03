@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 
 	"github.com/vmware-tanzu/crash-diagnostics/archiver"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/sirupsen/logrus"
 	"github.com/vmware-tanzu/crash-diagnostics/script"
@@ -74,22 +73,15 @@ func (e *Executor) Execute() error {
 		switch cmd := action.(type) {
 		case *script.KubeGetCommand:
 			logrus.Infof("KUBEGET: getting API objects (this may take a while)")
-			objects, err := exeKubeGet(k8sClient, cmd)
+			results, err := exeKubeGet(k8sClient, cmd)
 			if err != nil {
 				logrus.Errorf("KUBEGET: %s", err)
 				continue
 			}
-			// print objects
-			for _, obj := range objects {
-				objList, ok := obj.(*unstructured.UnstructuredList)
-				if !ok {
-					logrus.Errorf("KUBEGET: unexpected object type for %T", obj)
-					continue
-				}
-				if err := writeObjectList(k8sClient, cmd.What(), objList, workdir.Path()); err != nil {
-					logrus.Errorf("KUBEGET: %s", err)
-					continue
-				}
+			// process search result
+			if err := writeSearchResults(k8sClient, cmd.What(), results, workdir.Path()); err != nil {
+				logrus.Errorf("KUBEGET: %s", err)
+				continue
 			}
 
 		default:
