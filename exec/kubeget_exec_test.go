@@ -16,14 +16,6 @@ import (
 	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
 
-var (
-	// time used to wait for kind cluster to settle
-	// this time seems to vary depending on kind version.
-	// If tests are failing, update to version v0.7.0 or better
-	// GO111MODULE="on" go get sigs.k8s.io/kind@v0.7.0
-	waitTime = time.Second * 11
-)
-
 func TestExecKUBEGETFunc(t *testing.T) {
 	clusterName := "crashd-test-kubeget"
 	k8sconfig := fmt.Sprintf("/tmp/%s", clusterName)
@@ -40,6 +32,8 @@ func TestExecKUBEGETFunc(t *testing.T) {
 	}
 	defer os.RemoveAll(k8sconfig)
 
+	// important, wait for at least 1 pod to be deployed
+	waitTime := time.Second * 11
 	logrus.Infof("Sleeping %v ... waiting for pods", waitTime)
 	time.Sleep(waitTime)
 
@@ -68,16 +62,14 @@ func TestExecKUBEGETFunc(t *testing.T) {
 				}
 				cmd0, ok := src.Actions[0].(*script.KubeGetCommand)
 				if !ok {
-					t.Errorf("Unexpected script action type for %T", cmd0)
-					return
+					t.Fatalf("Unexpected script action type for %T", cmd0)
 				}
 				objects, err := exeKubeGet(k8sc, cmd0)
 				if err != nil {
-					t.Error(err)
-					return
+					t.Fatal(err)
 				}
 				if len(objects) == 0 {
-					t.Error("exeKubeGet returns 0 objects")
+					t.Fatal("exeKubeGet returns 0 objects")
 				}
 			},
 		},
@@ -173,6 +165,8 @@ func TestExecKUBEGET(t *testing.T) {
 	}
 	defer os.RemoveAll(k8sconfig)
 
+	// important, wait for at least 1 pod to be deployed
+	waitTime := time.Second * 11
 	logrus.Infof("Sleeping %v ... waiting for pods", waitTime)
 	time.Sleep(waitTime)
 
