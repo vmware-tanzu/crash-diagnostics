@@ -11,7 +11,6 @@ import (
 	"github.com/vmware-tanzu/crash-diagnostics/k8s"
 	"github.com/vmware-tanzu/crash-diagnostics/script"
 	coreV1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -86,7 +85,7 @@ func exeFrom(k8s *k8s.Client, src *script.Script) (*script.FromCommand, []*scrip
 }
 
 func getNodes(k8sc *k8s.Client, names, labels string) ([]*coreV1.Node, error) {
-	objs, err := k8sc.Search(
+	nodeResults, err := k8sc.Search(
 		"core",  // group
 		"nodes", // kind
 		"",      // namespaces
@@ -101,12 +100,8 @@ func getNodes(k8sc *k8s.Client, names, labels string) ([]*coreV1.Node, error) {
 
 	// collate
 	var nodes []*coreV1.Node
-	for _, obj := range objs {
-		unstructList, ok := obj.(*unstructured.UnstructuredList)
-		if !ok {
-			return nil, fmt.Errorf("unexpected type for NodeList: %T", obj)
-		}
-		for _, item := range unstructList.Items {
+	for _, result := range nodeResults {
+		for _, item := range result.List.Items {
 			node := new(coreV1.Node)
 			if err := runtime.DefaultUnstructuredConverter.FromUnstructured(item.Object, &node); err != nil {
 				return nil, err
