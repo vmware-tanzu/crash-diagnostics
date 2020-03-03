@@ -92,6 +92,15 @@ func (k8sc *Client) Search(groups, kinds, namespaces, versions, names, labels, c
 		return nil, err
 	}
 
+	// if namespace filters not provided, assume all namespaces
+	if len(namespaces) == 0 {
+		nsNames, err := getNamespaces(k8sc)
+		if err != nil {
+			return nil, err
+		}
+		namespaces = strings.Join(nsNames, " ")
+	}
+
 	var runtimeObjs []runtime.Object
 	logrus.Debugf("Searching in %d groups", len(grpList.Groups))
 	for _, grp := range grpList.Groups {
@@ -133,6 +142,7 @@ func (k8sc *Client) Search(groups, kinds, namespaces, versions, names, labels, c
 					Version:  discoGV.Version,
 					Resource: res.Name,
 				}
+				logrus.Debugf(`Searching for GroupResource %#v`, gvr)
 
 				// retrieve API objects based on GroupVersionResource and
 				// filter by namespaces and names
@@ -140,37 +150,38 @@ func (k8sc *Client) Search(groups, kinds, namespaces, versions, names, labels, c
 					LabelSelector: labels,
 				}
 
-				logrus.Debugf("Searching GroupVersionResource %#v", gvr)
 				var resList []*unstructured.UnstructuredList
-				if len(namespaces) > 0 {
-					logrus.Debugf("Searching for %s in namespace [%s]", res.Name, namespaces)
+				if res.Namespaced {
 					for _, ns := range splitParamList(namespaces) {
+						logrus.Debugf("Searching for %s in namespace %s [GroupRes: %v]", res.Name, ns, gvr)
 						list, err := k8sc.Client.Resource(gvr).Namespace(ns).List(listOptions)
 						if err != nil {
 							logrus.Debugf(
-								"WARN: K8s.Search failed to get resource list for %s/%s [%v]: %s",
-								discoGV.GroupVersion, ns, listOptions.LabelSelector, err,
+								"WARN: K8s.Search failed to get %s in %s [GroupRes: %s][labels: %v]: %s",
+								res.Name, ns, discoGV.GroupVersion, listOptions.LabelSelector, err,
 							)
 							continue
 						}
+						logrus.Debugf("Found %d %s in namespace [%s]", len(list.Items), res.Name, ns)
 						resList = append(resList, list)
 					}
 				} else {
-					logrus.Debugf("Searching %s", res.Name)
+					logrus.Debugf("Searching for resource %s (non-namespaced)", res.Name)
 					list, err := k8sc.Client.Resource(gvr).List(listOptions)
 					if err != nil {
 						logrus.Debugf(
-							"WARN: K8s.Search failed to get resource list: version %s [labels: %v]: %s",
-							discoGV.GroupVersion, listOptions.LabelSelector, err,
+							"WARN: K8s.Search failed to get %s: [GroupRes: %s] [labels: %v]: %s",
+							res.Name, discoGV.GroupVersion, listOptions.LabelSelector, err,
 						)
 						continue
 					}
+					logrus.Debugf("Found %d %s (non-namespaced)", len(list.Items), res.Name)
 					resList = append(resList, list)
 				}
 
 				for _, list := range resList {
 					if list != nil && len(list.Items) > 0 {
-						logrus.Debugf("Found %d %s", len(list.Items), res.Name)
+						logrus.Debugf("Applying name filter [%s] to %d %s", names, len(list.Items), res.Name)
 						objs := filterByNames(list, names)
 						// if podlist, apply container filter
 						if list.GetKind() == "PodList" {
@@ -212,6 +223,9 @@ func getLegacyGrpName(str string) string {
 }
 
 func splitParamList(nses string) []string {
+	if len(nses) == 0 {
+		return []string{}
+	}
 	if strings.Contains(nses, ",") {
 		return strings.Split(nses, ",")
 	}
@@ -298,4 +312,25 @@ func getPodContainers(podItem unstructured.Unstructured) []interface{} {
 	}
 
 	return result
+}
+
+// getNamespaces collect all available namespaces in cluster
+func getNamespaces(k8sc *Client) ([]string, error) {
+	gvr := schema.GroupVersionResource{
+		Group:    "",
+		Version:  "v1",
+		Resource: "namespaces",
+	}
+	objList, err := k8sc.Client.Resource(gvr).List(metav1.ListOptions{})
+
+	if err != nil {
+		return nil, err
+	}
+
+	names := make([]string, len(objList.Items))
+	for i, obj := range objList.Items {
+		names[i] = obj.GetName()
+	}
+
+	return names, nil
 }
