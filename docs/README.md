@@ -326,8 +326,12 @@ KUBEGET what:"objects"
 
 Here is an example of `KUBEGET` that explicitly uses most of its parameters (assuming `KUBECONFIG` is declared properly):
 ```
-KUBEGET objects groups:"core" kinds:"pods" namespaces:"kube-system default" containers:"kindnet-cni etcd"
+KUBEGET objects groups:"core" kinds:"pods" namespaces:"kube-system default" containers:"nginx etcd"
 ```
+The previous `KUBEGET` command will retrieve all pods from namespaces `kube-system` or `default` that have container names `nginx` or `etcd`.
+
+Crash-Diagnostics stores all retrieved objects under root directory `kubeget` as JSON files.  Inside that directory, the saved files are organized by namespaces (for namespaced resources) or
+saved at the root directory.
 
 ### OUTPUT
 This directive configures the location and file name of the generated archive file as shown in the following example:
