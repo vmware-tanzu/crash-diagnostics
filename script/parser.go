@@ -15,10 +15,11 @@ import (
 )
 
 var (
-	spaceSep = regexp.MustCompile(`\s`)
-	paramSep = regexp.MustCompile(`:`)
-	quoteSet = regexp.MustCompile(`[\"\']`)
-	cmdSep   = regexp.MustCompile(`\s`)
+	spaceSep       = regexp.MustCompile(`\s`)
+	paramSep       = regexp.MustCompile(`:`)
+	quoteSet       = regexp.MustCompile(`[\"\']`)
+	cmdSep         = regexp.MustCompile(`\s`)
+	namedParamRegx = regexp.MustCompile(`^([a-z0-9_\-]+)(:)(["']{0,1}.+["']{0,1})$`)
 )
 
 // Parse parses the textual script from reader into an *Script representation
@@ -169,20 +170,18 @@ func mapArgs(rawArgs string) (map[string]string, error) {
 	argMap := make(map[string]string)
 
 	// split params: param0:<param-val0> paramN:<param-valN> badparam
-	params, err := wordSplit(rawArgs)
+	params, err := commandSplit(rawArgs)
 	if err != nil {
 		return nil, err
 	}
 
 	// for each, split pram:<pram-value> into {param, <param-val>}
 	for _, param := range params {
-		parts := paramSep.Split(param, 2)
-		if len(parts) != 2 {
-			return argMap, fmt.Errorf("invalid param: %s", param)
+		cmdName, cmdStr, err := namedParamSplit(param)
+		if err != nil {
+			return nil, fmt.Errorf("map args: %s", err)
 		}
-		name := parts[0]
-		val := trimQuotes(parts[1])
-		argMap[name] = val
+		argMap[cmdName] = cmdStr
 	}
 
 	return argMap, nil
@@ -193,15 +192,7 @@ func mapArgs(rawArgs string) (map[string]string, error) {
 //    name:value
 //
 func isNamedParam(str string) bool {
-	if len(str) == 0 {
-		return false
-	}
-
-	parts := paramSep.Split(str, 2)
-	if len(parts) >= 2 {
-		return true
-	}
-	return false
+	return namedParamRegx.MatchString(str)
 }
 
 // makeParam
@@ -274,7 +265,7 @@ func enforceDefaults(script *Script) (*Script, error) {
 
 func cmdParse(cmdStr string) (cmd string, args []string, err error) {
 	logrus.Debugf("Parsing: %s", cmdStr)
-	args, err = wordSplit(cmdStr)
+	args, err = commandSplit(cmdStr)
 	if err != nil {
 		return "", nil, err
 	}
