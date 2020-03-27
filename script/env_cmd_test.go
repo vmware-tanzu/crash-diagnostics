@@ -177,6 +177,74 @@ func TestCommandENV(t *testing.T) {
 			},
 			shouldFail: true,
 		},
+		{
+			name: "ENV unquoted with embedded colon",
+			source: func() string {
+				return "ENV foo=bar:Baz"
+			},
+			script: func(s *Script) error {
+				envs := s.Preambles[CmdEnv]
+				if len(envs) != 1 {
+					return fmt.Errorf("Script has unexpected number of ENV %d", len(envs))
+				}
+				envCmd, ok := envs[0].(*EnvCommand)
+				if !ok {
+					return fmt.Errorf("Unexpected type %T in script", envs[0])
+				}
+				if len(envCmd.Envs()) != 1 {
+					return fmt.Errorf("ENV has unexpected number of env %d", len(envCmd.Envs()))
+				}
+				env := envCmd.Envs()["foo"]
+				if env != "bar:Baz" {
+					return fmt.Errorf("ENV has unexpected value: foo=%s", envCmd.Envs()["foo"])
+				}
+				return nil
+			},
+		},
+		{
+			name: "ENV quoted arg with embedded colon",
+			source: func() string {
+				return `ENV foo="bar bazz:bat"`
+			},
+			script: func(s *Script) error {
+				envs := s.Preambles[CmdEnv]
+				envCmd := envs[0].(*EnvCommand)
+				if len(envCmd.Envs()) != 1 {
+					return fmt.Errorf("ENV has unexpected number of env %d", len(envCmd.Envs()))
+				}
+				env := envCmd.Envs()["foo"]
+				if env != "bar bazz:bat" {
+					return fmt.Errorf("ENV has unexpected value: foo=%s", envCmd.Envs()["foo"])
+				}
+				return nil
+			},
+		},
+		{
+			name: "ENV multiple quoted vars with embedded colon",
+			source: func() string {
+				return `ENV vars:'a="b:g" c=d:d e=f'`
+			},
+			script: func(s *Script) error {
+				envs := s.Preambles[CmdEnv]
+				if len(envs) != 1 {
+					return fmt.Errorf("Script has unexpected number of ENV %d", len(envs))
+				}
+
+				envCmd0 := envs[0].(*EnvCommand)
+				if len(envCmd0.Envs()) != 3 {
+					return fmt.Errorf("ENV has unexpected number of env %d", len(envCmd0.Envs()))
+				}
+				env := envCmd0.Envs()["a"]
+				if env != "b:g" {
+					return fmt.Errorf("ENV has unexpected value a=%s", envCmd0.Envs()["a"])
+				}
+				env0, env1 := envCmd0.Envs()["c"], envCmd0.Envs()["e"]
+				if env0 != "d:d" || env1 != "f" {
+					return fmt.Errorf("ENV has unexpected values env[c]=%s and env[e]=%s", env0, env1)
+				}
+				return nil
+			},
+		},
 	}
 
 	for _, test := range tests {

@@ -8,13 +8,13 @@ import (
 	"unicode"
 )
 
-// wordSplit splits space-separted strings into words including quoted words:
+// commandSplit splits space-separted strings into groups of words including quoted words:
 //
 //     aaa "bbb" "ccc ddd" eee
 //
 //  In case of aaa"abcd", the whole thing is returned as aaa"abcd" including qoutes.
 //  In case of "aaa"bbb will be returned as two words "aaa" and "bbb"
-func wordSplit(val string) ([]string, error) {
+func commandSplit(val string) ([]string, error) {
 	rdr := bufio.NewReader(strings.NewReader(val))
 	var startQuote rune
 	var word strings.Builder
@@ -151,4 +151,22 @@ func trimQuotes(val string) string {
 	}
 
 	return val
+}
+
+// namedParamSplit takes a named param in the form of:
+//
+// pname0:"param value" pname1:'value' pname3:value
+//
+// Splits them into a slice of [param name, paramvalue]
+func namedParamSplit(param string) (cmdName, cmdStr string, err error) {
+	if len(param) == 0 {
+		return "", "", nil
+	}
+	parts := namedParamRegx.FindStringSubmatch(param)
+	// len(parts) should be 4
+	// [orig string, cmdName, :, cmdStr]
+	if len(parts) != 4 {
+		return "", "", fmt.Errorf("malformed param [%s]", parts)
+	}
+	return parts[1], trimQuotes(parts[3]), nil
 }

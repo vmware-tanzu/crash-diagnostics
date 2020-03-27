@@ -2,7 +2,7 @@ package script
 
 import "testing"
 
-func TestWordSplit(t *testing.T) {
+func TestCommandSplit(t *testing.T) {
 	tests := []struct {
 		name  string
 		str   string
@@ -67,7 +67,7 @@ func TestWordSplit(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			words, err := wordSplit(test.str)
+			words, err := commandSplit(test.str)
 			if err != nil {
 				t.Error(err)
 			}
@@ -83,7 +83,7 @@ func TestWordSplit(t *testing.T) {
 	}
 }
 
-func TestWordSplitTrimQuotes(t *testing.T) {
+func TestCommandSplitTrimQuotes(t *testing.T) {
 	tests := []struct {
 		name   string
 		str    string
@@ -141,6 +141,59 @@ func TestWordSplitTrimQuotes(t *testing.T) {
 			result := trimQuotes(test.str)
 			if result != test.result {
 				t.Fatalf("unexpected result: want %v, got %v", test.result, result)
+			}
+		})
+	}
+}
+
+func TestNamedParamSplit(t *testing.T) {
+	tests := []struct {
+		name  string
+		str   string
+		parts []string
+	}{
+		{
+			name:  "no quotes",
+			str:   `cmd:name:value`,
+			parts: []string{"cmd", "name:value"},
+		},
+		{
+			name:  "single quotes",
+			str:   `cmd:'name:single-quote-value'`,
+			parts: []string{"cmd", "name:single-quote-value"},
+		},
+		{
+			name:  "double quotes",
+			str:   `cmd:"name: double-quote-value"`,
+			parts: []string{"cmd", "name: double-quote-value"},
+		},
+		{
+			name:  "mismatch quotes",
+			str:   `cmd:'name:mismatch-quote-value"`,
+			parts: []string{"cmd", "name:mismatch-quote-value"},
+		},
+		{
+			name:  "unbalanced quotes",
+			str:   `cmd:'unbalanced-quote:value`,
+			parts: []string{"cmd", "unbalanced-quote:value"},
+		},
+		{
+			name:  "malformed param",
+			str:   `cmd:'malformed-param' cmd:abc`,
+			parts: []string{"cmd", "malformed-param' cmd:abc"},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			name, val, err := namedParamSplit(test.str)
+			if err != nil {
+				t.Error(err)
+			}
+			if test.parts[0] != name {
+				t.Fatalf("expecting param name %s, got %s", test.parts[0], name)
+			}
+			if test.parts[1] != val {
+				t.Fatalf("expecting param value [%s], got [%s]", test.parts[1], val)
 			}
 		})
 	}

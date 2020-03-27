@@ -175,6 +175,60 @@ func TestExecRUN(t *testing.T) {
 				return nil
 			},
 		},
+		{
+			name: "RUN single command with embeddec colon",
+			source: func() string {
+				return fmt.Sprintf(`FROM 127.0.0.1:%s
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
+				RUN /bin/echo "HELLO:WORLD"
+				`, testSSHPort)
+			},
+			exec: func(s *script.Script) error {
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+
+				exitcode := os.Getenv("CMD_EXITCODE")
+				if exitcode != "0" {
+					return fmt.Errorf("RUN has unexpected exit code %s", exitcode)
+				}
+
+				result := os.Getenv("CMD_RESULT")
+				if result != "HELLO:WORLD" {
+					return fmt.Errorf("RUN has unexpected CMD_RESULT: %s", result)
+				}
+				return nil
+			},
+		},
+		{
+			name: "RUN with shell wrapped quoted subcommand with embedded colon",
+			source: func() string {
+				return fmt.Sprintf(`
+				FROM 127.0.0.1:%s
+				AUTHCONFIG username:${USER} private-key:${HOME}/.ssh/id_rsa
+				RUN shell:"/bin/bash -c" cmd:'echo "Hello:World"'`, testSSHPort)
+			},
+			exec: func(s *script.Script) error {
+
+				e := New(s)
+				if err := e.Execute(); err != nil {
+					return err
+				}
+
+				exitcode := os.Getenv("CMD_EXITCODE")
+				if exitcode != "0" {
+					return fmt.Errorf("RUN has unexpected exit code %s", exitcode)
+				}
+
+				result := os.Getenv("CMD_RESULT")
+				if strings.TrimSpace(result) != "Hello:World" {
+					return fmt.Errorf("RUN has unexpected CMD_RESULT: %s", result)
+				}
+				return nil
+			},
+		},
 	}
 
 	for _, test := range tests {

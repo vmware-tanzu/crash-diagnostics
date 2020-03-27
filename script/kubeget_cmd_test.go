@@ -66,6 +66,30 @@ func TestCommandKUBEGET(t *testing.T) {
 				return nil
 			},
 		},
+		{
+			name: "KUBEGET objects with params with embedded colon",
+			source: func() string {
+				return `
+				KUBEGET objects namespaces:"myns test:ns" groups:"v1" kinds:"pods events" versions:"1" names:"my-app" labels:"prod" containers:"webapp"`
+			},
+			script: func(s *Script) error {
+				kgCmd := s.Actions[0].(*KubeGetCommand)
+				if len(kgCmd.Args()) != 8 {
+					return fmt.Errorf("KUBEGET unexpected param count: %d", len(kgCmd.Args()))
+				}
+				// check each param
+				if kgCmd.What() != "objects" {
+					return fmt.Errorf("KUBEGET unexpected what: %s", kgCmd.What())
+				}
+				if kgCmd.Namespaces() != "myns test:ns" {
+					return fmt.Errorf("KUBEGET unexpected namespaces: %s", kgCmd.Namespaces())
+				}
+				if kgCmd.Groups() != "v1" {
+					return fmt.Errorf("KUBEGET unexpected namespaces: %s", kgCmd.Namespaces())
+				}
+				return nil
+			},
+		},
 	}
 
 	for _, test := range tests {

@@ -115,6 +115,30 @@ func TestCommandAUTHCONFIG(t *testing.T) {
 			},
 			shouldFail: true,
 		},
+
+		{
+			name: "AUTHCONFIG - with embedded colon",
+			source: func() string {
+				return "AUTHCONFIG username:test-user private-key:'/a/:b/c'"
+			},
+			script: func(s *Script) error {
+				cmds := s.Preambles[CmdAuthConfig]
+				if len(cmds) != 1 {
+					return fmt.Errorf("Script missing preamble %s", CmdAuthConfig)
+				}
+				authCmd, ok := cmds[0].(*AuthConfigCommand)
+				if !ok {
+					return fmt.Errorf("Unexpected type %T in script", cmds[0])
+				}
+				if authCmd.GetUsername() != "test-user" {
+					return fmt.Errorf("Unexpected username %s", authCmd.GetUsername())
+				}
+				if authCmd.GetPrivateKey() != "/a/:b/c" {
+					return fmt.Errorf("Unexpected private-key %s", authCmd.GetPrivateKey())
+				}
+				return nil
+			},
+		},
 	}
 
 	for _, test := range tests {

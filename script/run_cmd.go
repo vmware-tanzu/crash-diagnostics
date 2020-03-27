@@ -82,13 +82,13 @@ func (c *RunCommand) GetEffectiveCmd() ([]string, error) {
 	cmdStr := c.GetCmdString()
 	shell := c.GetCmdShell()
 	if c.GetCmdShell() != "" {
-		shArgs, err := wordSplit(shell)
+		shArgs, err := commandSplit(shell)
 		if err != nil {
 			return nil, err
 		}
 		return append(shArgs, cmdStr), nil
 	}
-	cmdArgs, err := wordSplit(cmdStr)
+	cmdArgs, err := commandSplit(cmdStr)
 	if err != nil {
 		return nil, err
 	}

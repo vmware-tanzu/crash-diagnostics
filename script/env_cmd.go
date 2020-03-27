@@ -53,7 +53,7 @@ func NewEnvCommand(index int, rawArgs string) (*EnvCommand, error) {
 	// supported format keyN=valN keyN="valN" keyN='valN'
 	// foreach key0=val0 key1=val1 ... keyN=valN
 	// split into keyN, valN
-	envs, err := wordSplit(argMap["vars"])
+	envs, err := commandSplit(argMap["vars"])
 	if err != nil {
 		return nil, fmt.Errorf("ENV: %s", err)
 	}
@@ -65,7 +65,7 @@ func NewEnvCommand(index int, rawArgs string) (*EnvCommand, error) {
 		}
 
 		key := parts[0]
-		val, err := wordSplit(parts[1]) // safely remove outer quotes
+		val, err := commandSplit(parts[1]) // safely remove outer quotes
 		if err != nil {
 			return nil, fmt.Errorf("ENV: %s", err)
 		}
