@@ -4,6 +4,15 @@
 
 Crash Recovery and Diagnostics for Kubernetes (*Crash Diagnostics* for short) is designed to help human operators who are investigating and troubleshooting unhealthy or unresponsive Kubernetes clusters.  It is a project designed to automate the diagnosis of problem clusters that may be in an unstable state including completely inoperable.  In its introductory release, Crash Diagnostics provides cluster operators the ability to automatically collect machine states and other information from each node in a cluster.  The collected information is then bundled in a tar file for further analysis. 
 
+## Crash Diagnostics Design
+Starting with the version 0.3.x of Crash Diagnostics, the project will undergo a major redesign:
+* Refactor the programmatic API surface into distinct infrastructural components
+* A programmatic extension/plugin for distinct backend implementations to support different compute infrastructures
+* Tigher Kubernetes integration including the ability to extract troubleshooting data Cluster-API managed clusters
+
+See the detail Google Doc design document [here](https://docs.google.com/document/d/1pqYOdTf6ZIT_GSis-AVzlOTm3kyyg-32-seIfULaYEs/edit?usp=sharing).
+
+
 ## Collecting information for troubleshooting
 To specify the resources to collect from cluster machines, a series of commands are declared in a file called a diagnostics file.  Like a Dockerfile, the diagnostics file is a collection of line-by-line directives with commands that are executed on each specified cluster machine.  The output of the commands is then added to a tar file and saved for further analysis.    
 
