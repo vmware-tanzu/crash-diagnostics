@@ -25,7 +25,16 @@ The following additional features are also planned for this series.
 
 
 ## v0.3.x-Releases
-This series of release will start introduce optimization features.  Some features may include:
+This series of release will see the redsign of the internals of Crash Diagnostics:
+* Refactor the programmatic API surface into distinct infrastructural components
+* A programmatic extension/plugin to create backend implementations for different infrastructures
+* Tigher Kubernetes integration including the ability to extract troubleshooting data Cluster-API managed clusters
+
+See the Google Doc design document [here](https://docs.google.com/document/d/1pqYOdTf6ZIT_GSis-AVzlOTm3kyyg-32-seIfULaYEs/edit?usp=sharing).
+
+
+## v0.5.x-Releases
+This series of releases will explore optimization features:
 * Parsing and execution optimization (i.e. parallel execution)
 * A Uniform retry strategies (smart enough to requeue actions when failed)
 
