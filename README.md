@@ -23,7 +23,7 @@ FROM  192.168.176.100:22 192.168.176.102:22
 AUTHCONFIG username:${remoteuser}  private-key:${HOME}/.ssh/id_rsa 
 WORKDIR /tmp/crashout 
 
-# copy log files 
+# Copy log files 
 COPY /var/log/kube-apiserver.log 
 COPY /var/log/kube-scheduler.log 
 COPY /var/log/kube-controller-manager.log 
