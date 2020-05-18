@@ -4,92 +4,77 @@
 package script
 
 import (
-	"fmt"
 	"testing"
 )
 
 func TestCommandKUBEGET(t *testing.T) {
 	tests := []commandTest{
 		{
-			name: "KUBEGET unamed what-param, no other params",
-			source: func() string {
-				return "KUBEGET objects"
+			name: "KUBEGET/objects",
+			command: func(t *testing.T) Command {
+				cmd, err := NewKubeGetCommand(0,"objects")
+				if err != nil {
+					t.Fatal(err)
+				}
+				return cmd
 			},
-			script: func(s *Script) error {
-				kgCmd, ok := s.Actions[0].(*KubeGetCommand)
+			test: func(t *testing.T, c Command) {
+				kgCmd, ok := c.(*KubeGetCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", s.Actions[0])
+					t.Errorf("Unexpected type %T in script", c)
 				}
 				if kgCmd.What() != "objects" {
-					return fmt.Errorf("KUBEGET unexpected what: %s", kgCmd.What())
+					t.Errorf("KUBEGET unexpected what: %s", kgCmd.What())
 				}
-				return nil
 			},
 		},
 		{
-			name: "KUBEGET named what-param, no other params",
-			source: func() string {
-				return "KUBEGET what:logs"
+			name: "KUBEGET/what-param",
+			command: func(t *testing.T) Command {
+				cmd, err := NewKubeGetCommand(0, "what:logs")
+				if err != nil {
+					t.Fatal(err)
+				}
+				return cmd
 			},
-			script: func(s *Script) error {
-				kgCmd, ok := s.Actions[0].(*KubeGetCommand)
+			test: func(t *testing.T, c Command) {
+				kgCmd, ok := c.(*KubeGetCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", s.Actions[0])
+					t.Errorf("Unexpected type %T in script", c)
 				}
 				if kgCmd.What() != "logs" {
-					return fmt.Errorf("KUBEGET unexpected what: %s", kgCmd.What())
+					t.Errorf("KUBEGET unexpected what: %s", kgCmd.What())
 				}
-				return nil
 			},
 		},
 		{
-			name: "KUBEGET objects with other params",
-			source: func() string {
-				return `
-				KUBEGET objects namespaces:"myns testns" groups:"v1" kinds:"pods events" versions:"1" names:"my-app" labels:"prod" containers:"webapp"`
+			name: "KUBEGET/all object params",
+			command: func(t *testing.T) Command {
+				cmd, err := NewKubeGetCommand(0, `
+				objects namespaces:"myns testns" groups:"v1" kinds:"pods events" versions:"1" names:"my-app" labels:"prod" containers:"webapp"`)
+				if err != nil {
+					t.Fatal(err)
+				}
+				return cmd
 			},
-			script: func(s *Script) error {
-				kgCmd := s.Actions[0].(*KubeGetCommand)
+			test: func(t *testing.T, c Command) {
+				kgCmd := c.(*KubeGetCommand)
 				if len(kgCmd.Args()) != 8 {
-					return fmt.Errorf("KUBEGET unexpected param count: %d", len(kgCmd.Args()))
+					t.Errorf("KUBEGET unexpected param count: %d", len(kgCmd.Args()))
 				}
 				// check each param
 				if kgCmd.What() != "objects" {
-					return fmt.Errorf("KUBEGET unexpected what: %s", kgCmd.What())
+					t.Errorf("KUBEGET unexpected what: %s", kgCmd.What())
 				}
 				if kgCmd.Namespaces() != "myns testns" {
-					return fmt.Errorf("KUBEGET unexpected namespaces: %s", kgCmd.Namespaces())
+					t.Errorf("KUBEGET unexpected namespaces: %s", kgCmd.Namespaces())
 				}
 				if kgCmd.Groups() != "v1" {
-					return fmt.Errorf("KUBEGET unexpected namespaces: %s", kgCmd.Namespaces())
+					t.Errorf("KUBEGET unexpected namespaces: %s", kgCmd.Namespaces())
 				}
-				return nil
 			},
 		},
-		{
-			name: "KUBEGET objects with params with embedded colon",
-			source: func() string {
-				return `
-				KUBEGET objects namespaces:"myns test:ns" groups:"v1" kinds:"pods events" versions:"1" names:"my-app" labels:"prod" containers:"webapp"`
-			},
-			script: func(s *Script) error {
-				kgCmd := s.Actions[0].(*KubeGetCommand)
-				if len(kgCmd.Args()) != 8 {
-					return fmt.Errorf("KUBEGET unexpected param count: %d", len(kgCmd.Args()))
-				}
-				// check each param
-				if kgCmd.What() != "objects" {
-					return fmt.Errorf("KUBEGET unexpected what: %s", kgCmd.What())
-				}
-				if kgCmd.Namespaces() != "myns test:ns" {
-					return fmt.Errorf("KUBEGET unexpected namespaces: %s", kgCmd.Namespaces())
-				}
-				if kgCmd.Groups() != "v1" {
-					return fmt.Errorf("KUBEGET unexpected namespaces: %s", kgCmd.Namespaces())
-				}
-				return nil
-			},
-		},
+		
 	}
 
 	for _, test := range tests {

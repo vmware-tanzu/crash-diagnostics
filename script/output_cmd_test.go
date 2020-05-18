@@ -4,7 +4,6 @@
 package script
 
 import (
-	"fmt"
 	"os"
 	"testing"
 )
@@ -12,138 +11,124 @@ import (
 func TestCommandOUTPUT(t *testing.T) {
 	tests := []commandTest{
 		{
-			name: "OUTPUT with default param",
-			source: func() string {
-				return "OUTPUT foo/bar.tar.gz"
-			},
-			script: func(s *Script) error {
-				outs := s.Preambles[CmdOutput]
-				if len(outs) != 1 {
-					return fmt.Errorf("Script has unexpected number of OUTPUT %d", len(outs))
+			name: "OUTPUT",
+			command: func(t *testing.T) Command {
+				cmd, err := NewOutputCommand(0, "foo/bar.tar.gz")
+				if err != nil {
+					t.Fatal(err)
 				}
-				outCmd, ok := outs[0].(*OutputCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				outCmd, ok := c.(*OutputCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", outs[0])
+					t.Errorf("Unexpected type %T in script", c)
 				}
 				if outCmd.Path() != "foo/bar.tar.gz" {
-					return fmt.Errorf("OUTPUT has unexpected directory %s", outCmd.Path())
+					t.Errorf("OUTPUT has unexpected directory %s", outCmd.Path())
 				}
-				return nil
+
 			},
 		},
 		{
-			name: "OUTPUT with quoted default param",
-			source: func() string {
-				return "OUTPUT 'foo/bar.tar.gz'"
-			},
-			script: func(s *Script) error {
-				outs := s.Preambles[CmdOutput]
-				if len(outs) != 1 {
-					return fmt.Errorf("Script has unexpected number of OUTPUT %d", len(outs))
+			name: "OUTPUT/quoted param",
+			command: func(t *testing.T) Command {
+				cmd, err := NewOutputCommand(0, "OUTPUT 'foo/bar.tar.gz'")
+				if err != nil {
+					t.Fatal(err)
 				}
-				outCmd, ok := outs[0].(*OutputCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				outCmd, ok := c.(*OutputCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", outs[0])
+					t.Errorf("Unexpected type %T in script", c)
 				}
 				if outCmd.Path() != "foo/bar.tar.gz" {
-					return fmt.Errorf("OUTPUT has unexpected directory %s", outCmd.Path())
+					t.Errorf("OUTPUT has unexpected directory %s", outCmd.Path())
 				}
-				return nil
+
 			},
 		},
 		{
-			name: "OUTPUT with single arg",
-			source: func() string {
-				return "OUTPUT path:foo/bar.tar.gz"
-			},
-			script: func(s *Script) error {
-				outs := s.Preambles[CmdOutput]
-				if len(outs) != 1 {
-					return fmt.Errorf("Script has unexpected number of OUTPUT %d", len(outs))
+			name: "OUTPUT/param",
+			command: func(t *testing.T) Command {
+				cmd, err := NewOutputCommand(0, "path:foo/bar.tar.gz")
+				if err != nil {
+					t.Fatal(err)
 				}
-				outCmd, ok := outs[0].(*OutputCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				outCmd, ok := c.(*OutputCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", outs[0])
+					t.Errorf("Unexpected type %T in script", c)
 				}
 				if outCmd.Path() != "foo/bar.tar.gz" {
-					return fmt.Errorf("OUTPUT has unexpected directory %s", outCmd.Path())
+					t.Errorf("OUTPUT has unexpected directory %s", outCmd.Path())
 				}
-				return nil
+
 			},
 		},
 		{
-			name: "Multiple OUTPUTs",
-			source: func() string {
-				return "OUTPUT path:foo/bar\nOUTPUT path:'bazz/buzz.tar.gz'"
-			},
-			script: func(s *Script) error {
-				outs := s.Preambles[CmdOutput]
-				if len(outs) != 1 {
-					return fmt.Errorf("Script has unexpected number of OUTPUT %d", len(outs))
-				}
-				outCmd, ok := outs[0].(*OutputCommand)
-				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", outs[0])
-				}
-				if outCmd.Path() != "bazz/buzz.tar.gz" {
-					return fmt.Errorf("OUTPUT has unexpected directory %s", outCmd.Path())
-				}
-				return nil
-			},
-		},
-		{
-			name: "OUTPUT with expanded var",
-			source: func() string {
+			name: "OUTPUT/expanded var",
+			command: func(t *testing.T) Command {
 				os.Setenv("foopath", "foo/bar.tar.gz")
-				return "OUTPUT $foopath"
-			},
-			script: func(s *Script) error {
-				outs := s.Preambles[CmdOutput]
-				if len(outs) != 1 {
-					return fmt.Errorf("Script has unexpected number of OUTPUT %d", len(outs))
+				cmd, err := NewOutputCommand(0, "$foopath")
+				if err != nil {
+					t.Fatal(err)
 				}
-				outCmd, ok := outs[0].(*OutputCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				outCmd, ok := c.(*OutputCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", outs[0])
+					t.Errorf("Unexpected type %T in script", c)
 				}
 				if outCmd.Path() != "foo/bar.tar.gz" {
-					return fmt.Errorf("OUTPUT has unexpected directory %s", outCmd.Path())
+					t.Errorf("OUTPUT has unexpected directory %s", outCmd.Path())
 				}
-				return nil
+
 			},
 		},
 		{
-			name: "OUTPUT with multiple args",
-			source: func() string {
-				return "OUTPUT path:foo/bar path:bazz/buzz"
-			},
-			shouldFail: true,
-		},
-		{
-			name: "OUTPUT with no args",
-			source: func() string {
-				return "OUTPUT"
-			},
-			shouldFail: true,
-		},
-		{
-			name: "OUTPUT named arg with embedded colon",
-			source: func() string {
-				return "OUTPUT path:foo/bar.tar.gz:ignore"
-			},
-			script: func(s *Script) error {
-				outs := s.Preambles[CmdOutput]
-				if len(outs) != 1 {
-					return fmt.Errorf("Script has unexpected number of OUTPUT %d", len(outs))
+			name: "OUTPUT/multiple args",
+			command: func(t *testing.T) Command {
+				cmd, err := NewOutputCommand(0, "path:foo/bar path:bazz/buzz")
+				if err == nil {
+					t.Fatal("Expecting error, but got nil")
 				}
-				outCmd, ok := outs[0].(*OutputCommand)
+				return cmd
+			},
+		},
+		{
+			name: "OUTPUT/no args",
+			command: func(t *testing.T) Command {
+				cmd, err := NewOutputCommand(0, "OUTPUT")
+				if err == nil {
+					t.Fatal("Expecting error, but got nil")
+				}
+				return cmd
+			},
+		},
+		{
+			name: "OUTPUT/embedded colon",
+			command: func(t *testing.T) Command {
+				cmd, err := NewOutputCommand(0, "OUTPUT path:foo/bar.tar.gz:ignore")
+				if err != nil {
+					t.Fatal(err)
+				}
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				outCmd, ok := c.(*OutputCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", outs[0])
+					t.Errorf("Unexpected type %T in script", c)
 				}
 				if outCmd.Path() != "foo/bar.tar.gz:ignore" {
-					return fmt.Errorf("OUTPUT has unexpected directory %s", outCmd.Path())
+					t.Errorf("OUTPUT has unexpected directory %s", outCmd.Path())
 				}
-				return nil
+
 			},
 		},
 	}

@@ -4,7 +4,6 @@
 package script
 
 import (
-	"fmt"
 	"os"
 	"testing"
 )
@@ -12,131 +11,124 @@ import (
 func TestCommandAUTHCONFIG(t *testing.T) {
 	tests := []commandTest{
 		{
-			name: "AUTHCONFIG - userid and private key",
-			source: func() string {
-				return "AUTHCONFIG username:test-user private-key:/a/b/c"
-			},
-			script: func(s *Script) error {
-				cmds := s.Preambles[CmdAuthConfig]
-				if len(cmds) != 1 {
-					return fmt.Errorf("Script missing preamble %s", CmdAuthConfig)
+			name: "AUTHCONFIG/all params unquoted",
+			command: func(t *testing.T) Command {
+				cmd, err := NewAuthConfigCommand(0, "username:test-user private-key:/a/b/c")
+				if err != nil {
+					t.Fatal(err)
 				}
-				authCmd, ok := cmds[0].(*AuthConfigCommand)
+				return cmd
+			},
+			test: func(t *testing.T, cmd Command) {
+				authCmd, ok := cmd.(*AuthConfigCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", cmds[0])
+					t.Fatalf("Unexpected type %T in script", cmd)
 				}
 				if authCmd.GetUsername() != "test-user" {
-					return fmt.Errorf("Unexpected username %s", authCmd.GetUsername())
+					t.Errorf("Unexpected username %s", authCmd.GetUsername())
 				}
 				if authCmd.GetPrivateKey() != "/a/b/c" {
-					return fmt.Errorf("Unexpected private-key %s", authCmd.GetPrivateKey())
+					t.Errorf("Unexpected private-key %s", authCmd.GetPrivateKey())
 				}
-				return nil
 			},
 		},
 		{
-			name: "AUTHCONFIG - quoted params",
-			source: func() string {
-				return "AUTHCONFIG username:test-user private-key:'/a/b/c'"
-			},
-			script: func(s *Script) error {
-				cmds := s.Preambles[CmdAuthConfig]
-				if len(cmds) != 1 {
-					return fmt.Errorf("Script missing preamble %s", CmdAuthConfig)
+			name: "AUTHCONFIG/all params quoted",
+			command: func(t *testing.T) Command {
+				cmd, err := NewAuthConfigCommand(0, "username:test-user private-key:'/a/b/c'")
+				if err != nil {
+					t.Fatal(err)
 				}
-				authCmd, ok := cmds[0].(*AuthConfigCommand)
+				return cmd
+			},
+			test: func(t *testing.T, cmd Command) {
+				authCmd, ok := cmd.(*AuthConfigCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", cmds[0])
+					t.Fatalf("Unexpected type %T in script", cmd)
 				}
 				if authCmd.GetUsername() != "test-user" {
-					return fmt.Errorf("Unexpected username %s", authCmd.GetUsername())
+					t.Errorf("Unexpected username %s", authCmd.GetUsername())
 				}
 				if authCmd.GetPrivateKey() != "/a/b/c" {
-					return fmt.Errorf("Unexpected private-key %s", authCmd.GetPrivateKey())
+					t.Errorf("Unexpected private-key %s", authCmd.GetPrivateKey())
 				}
-				return nil
 			},
 		},
 		{
-			name: "AUTHCONFIG with only private-key",
-			source: func() string {
-				return "AUTHCONFIG private-key:/a/b/c"
-			},
-			script: func(s *Script) error {
-				cmds := s.Preambles[CmdAuthConfig]
-				if len(cmds) != 1 {
-					return fmt.Errorf("Script missing preamble %s", CmdAuthConfig)
+			name: "AUTHCONFIG/only private-key",
+			command: func(t *testing.T) Command {
+				cmd, err := NewAuthConfigCommand(0, "private-key:/a/b/c")
+				if err != nil {
+					t.Fatal(err)
 				}
-				authCmd, ok := cmds[0].(*AuthConfigCommand)
+				return cmd
+			},
+			test: func(t *testing.T, cmd Command) {
+				authCmd, ok := cmd.(*AuthConfigCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", cmds[0])
+					t.Fatalf("Unexpected type %T in script", cmd)
 				}
 				if authCmd.GetUsername() != "" {
-					return fmt.Errorf("Unexpected username %s", authCmd.GetUsername())
+					t.Errorf("Unexpected username %s", authCmd.GetUsername())
 				}
 				if authCmd.GetPrivateKey() != "/a/b/c" {
-					return fmt.Errorf("Unexpected privateKey %s", authCmd.GetPrivateKey())
+					t.Errorf("Unexpected privateKey %s", authCmd.GetPrivateKey())
 				}
-				return nil
 			},
 		},
 		{
-			name: "AUTHCONFIG - with var expansion",
-			source: func() string {
+			name: "AUTHCONFIG/var expansion",
+			command: func(t *testing.T) Command {
+				cmd, err := NewAuthConfigCommand(0, "username:${USER} private-key:$fookey")
+				if err != nil {
+					t.Fatal(err)
+				}
+				return cmd
+			},
+			test: func(t *testing.T, cmd Command) {
 				os.Setenv("fookey", "/a/b/c")
-				return "AUTHCONFIG username:${USER} private-key:$fookey"
-			},
-			script: func(s *Script) error {
-				cmds := s.Preambles[CmdAuthConfig]
-				authCmd := cmds[0].(*AuthConfigCommand)
+				authCmd := cmd.(*AuthConfigCommand)
 				if authCmd.GetUsername() != ExpandEnv("$USER") {
-					return fmt.Errorf("Unexpected username %s", authCmd.GetUsername())
+					t.Errorf("Unexpected username %s", authCmd.GetUsername())
 				}
 				if authCmd.GetPrivateKey() != "/a/b/c" {
-					return fmt.Errorf("Unexpected private-key %s", authCmd.GetPrivateKey())
+					t.Errorf("Unexpected private-key %s", authCmd.GetPrivateKey())
 				}
-				return nil
 			},
-		},
-		{
-			name: "Multiple AUTHCONFIG provided",
-			source: func() string {
-				return "AUTHCONFIG private-key:/foo/bar\nAUTHCONFIG username:test-user"
-			},
-			script: func(s *Script) error {
-				return nil
-			},
-			shouldFail: true,
-		},
-		{
-			name: "AUTHCONFIG with bad args",
-			source: func() string {
-				return "SSHCONFIG bar private-key:buzz"
-			},
-			shouldFail: true,
 		},
 
 		{
-			name: "AUTHCONFIG - with embedded colon",
-			source: func() string {
-				return "AUTHCONFIG username:test-user private-key:'/a/:b/c'"
-			},
-			script: func(s *Script) error {
-				cmds := s.Preambles[CmdAuthConfig]
-				if len(cmds) != 1 {
-					return fmt.Errorf("Script missing preamble %s", CmdAuthConfig)
+			name: "AUTHCONFIG with bad args",
+			command: func(t *testing.T) Command {
+				cmd, err := NewAuthConfigCommand(0,"bar private-key:buzz")
+				if err == nil {
+					t.Fatalf("Expecting failure but err == nil")
 				}
-				authCmd, ok := cmds[0].(*AuthConfigCommand)
+				return cmd
+			},
+			test:       func(t *testing.T, cmd Command) {},
+		},
+
+		{
+			name: "AUTHCONFIG/embedded colon",
+			command: func(t *testing.T) Command {
+				cmd, err := NewAuthConfigCommand(0,"username:test-user private-key:'/a/:b/c'")
+				if err != nil {
+					t.Error(err)
+				}
+				return cmd
+			},
+			test: func(t *testing.T, cmd Command) {
+				authCmd, ok := cmd.(*AuthConfigCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", cmds[0])
+					t.Fatalf("Unexpected type %T in script", cmd)
 				}
 				if authCmd.GetUsername() != "test-user" {
-					return fmt.Errorf("Unexpected username %s", authCmd.GetUsername())
+					t.Errorf("Unexpected username %s", authCmd.GetUsername())
 				}
 				if authCmd.GetPrivateKey() != "/a/:b/c" {
-					return fmt.Errorf("Unexpected private-key %s", authCmd.GetPrivateKey())
+					t.Errorf("Unexpected private-key %s", authCmd.GetPrivateKey())
 				}
-				return nil
 			},
 		},
 	}

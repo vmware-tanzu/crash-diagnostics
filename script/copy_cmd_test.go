@@ -3,7 +3,6 @@
 package script
 
 import (
-	"fmt"
 	"os"
 	"testing"
 )
@@ -11,252 +10,209 @@ import (
 func TestCommandCOPY(t *testing.T) {
 	tests := []commandTest{
 		{
-			name: "COPY with default param",
-			source: func() string {
-				return "COPY /a/b/c"
-			},
-			script: func(s *Script) error {
-				if len(s.Actions) != 1 {
-					return fmt.Errorf("Script has unexpected COPY actions, has %d COPY", len(s.Actions))
+			name: "COPY",
+			command: func(t *testing.T) Command {
+				cmd, err := NewCopyCommand(0, "/a/b/c")
+				if err != nil {
+					t.Fatal(err)
 				}
-
-				cmd := s.Actions[0].(*CopyCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				cmd := c.(*CopyCommand)
 				if len(cmd.Paths()) != 1 {
-					return fmt.Errorf("COPY has unexpected number of paths %d", len(cmd.Paths()))
+					t.Errorf("COPY has unexpected number of paths %d", len(cmd.Paths()))
 				}
 
 				arg := cmd.Paths()[0]
 				if arg != "/a/b/c" {
-					return fmt.Errorf("COPY has unexpected argument %s", arg)
+					t.Errorf("COPY has unexpected argument %s", arg)
 				}
-				return nil
 			},
 		},
 		{
-			name: "COPY with quoted default param",
-			source: func() string {
-				return `COPY '/a/b/c'`
-			},
-			script: func(s *Script) error {
-				if len(s.Actions) != 1 {
-					return fmt.Errorf("Script has unexpected COPY actions, has %d COPY", len(s.Actions))
+			name: "COPY/quoted",
+			command: func(t *testing.T) Command {
+				cmd, err := NewCopyCommand(0, `'/a/b/c'`)
+				if err != nil {
+					t.Fatal(err)
 				}
-
-				cmd := s.Actions[0].(*CopyCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				cmd := c.(*CopyCommand)
 				if len(cmd.Paths()) != 1 {
-					return fmt.Errorf("COPY has unexpected number of paths %d", len(cmd.Paths()))
+					t.Errorf("COPY has unexpected number of paths %d", len(cmd.Paths()))
 				}
 
 				arg := cmd.Paths()[0]
 				if arg != "/a/b/c" {
-					return fmt.Errorf("COPY has unexpected argument %s", arg)
+					t.Errorf("COPY has unexpected argument %s", arg)
 				}
-				return nil
 			},
 		},
 		{
-			name: "COPY with quoted named param",
-			source: func() string {
-				return `COPY paths:"/a/b/c"`
-			},
-			script: func(s *Script) error {
-				if len(s.Actions) != 1 {
-					return fmt.Errorf("Script has unexpected COPY actions, has %d COPY", len(s.Actions))
+			name: "COPY/quoted param",
+			command: func(t *testing.T) Command {
+				cmd, err := NewCopyCommand(0, `paths:"/a/b/c"`)
+				if err != nil {
+					t.Fatal(err)
 				}
-
-				cmd := s.Actions[0].(*CopyCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				cmd := c.(*CopyCommand)
 				if len(cmd.Paths()) != 1 {
-					return fmt.Errorf("COPY has unexpected number of paths %d", len(cmd.Paths()))
+					t.Errorf("COPY has unexpected number of paths %d", len(cmd.Paths()))
 				}
 
 				arg := cmd.Paths()[0]
 				if arg != "/a/b/c" {
-					return fmt.Errorf("COPY has unexpected argument %s", arg)
+					t.Errorf("COPY has unexpected argument %s", arg)
 				}
-				return nil
 			},
 		},
 		{
-			name: "COPY with multiple args",
-			source: func() string {
-				return "COPY /a/b/c /e/f/g"
-			},
-			script: func(s *Script) error {
-				if len(s.Actions) != 1 {
-					return fmt.Errorf("Script has unexpected COPY actions, has %d COPY", len(s.Actions))
+			name: "COPY/multiple paths",
+			command: func(t *testing.T) Command {
+				cmd, err := NewCopyCommand(0, "/a/b/c /e/f/g")
+				if err != nil {
+					t.Fatal(err)
 				}
-
-				cmd := s.Actions[0].(*CopyCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				cmd := c.(*CopyCommand)
 				if len(cmd.Paths()) != 2 {
-					return fmt.Errorf("COPY has unexpected number of args %d", len(cmd.Paths()))
+					t.Errorf("COPY has unexpected number of args %d", len(cmd.Paths()))
 				}
 				if cmd.Paths()[0] != "/a/b/c" {
-					return fmt.Errorf("COPY has unexpected argument[0] %s", cmd.Paths()[0])
+					t.Errorf("COPY has unexpected argument[0] %s", cmd.Paths()[0])
 				}
 				if cmd.Paths()[1] != "/e/f/g" {
-					return fmt.Errorf("COPY has unexpected argument[1] %s", cmd.Paths()[1])
+					t.Errorf("COPY has unexpected argument[1] %s", cmd.Paths()[1])
 				}
-
-				return nil
 			},
 		},
 		{
-			name: "Multiple COPY commands",
-			source: func() string {
-				return "COPY /a/b/c\nCOPY d /e/f"
+			name: "COPY/named param",
+			command: func(t *testing.T) Command {
+				cmd, err := NewCopyCommand(0, "COPY paths:/a/b/c")
+				if err != nil {
+					t.Fatal(err)
+				}
+				return cmd
 			},
-			script: func(s *Script) error {
-				if len(s.Actions) != 2 {
-					return fmt.Errorf("Script has unexpected COPY actions, has %d COPY", len(s.Actions))
-				}
-
-				cmd0 := s.Actions[0].(*CopyCommand)
-				if len(cmd0.Paths()) != 1 {
-					return fmt.Errorf("COPY action[0] has wrong number of args %s", cmd0.Paths())
-				}
-				arg := cmd0.Paths()[0]
-				if arg != "/a/b/c" {
-					return fmt.Errorf("COPY action[0] has unexpected arg %s", arg)
-				}
-
-				cmd1 := s.Actions[1].(*CopyCommand)
-				if len(cmd1.Paths()) != 2 {
-					return fmt.Errorf("COPY action[1] has wrong number of args %d", len(cmd1.Paths()))
-				}
-				arg = cmd1.Paths()[0]
-				if arg != "d" {
-					return fmt.Errorf("COPY action[1] has unexpected arg[0] %s", arg)
-				}
-				arg = cmd1.Paths()[1]
-				if arg != "/e/f" {
-					return fmt.Errorf("COPY action[1] has unexpected arg[1] %s", arg)
-				}
-				return nil
-			},
-		},
-		{
-			name: "COPY single with named param",
-			source: func() string {
-				return "COPY paths:/a/b/c"
-			},
-			script: func(s *Script) error {
-				if len(s.Actions) != 1 {
-					return fmt.Errorf("Script has unexpected COPY actions, has %d COPY", len(s.Actions))
-				}
-
-				cmd := s.Actions[0].(*CopyCommand)
+			test: func(t *testing.T, c Command) {
+				cmd := c.(*CopyCommand)
 				if len(cmd.Paths()) != 1 {
-					return fmt.Errorf("COPY has unexpected number of paths %d", len(cmd.Paths()))
+					t.Errorf("COPY has unexpected number of paths %d", len(cmd.Paths()))
 				}
 
 				arg := cmd.Paths()[0]
 				if arg != "/a/b/c" {
-					return fmt.Errorf("COPY has unexpected argument %s", arg)
+					t.Errorf("COPY has unexpected argument %s", arg)
 				}
-				return nil
 			},
 		},
 		{
-			name: "COPY multiple with named param",
-			source: func() string {
-				return `COPY paths:"/a/b/c /e/f/g"`
-			},
-			script: func(s *Script) error {
-				if len(s.Actions) != 1 {
-					return fmt.Errorf("Script has unexpected COPY actions, has %d COPY", len(s.Actions))
+			name: "COPY/named param multiple paths",
+			command: func(t *testing.T) Command {
+				cmd, err := NewCopyCommand(0, `COPY paths:"/a/b/c /e/f/g"`)
+				if err != nil {
+					t.Fatal(err)
 				}
-
-				cmd := s.Actions[0].(*CopyCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				cmd := c.(*CopyCommand)
 				if len(cmd.Paths()) != 2 {
-					return fmt.Errorf("COPY has unexpected number of args %d", len(cmd.Paths()))
+					t.Errorf("COPY has unexpected number of args %d", len(cmd.Paths()))
 				}
 				if cmd.Paths()[0] != "/a/b/c" {
-					return fmt.Errorf("COPY has unexpected argument[0] %s", cmd.Paths()[0])
+					t.Errorf("COPY has unexpected argument[0] %s", cmd.Paths()[0])
 				}
 				if cmd.Paths()[1] != "/e/f/g" {
-					return fmt.Errorf("COPY has unexpected argument[1] %s", cmd.Paths()[1])
+					t.Errorf("COPY has unexpected argument[1] %s", cmd.Paths()[1])
 				}
-
-				return nil
 			},
 		},
 		{
-			name: "COPY with var expansion",
-			source: func() string {
+			name: "COPY/var expansion",
+			command: func(t *testing.T) Command {
+				cmd, err := NewCopyCommand(0, "${foopath1} /e/f/${foodir}")
+				if err != nil {
+					t.Fatal(err)
+				}
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
 				os.Setenv("foopath1", "/a/b/c")
 				os.Setenv("foodir", "g")
-				return "COPY ${foopath1} /e/f/${foodir}"
-			},
-			script: func(s *Script) error {
-				if len(s.Actions) != 1 {
-					return fmt.Errorf("Script has unexpected COPY actions, has %d COPY", len(s.Actions))
-				}
-
-				cmd := s.Actions[0].(*CopyCommand)
+				cmd := c.(*CopyCommand)
 				if len(cmd.Paths()) != 2 {
-					return fmt.Errorf("COPY has unexpected number of args %d", len(cmd.Paths()))
+					t.Errorf("COPY has unexpected number of args %d", len(cmd.Paths()))
 				}
 				if cmd.Paths()[0] != "/a/b/c" {
-					return fmt.Errorf("COPY has unexpected argument[0] %s", cmd.Paths()[0])
+					t.Errorf("COPY has unexpected argument[0] %s", cmd.Paths()[0])
 				}
 				if cmd.Paths()[1] != "/e/f/g" {
-					return fmt.Errorf("COPY has unexpected argument[1] %s", cmd.Paths()[1])
+					t.Errorf("COPY has unexpected argument[1] %s", cmd.Paths()[1])
 				}
-
-				return nil
 			},
 		},
 		{
-			name: "COPY no arg",
-			source: func() string {
-				return "COPY "
+			name: "COPY/no path",
+			command: func(t *testing.T) Command {
+				cmd, err := NewCopyCommand(0, "")
+				if err == nil {
+					t.Fatal("Expecting error, but got nil")
+				}
+				return cmd
 			},
-			shouldFail: true,
+			test: func(t *testing.T, c Command) {},
 		},
 		{
-			name: "COPY with quoted default with ebedded colon",
-			source: func() string {
-				return `COPY '/a/:b/c'`
-			},
-			script: func(s *Script) error {
-				if len(s.Actions) != 1 {
-					return fmt.Errorf("Script has unexpected COPY actions, has %d COPY", len(s.Actions))
+			name: "COPY/colon in path",
+			command: func(t *testing.T) Command {
+				cmd, err := NewCopyCommand(0, `'/a/:b/c'`)
+				if err != nil {
+					t.Fatal(err)
 				}
-
-				cmd := s.Actions[0].(*CopyCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				cmd := c.(*CopyCommand)
 				if len(cmd.Paths()) != 1 {
-					return fmt.Errorf("COPY has unexpected number of paths %d", len(cmd.Paths()))
+					t.Errorf("COPY has unexpected number of paths %d", len(cmd.Paths()))
 				}
 
 				arg := cmd.Paths()[0]
 				if arg != "/a/:b/c" {
-					return fmt.Errorf("COPY has unexpected argument %s", arg)
+					t.Errorf("COPY has unexpected argument %s", arg)
 				}
-				return nil
 			},
 		},
 		{
-			name: "COPY multiple with named param",
-			source: func() string {
-				return `COPY paths:"/a/b/c /e/:f/g"`
-			},
-			script: func(s *Script) error {
-				if len(s.Actions) != 1 {
-					return fmt.Errorf("Script has unexpected COPY actions, has %d COPY", len(s.Actions))
+			name: "COPY/multiple paths with colon",
+			command: func(t *testing.T) Command {
+				cmd, err := NewCopyCommand(0, `paths:"/a/b/c /e/:f/g"`)
+				if err != nil {
+					t.Fatal(err)
 				}
-
-				cmd := s.Actions[0].(*CopyCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				cmd := c.(*CopyCommand)
 				if len(cmd.Paths()) != 2 {
-					return fmt.Errorf("COPY has unexpected number of args %d", len(cmd.Paths()))
+					t.Errorf("COPY has unexpected number of args %d", len(cmd.Paths()))
 				}
 				if cmd.Paths()[0] != "/a/b/c" {
-					return fmt.Errorf("COPY has unexpected argument[0] %s", cmd.Paths()[0])
+					t.Errorf("COPY has unexpected argument[0] %s", cmd.Paths()[0])
 				}
 				if cmd.Paths()[1] != "/e/:f/g" {
-					return fmt.Errorf("COPY has unexpected argument[1] %s", cmd.Paths()[1])
+					t.Errorf("COPY has unexpected argument[1] %s", cmd.Paths()[1])
 				}
-
-				return nil
 			},
 		},
 	}
