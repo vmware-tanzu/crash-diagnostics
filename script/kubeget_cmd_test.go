@@ -12,7 +12,7 @@ func TestCommandKUBEGET(t *testing.T) {
 		{
 			name: "KUBEGET/objects",
 			command: func(t *testing.T) Command {
-				cmd, err := NewKubeGetCommand(0,"objects")
+				cmd, err := NewKubeGetCommand(0, "objects")
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -50,8 +50,9 @@ func TestCommandKUBEGET(t *testing.T) {
 		{
 			name: "KUBEGET/all object params",
 			command: func(t *testing.T) Command {
-				cmd, err := NewKubeGetCommand(0, `
-				objects namespaces:"myns testns" groups:"v1" kinds:"pods events" versions:"1" names:"my-app" labels:"prod" containers:"webapp"`)
+				cmd, err := NewKubeGetCommand(0,
+					`objects namespaces:"myns testns" groups:"v1" kinds:"pods events" versions:"1" names:"my-app" labels:"prod" containers:"webapp"`,
+				)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -74,7 +75,6 @@ func TestCommandKUBEGET(t *testing.T) {
 				}
 			},
 		},
-		
 	}
 
 	for _, test := range tests {

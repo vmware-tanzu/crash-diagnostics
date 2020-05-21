@@ -17,6 +17,7 @@ import (
 
 var (
 	spaceSep       = regexp.MustCompile(`\s`)
+	namedParamRegx = regexp.MustCompile(`^([a-z0-9_\-]+)(:)(["']{0,1}.+["']{0,1})$`)
 )
 
 // Parse parses the textual script into an *script.Script representation

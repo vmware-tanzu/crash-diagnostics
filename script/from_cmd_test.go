@@ -13,8 +13,8 @@ func TestCommandFROM(t *testing.T) {
 	tests := []commandTest{
 		{
 			name: "FROM",
-			command: func(t *testing.T) Command{
-				cmd, err := NewFromCommand(0,"local foo.bar:1234")
+			command: func(t *testing.T) Command {
+				cmd, err := NewFromCommand(0, "local foo.bar:1234")
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -44,7 +44,7 @@ func TestCommandFROM(t *testing.T) {
 				if fromCmd.ConnectionTimeout() != time.Second*120 {
 					t.Errorf("FROM has unexpected retries %d", fromCmd.ConnectionRetries())
 				}
-				
+
 			},
 		},
 		{
@@ -96,7 +96,7 @@ func TestCommandFROM(t *testing.T) {
 				if fromCmd.ConnectionTimeout() != time.Minute*5 {
 					t.Errorf("FROM has unexpected connection retries %d", fromCmd.ConnectionRetries())
 				}
-				
+
 			},
 		},
 
@@ -112,7 +112,7 @@ func TestCommandFROM(t *testing.T) {
 			test: func(t *testing.T, c Command) {
 				os.Setenv("foohost", "foo.bar")
 				os.Setenv("port", "1234")
-				
+
 				fromCmd := c.(*FromCommand)
 
 				if len(fromCmd.Hosts()) != 1 {
@@ -124,7 +124,7 @@ func TestCommandFROM(t *testing.T) {
 				if fromCmd.Port() != "1234" {
 					t.Errorf("FROM has unexpected port value %s", fromCmd.Port())
 				}
-				
+
 			},
 		},
 	}

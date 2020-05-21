@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/sirupsen/logrus"
+	"github.com/vmware-tanzu/crash-diagnostics/parser"
 	"github.com/vmware-tanzu/crash-diagnostics/script"
 	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
@@ -66,7 +67,7 @@ func runExecutorTest(t *testing.T, test execTest) {
 		}
 	}()
 
-	script, err := script.Parse(strings.NewReader(test.source()))
+	script, err := parser.Parse(strings.NewReader(test.source()))
 	if err != nil {
 		if !test.shouldFail {
 			t.Fatal(err)

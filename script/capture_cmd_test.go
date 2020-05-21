@@ -13,7 +13,7 @@ func TestCommandCAPTURE(t *testing.T) {
 		{
 			name: "CAPTURE/single unquoted param",
 			command: func(t *testing.T) Command {
-				cmd, err := NewCaptureCommand(0, `CAPTURE /bin/echo "HELLO WORLD"`)
+				cmd, err := NewCaptureCommand(0, `/bin/echo "HELLO WORLD"`)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -142,7 +142,7 @@ func TestCommandCAPTURE(t *testing.T) {
 		{
 			name: "CAPTURE/unquoted named params",
 			command: func(t *testing.T) Command {
-				cmd, err := NewCaptureCommand(0,"cmd:/bin/date")
+				cmd, err := NewCaptureCommand(0, "cmd:/bin/date")
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -225,8 +225,8 @@ func TestCommandCAPTURE(t *testing.T) {
 		{
 			name: "CAPTURE/with echo",
 			command: func(t *testing.T) Command {
-				cmd, err := NewCaptureCommand(0,`shell:"/bin/bash -c" cmd:"echo 'HELLO WORLD'" echo:"true"`)
-				if err != nil{
+				cmd, err := NewCaptureCommand(0, `shell:"/bin/bash -c" cmd:"echo 'HELLO WORLD'" echo:"true"`)
+				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
@@ -344,8 +344,8 @@ func TestCommandCAPTURE(t *testing.T) {
 		{
 			name: "CAPTURE/double-quoted named-param with embedded colon",
 			command: func(t *testing.T) Command {
-				cmd, err := NewCaptureCommand(0,`cmd:"/bin/echo -n 'HELLO:WORLD'"`)
-				if err != nil{
+				cmd, err := NewCaptureCommand(0, `cmd:"/bin/echo -n 'HELLO:WORLD'"`)
+				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
@@ -377,7 +377,7 @@ func TestCommandCAPTURE(t *testing.T) {
 			name: "CAPTURE unquoted named param with multiple embedded colons",
 			command: func(t *testing.T) Command {
 				cmd, err := NewCaptureCommand(0, "cmd:/bin/date:time:")
-				if err != nil{
+				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
@@ -400,7 +400,7 @@ func TestCommandCAPTURE(t *testing.T) {
 			name: "CAPTURE/shell with embedded colon",
 			command: func(t *testing.T) Command {
 				cmd, err := NewCaptureCommand(0, `shell:"/bin/bash -c" cmd:"echo 'HELLO:WORLD'"`)
-				if err != nil{
+				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd

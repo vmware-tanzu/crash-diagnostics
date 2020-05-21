@@ -33,7 +33,7 @@ func TestCommandOUTPUT(t *testing.T) {
 		{
 			name: "OUTPUT/quoted param",
 			command: func(t *testing.T) Command {
-				cmd, err := NewOutputCommand(0, "OUTPUT 'foo/bar.tar.gz'")
+				cmd, err := NewOutputCommand(0, "'foo/bar.tar.gz'")
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -114,7 +114,7 @@ func TestCommandOUTPUT(t *testing.T) {
 		{
 			name: "OUTPUT/embedded colon",
 			command: func(t *testing.T) Command {
-				cmd, err := NewOutputCommand(0, "OUTPUT path:foo/bar.tar.gz:ignore")
+				cmd, err := NewOutputCommand(0, "path:foo/bar.tar.gz:ignore")
 				if err != nil {
 					t.Fatal(err)
 				}

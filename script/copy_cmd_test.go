@@ -97,7 +97,7 @@ func TestCommandCOPY(t *testing.T) {
 		{
 			name: "COPY/named param",
 			command: func(t *testing.T) Command {
-				cmd, err := NewCopyCommand(0, "COPY paths:/a/b/c")
+				cmd, err := NewCopyCommand(0, "paths:/a/b/c")
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -118,7 +118,7 @@ func TestCommandCOPY(t *testing.T) {
 		{
 			name: "COPY/named param multiple paths",
 			command: func(t *testing.T) Command {
-				cmd, err := NewCopyCommand(0, `COPY paths:"/a/b/c /e/f/g"`)
+				cmd, err := NewCopyCommand(0, `paths:"/a/b/c /e/f/g"`)
 				if err != nil {
 					t.Fatal(err)
 				}

@@ -12,7 +12,7 @@ func TestCommandENV(t *testing.T) {
 		{
 			name: "ENV",
 			command: func(t *testing.T) Command {
-				cmd, err := NewEnvCommand(0,"foo=bar")
+				cmd, err := NewEnvCommand(0, "foo=bar")
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -30,13 +30,13 @@ func TestCommandENV(t *testing.T) {
 				if env != "bar" {
 					t.Errorf("ENV has unexpected value: foo=%s", envCmd.Envs()["foo"])
 				}
-				
+
 			},
 		},
 		{
 			name: "ENV/quoted value",
 			command: func(t *testing.T) Command {
-				cmd, err := NewEnvCommand(0,`foo="bar bazz"`)
+				cmd, err := NewEnvCommand(0, `foo="bar bazz"`)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -52,13 +52,13 @@ func TestCommandENV(t *testing.T) {
 				if env != "bar bazz" {
 					t.Errorf("ENV has unexpected value: foo=%s", envCmd.Envs()["foo"])
 				}
-				
+
 			},
 		},
 		{
 			name: "ENV/named param",
 			command: func(t *testing.T) Command {
-				cmd, err := NewEnvCommand(0,"vars:abc=defgh")
+				cmd, err := NewEnvCommand(0, "vars:abc=defgh")
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -76,7 +76,7 @@ func TestCommandENV(t *testing.T) {
 				if env != "defgh" {
 					t.Errorf("ENV has unexpected value: %#v", envCmd.Envs())
 				}
-				
+
 			},
 		},
 		{
@@ -101,30 +101,30 @@ func TestCommandENV(t *testing.T) {
 				if env0 != "d" || env1 != "f" {
 					t.Errorf("ENV has unexpected values env[c]=%s and env[e]=%s", env0, env1)
 				}
-				
+
 			},
 		},
 		{
 			name: "ENV/bad format",
 			command: func(t *testing.T) Command {
-				cmd, err := NewEnvCommand(0,"a=b foo|bar")
+				cmd, err := NewEnvCommand(0, "a=b foo|bar")
 				if err == nil {
 					t.Fatal("Expecting failure but got nil")
 				}
 				return cmd
 			},
-			test : func(t *testing.T, c Command) {},
+			test: func(t *testing.T, c Command) {},
 		},
 		{
 			name: "ENV/missing params",
 			command: func(t *testing.T) Command {
-				cmd, err := NewEnvCommand(0,"")
+				cmd, err := NewEnvCommand(0, "")
 				if err == nil {
 					t.Fatal("Expecting failure but got nil")
 				}
 				return cmd
 			},
-			test : func(t *testing.T, c Command) {},
+			test: func(t *testing.T, c Command) {},
 		},
 		{
 			name: "ENV/embedded colon",
@@ -147,14 +147,14 @@ func TestCommandENV(t *testing.T) {
 				if env != "bar:Baz" {
 					t.Errorf("ENV has unexpected value: foo=%s", envCmd.Envs()["foo"])
 				}
-				
+
 			},
 		},
 		{
 			name: "ENV/quoted embedded colon",
 			command: func(t *testing.T) Command {
-				cmd, err := NewEnvCommand(0,`foo="bar bazz:bat"`)
-				if err == nil {
+				cmd, err := NewEnvCommand(0, `foo="bar bazz:bat"`)
+				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
@@ -168,14 +168,14 @@ func TestCommandENV(t *testing.T) {
 				if env != "bar bazz:bat" {
 					t.Errorf("ENV has unexpected value: foo=%s", envCmd.Envs()["foo"])
 				}
-				
+
 			},
 		},
 		{
 			name: "ENV/multiple embedded colon",
 			command: func(t *testing.T) Command {
-				cmd, err := NewEnvCommand(0,`vars:'a="b:g" c=d:d e=f'`)
-				if err == nil {
+				cmd, err := NewEnvCommand(0, `vars:'a="b:g" c=d:d e=f'`)
+				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
@@ -193,7 +193,7 @@ func TestCommandENV(t *testing.T) {
 				if env0 != "d:d" || env1 != "f" {
 					t.Errorf("ENV has unexpected values env[c]=%s and env[e]=%s", env0, env1)
 				}
-				
+
 			},
 		},
 	}

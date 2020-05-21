@@ -100,19 +100,19 @@ func TestCommandAUTHCONFIG(t *testing.T) {
 		{
 			name: "AUTHCONFIG with bad args",
 			command: func(t *testing.T) Command {
-				cmd, err := NewAuthConfigCommand(0,"bar private-key:buzz")
+				cmd, err := NewAuthConfigCommand(0, "bar private-key:buzz")
 				if err == nil {
 					t.Fatalf("Expecting failure but err == nil")
 				}
 				return cmd
 			},
-			test:       func(t *testing.T, cmd Command) {},
+			test: func(t *testing.T, cmd Command) {},
 		},
 
 		{
 			name: "AUTHCONFIG/embedded colon",
 			command: func(t *testing.T) Command {
-				cmd, err := NewAuthConfigCommand(0,"username:test-user private-key:'/a/:b/c'")
+				cmd, err := NewAuthConfigCommand(0, "username:test-user private-key:'/a/:b/c'")
 				if err != nil {
 					t.Error(err)
 				}

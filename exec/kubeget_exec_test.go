@@ -14,6 +14,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/vmware-tanzu/crash-diagnostics/k8s"
+	"github.com/vmware-tanzu/crash-diagnostics/parser"
 	"github.com/vmware-tanzu/crash-diagnostics/script"
 	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
@@ -39,7 +40,7 @@ func testExeKubeGet(t *testing.T, k8sconfig string) {
 					KUBECONFIG %s
 					KUBEGET objects groups:"core" kinds:"pods" namespaces:"kube-system"
 				`, k8sconfig)
-				script, err := script.Parse(strings.NewReader(src))
+				script, err := parser.Parse(strings.NewReader(src))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -72,7 +73,7 @@ func testExeKubeGet(t *testing.T, k8sconfig string) {
 					KUBECONFIG %s
 					KUBEGET objects groups:"core" kinds:"pods" namespaces:"kube-system" labels:"component=kube-apiserver"
 				`, k8sconfig)
-				script, err := script.Parse(strings.NewReader(src))
+				script, err := parser.Parse(strings.NewReader(src))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -103,7 +104,7 @@ func testExeKubeGet(t *testing.T, k8sconfig string) {
 					KUBECONFIG %s
 					KUBEGET logs groups:"core" kinds:"pods" namespaces:"kube-system" labels:"component=kube-apiserver"
 				`, k8sconfig)
-				script, err := script.Parse(strings.NewReader(src))
+				script, err := parser.Parse(strings.NewReader(src))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -155,7 +156,7 @@ func testWriteSearchResults(t *testing.T, k8sconfig string) {
 					KUBECONFIG %s
 					KUBEGET objects groups:"core" kinds:"services" namespaces:"default kube-system"
 				`, k8sconfig)
-				scrpt, err := script.Parse(strings.NewReader(src))
+				scrpt, err := parser.Parse(strings.NewReader(src))
 				if err != nil {
 					t.Error(err)
 					return nil
@@ -208,7 +209,7 @@ func testWriteSearchResults(t *testing.T, k8sconfig string) {
 					KUBECONFIG %s
 					KUBEGET objects groups:"core" kinds:"nodes"
 				`, k8sconfig)
-				scrpt, err := script.Parse(strings.NewReader(src))
+				scrpt, err := parser.Parse(strings.NewReader(src))
 				if err != nil {
 					t.Error(err)
 					return nil
@@ -257,7 +258,7 @@ func testWriteSearchResults(t *testing.T, k8sconfig string) {
 					KUBECONFIG %s
 					KUBEGET logs namespace:"kube-system"
 				`, k8sconfig)
-				scrpt, err := script.Parse(strings.NewReader(src))
+				scrpt, err := parser.Parse(strings.NewReader(src))
 				if err != nil {
 					t.Error(err)
 					return nil
@@ -310,7 +311,7 @@ func testWriteSearchResults(t *testing.T, k8sconfig string) {
 					KUBECONFIG %s
 					KUBEGET logs namespace:"kube-system" containers:"etcd"
 				`, k8sconfig)
-				scrpt, err := script.Parse(strings.NewReader(src))
+				scrpt, err := parser.Parse(strings.NewReader(src))
 				if err != nil {
 					t.Error(err)
 					return nil

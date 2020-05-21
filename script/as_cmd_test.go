@@ -37,7 +37,7 @@ func TestCommandAS(t *testing.T) {
 		{
 			name: "AS/quoted",
 			command: func(t *testing.T) Command {
-				cmd, err :=  NewAsCommand(0,`userid:"foo" groupid:bar`)
+				cmd, err := NewAsCommand(0, `userid:"foo" groupid:bar`)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -58,7 +58,7 @@ func TestCommandAS(t *testing.T) {
 		},
 		{
 			name: "AS/userid only",
-			command: func(t *testing.T) Command{
+			command: func(t *testing.T) Command {
 				cmd, err := NewAsCommand(0, "userid:foo")
 				if err != nil {
 					t.Fatal(err)
@@ -97,18 +97,6 @@ func TestCommandAS(t *testing.T) {
 				if asCmd.GetGroupId() != "barid" {
 					t.Errorf("Unexpected AS groupid %s", asCmd.GetUserId())
 				}
-			},
-		},
-		{
-			name: "AS/unsupported args",
-			command: func(t *testing.T) Command {
-				cmd, err := NewAsCommand(0, "foo:bar fuzz:buzz")
-				if err == nil {
-					t.Fatal("Expected failure, but err is nil")
-				}
-				return cmd
-			},
-			test:func(t *testing.T, cmd Command){
 			},
 		},
 	}

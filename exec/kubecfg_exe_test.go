@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/vmware-tanzu/crash-diagnostics/parser"
 	"github.com/vmware-tanzu/crash-diagnostics/script"
 	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
@@ -40,7 +41,7 @@ func TestExecKUBECONFIGFunc(t *testing.T) {
 				src := fmt.Sprintf(`
 					KUBECONFIG %s
 				`, k8sconfig)
-				script, _ := script.Parse(strings.NewReader(src))
+				script, _ := parser.Parse(strings.NewReader(src))
 				return script
 			},
 			exec: func(src *script.Script) {
@@ -57,7 +58,7 @@ func TestExecKUBECONFIGFunc(t *testing.T) {
 			name: "KUBECONFIG with bad path",
 			script: func() *script.Script {
 				src := fmt.Sprintf(`KUBECONFIG bad-path`)
-				script, _ := script.Parse(strings.NewReader(src))
+				script, _ := parser.Parse(strings.NewReader(src))
 				return script
 			},
 			exec: func(src *script.Script) {

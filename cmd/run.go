@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vmware-tanzu/crash-diagnostics/exec"
+	"github.com/vmware-tanzu/crash-diagnostics/parser"
 	"github.com/vmware-tanzu/crash-diagnostics/script"
 )
 
@@ -46,7 +47,7 @@ func run(flag *runFlags, args []string) error {
 
 	defer file.Close()
 
-	src, err := script.Parse(file)
+	src, err := parser.Parse(file)
 	if err != nil {
 		return err
 	}
