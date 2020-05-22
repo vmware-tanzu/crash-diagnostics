@@ -12,142 +12,92 @@ import (
 func TestCommandAS(t *testing.T) {
 	tests := []commandTest{
 		{
-			name: "AS specified with userid and groupid",
-			source: func() string {
-				return "AS userid:foo groupid:bar"
-			},
-			script: func(s *Script) error {
-				cmds := s.Preambles[CmdAs]
-				if len(cmds) != 1 {
-					return fmt.Errorf("Script missing preamble %s", CmdAs)
+			name: "AS/unquoted",
+			command: func(t *testing.T) Command {
+				cmd, err := NewAsCommand(0, "userid:foo groupid:bar")
+				if err != nil {
+					t.Fatal(err)
 				}
-				asCmd, ok := cmds[0].(*AsCommand)
+				return cmd
+			},
+
+			test: func(t *testing.T, cmd Command) {
+				asCmd, ok := cmd.(*AsCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", cmds[0])
+					t.Fatalf("Unexpected type %T in script", cmd)
 				}
 				if asCmd.GetUserId() != "foo" {
-					return fmt.Errorf("Unexpected AS userid %s", asCmd.GetUserId())
+					t.Errorf("Unexpected AS userid %s", asCmd.GetUserId())
 				}
 				if asCmd.GetGroupId() != "bar" {
-					return fmt.Errorf("Unexpected AS groupid %s", asCmd.GetUserId())
+					t.Errorf("Unexpected AS groupid %s", asCmd.GetUserId())
 				}
-				return nil
 			},
 		},
 		{
-			name: "AS with quoted userid and groupid",
-			source: func() string {
-				return `AS userid:"foo" groupid:bar`
-			},
-			script: func(s *Script) error {
-				cmds := s.Preambles[CmdAs]
-				if len(cmds) != 1 {
-					return fmt.Errorf("Script missing preamble %s", CmdAs)
+			name: "AS/quoted",
+			command: func(t *testing.T) Command {
+				cmd, err := NewAsCommand(0, `userid:"foo" groupid:bar`)
+				if err != nil {
+					t.Fatal(err)
 				}
-				asCmd, ok := cmds[0].(*AsCommand)
+				return cmd
+			},
+			test: func(t *testing.T, cmd Command) {
+				asCmd, ok := cmd.(*AsCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", cmds[0])
+					t.Fatalf("Unexpected type %T in script", cmd)
 				}
 				if asCmd.GetUserId() != "foo" {
-					return fmt.Errorf("Unexpected AS userid %s", asCmd.GetUserId())
+					t.Errorf("Unexpected AS userid %s", asCmd.GetUserId())
 				}
 				if asCmd.GetGroupId() != "bar" {
-					return fmt.Errorf("Unexpected AS groupid %s", asCmd.GetUserId())
+					t.Errorf("Unexpected AS groupid %s", asCmd.GetUserId())
 				}
-				return nil
 			},
 		},
 		{
-			name: "AS with only userid",
-			source: func() string {
-				return "AS userid:foo"
-			},
-			script: func(s *Script) error {
-				cmds := s.Preambles[CmdAs]
-				if len(cmds) != 1 {
-					return fmt.Errorf("Script missing preamble %s", CmdAs)
+			name: "AS/userid only",
+			command: func(t *testing.T) Command {
+				cmd, err := NewAsCommand(0, "userid:foo")
+				if err != nil {
+					t.Fatal(err)
 				}
-				asCmd, ok := cmds[0].(*AsCommand)
+				return cmd
+			},
+			test: func(t *testing.T, cmd Command) {
+				asCmd, ok := cmd.(*AsCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", cmds[0])
+					t.Fatalf("Unexpected type %T in script", cmd)
 				}
 				if asCmd.GetUserId() != "foo" {
-					return fmt.Errorf("Unexpected AS userid %s", asCmd.GetUserId())
+					t.Errorf("Unexpected AS userid %s", asCmd.GetUserId())
 				}
 				if asCmd.GetGroupId() != fmt.Sprintf("%d", os.Getgid()) {
-					return fmt.Errorf("Unexpected AS groupid %s", asCmd.GetGroupId())
+					t.Errorf("Unexpected AS groupid %s", asCmd.GetGroupId())
 				}
-				return nil
 			},
 		},
+
 		{
-			name: "AS not specified",
-			source: func() string {
-				return "FROM local"
+			name: "AS/var expansion",
+			command: func(t *testing.T) Command {
+				cmd, err := NewAsCommand(0, "userid:$USER groupid:$foogid")
+				if err != nil {
+					t.Fatal(err)
+				}
+				return cmd
 			},
-			script: func(s *Script) error {
-				cmds := s.Preambles[CmdAs]
-				if len(cmds) != 1 {
-					return fmt.Errorf("Script missing default AS preamble")
-				}
-				asCmd, ok := cmds[0].(*AsCommand)
-				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", cmds[0])
-				}
-				if asCmd.GetUserId() != fmt.Sprintf("%d", os.Getuid()) {
-					return fmt.Errorf("Unexpected AS default userid %s", asCmd.GetUserId())
-				}
-				if asCmd.GetGroupId() != fmt.Sprintf("%d", os.Getgid()) {
-					return fmt.Errorf("Unexpected AS default groupid %s", asCmd.GetUserId())
-				}
-				return nil
-			},
-		},
-		{
-			name: "Multiple AS provided",
-			source: func() string {
-				return "AS userid:foo\nAS userid:bar"
-			},
-			script: func(s *Script) error {
-				cmds := s.Preambles[CmdAs]
-				if len(cmds) != 1 {
-					return fmt.Errorf("Script should only have 1 AS instruction, got %d", len(cmds))
-				}
-				asCmd := cmds[0].(*AsCommand)
-				if asCmd.GetUserId() != "bar" {
-					return fmt.Errorf("Unexpected AS userid %s", asCmd.GetUserId())
-				}
-				if asCmd.GetGroupId() != "" {
-					return fmt.Errorf("Unexpected AS groupid %s", asCmd.GetUserId())
-				}
-				return nil
-			},
-			shouldFail: true,
-		},
-		{
-			name: "AS with var expansion",
-			source: func() string {
+			test: func(t *testing.T, cmd Command) {
 				os.Setenv("foogid", "barid")
-				return "AS userid:$USER groupid:$foogid"
-			},
-			script: func(s *Script) error {
-				cmds := s.Preambles[CmdAs]
-				asCmd := cmds[0].(*AsCommand)
+				asCmd := cmd.(*AsCommand)
 				if asCmd.GetUserId() != ExpandEnv("$USER") {
-					return fmt.Errorf("Unexpected AS userid %s", asCmd.GetUserId())
+					t.Errorf("Unexpected AS userid %s", asCmd.GetUserId())
 				}
 				if asCmd.GetGroupId() != "barid" {
-					return fmt.Errorf("Unexpected AS groupid %s", asCmd.GetUserId())
+					t.Errorf("Unexpected AS groupid %s", asCmd.GetUserId())
 				}
-				return nil
 			},
-		},
-		{
-			name: "AS with multiple args",
-			source: func() string {
-				return "AS foo:bar fuzz:buzz"
-			},
-			shouldFail: true,
 		},
 	}
 

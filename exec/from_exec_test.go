@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/vmware-tanzu/crash-diagnostics/k8s"
+	"github.com/vmware-tanzu/crash-diagnostics/parser"
 	"github.com/vmware-tanzu/crash-diagnostics/script"
 	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
@@ -40,7 +41,7 @@ func TestExecFROMFunc(t *testing.T) {
 		{
 			name: "FROM with host:port",
 			script: func() *script.Script {
-				script, _ := script.Parse(strings.NewReader("FROM 1.1.1.1:4444"))
+				script, _ := parser.Parse(strings.NewReader("FROM 1.1.1.1:4444"))
 				return script
 			},
 			exec: func(k8sc *k8s.Client, src *script.Script) error {
@@ -65,7 +66,7 @@ func TestExecFROMFunc(t *testing.T) {
 		{
 			name: "FROM with host default port",
 			script: func() *script.Script {
-				script, _ := script.Parse(strings.NewReader("FROM 1.1.1.1"))
+				script, _ := parser.Parse(strings.NewReader("FROM 1.1.1.1"))
 				return script
 			},
 			exec: func(k8sc *k8s.Client, src *script.Script) error {
@@ -90,7 +91,7 @@ func TestExecFROMFunc(t *testing.T) {
 		{
 			name: "FROM with host:port and global port",
 			script: func() *script.Script {
-				script, _ := script.Parse(strings.NewReader(`FROM hosts:"1.1.1.1 10.10.10.10:2222" port:2121`))
+				script, _ := parser.Parse(strings.NewReader(`FROM hosts:"1.1.1.1 10.10.10.10:2222" port:2121`))
 				return script
 			},
 			exec: func(k8sc *k8s.Client, src *script.Script) error {
@@ -120,7 +121,7 @@ func TestExecFROMFunc(t *testing.T) {
 					KUBECONFIG %s
 					FROM nodes:'all'
 				`, k8sconfig)
-				script, _ := script.Parse(strings.NewReader(src))
+				script, _ := parser.Parse(strings.NewReader(src))
 				return script
 			},
 			exec: func(k8sc *k8s.Client, src *script.Script) error {
@@ -153,7 +154,7 @@ func TestExecFROMFunc(t *testing.T) {
 					KUBECONFIG %s
 					FROM nodes:'%s'
 				`, k8sconfig, kindNodeName)
-				script, _ := script.Parse(strings.NewReader(src))
+				script, _ := parser.Parse(strings.NewReader(src))
 				return script
 			},
 			exec: func(k8sc *k8s.Client, src *script.Script) error {
@@ -181,7 +182,7 @@ func TestExecFROMFunc(t *testing.T) {
 					KUBECONFIG %s
 					FROM nodes:'bad-node-name'
 				`, k8sconfig)
-				script, _ := script.Parse(strings.NewReader(src))
+				script, _ := parser.Parse(strings.NewReader(src))
 				return script
 			},
 			exec: func(k8sc *k8s.Client, src *script.Script) error {
@@ -202,7 +203,7 @@ func TestExecFROMFunc(t *testing.T) {
 					KUBECONFIG %s
 					FROM nodes:'all' labels:'kubernetes.io/hostname=%s'
 				`, k8sconfig, kindNodeName)
-				script, _ := script.Parse(strings.NewReader(src))
+				script, _ := parser.Parse(strings.NewReader(src))
 				return script
 			},
 			exec: func(k8sc *k8s.Client, src *script.Script) error {
@@ -230,7 +231,7 @@ func TestExecFROMFunc(t *testing.T) {
 					KUBECONFIG %s
 					FROM nodes:'all' labels:'foo/bar=mycluster-control-plane'
 				`, k8sconfig)
-				script, _ := script.Parse(strings.NewReader(src))
+				script, _ := parser.Parse(strings.NewReader(src))
 				return script
 			},
 			exec: func(k8sc *k8s.Client, src *script.Script) error {

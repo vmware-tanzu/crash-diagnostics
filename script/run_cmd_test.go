@@ -4,7 +4,6 @@
 package script
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -13,331 +12,307 @@ import (
 func TestCommandRUN(t *testing.T) {
 	tests := []commandTest{
 		{
-			name: "RUN with unqoted default with quoted param",
-			source: func() string {
-				return `RUN /bin/echo "HELLO WORLD"`
-			},
-			script: func(s *Script) error {
-				if len(s.Actions) != 1 {
-					return fmt.Errorf("Script has unexpected action count, needs %d", len(s.Actions))
+			name: "RUN",
+			command: func(t *testing.T) Command {
+				cmd, err := NewRunCommand(0, `/bin/echo "HELLO WORLD"`)
+				if err != nil {
+					t.Fatal(err)
 				}
-				cmd, ok := s.Actions[0].(*RunCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				cmd, ok := c.(*RunCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected action type %T in script", s.Actions[0])
+					t.Errorf("Unexpected action type %T in script", c)
 				}
 
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
-					return fmt.Errorf("RUN action with unexpected command string %s", cmd.GetCmdString())
+					t.Errorf("RUN action with unexpected command string %s", cmd.GetCmdString())
 				}
 				cliCmd, cliArgs, err := cmd.GetParsedCmd()
 				if err != nil {
-					return fmt.Errorf("RUN command parse failed: %s", err)
+					t.Errorf("RUN command parse failed: %s", err)
 				}
 				if cliCmd != "/bin/echo" {
-					return fmt.Errorf("RUN unexpected command parsed: %s", cliCmd)
+					t.Errorf("RUN unexpected command parsed: %s", cliCmd)
 				}
 				if len(cliArgs) != 1 {
-					return fmt.Errorf("RUN unexpected command args parsed: %d", len(cliArgs))
+					t.Errorf("RUN unexpected command args parsed: %d", len(cliArgs))
 				}
 				if cliArgs[0] != "HELLO WORLD" {
-					return fmt.Errorf("RUN has unexpected cli args: %#v", cliArgs)
+					t.Errorf("RUN has unexpected cli args: %#v", cliArgs)
 				}
-				return nil
+
 			},
 		},
 		{
-			name: "RUN single-quoted default with quoted param",
-			source: func() string {
-				return `RUN '/bin/echo -n "HELLO WORLD"'`
-			},
-			script: func(s *Script) error {
-				if len(s.Actions) != 1 {
-					return fmt.Errorf("Script has unexpected actions, needs %d", len(s.Actions))
+			name: "RUN/single quoted",
+			command: func(t *testing.T) Command {
+				cmd, err := NewRunCommand(0, `'/bin/echo -n "HELLO WORLD"'`)
+				if err != nil {
+					t.Fatal(err)
 				}
-				cmd := s.Actions[0].(*RunCommand)
+				return cmd
+
+			},
+			test: func(t *testing.T, c Command) {
+				cmd := c.(*RunCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
-					return fmt.Errorf("RUN action with unexpected CLI string %s", cmd.GetCmdString())
+					t.Errorf("RUN action with unexpected CLI string %s", cmd.GetCmdString())
 				}
 				cliCmd, cliArgs, err := cmd.GetParsedCmd()
 				if err != nil {
-					return fmt.Errorf("RUN command parse failed: %s", err)
+					t.Errorf("RUN command parse failed: %s", err)
 				}
 				if cliCmd != "/bin/echo" {
-					return fmt.Errorf("RUN unexpected command parsed: %s", cliCmd)
+					t.Errorf("RUN unexpected command parsed: %s", cliCmd)
 				}
 				if len(cliArgs) != 2 {
-					return fmt.Errorf("RUN unexpected command args parsed: %d", len(cliArgs))
+					t.Errorf("RUN unexpected command args parsed: %d", len(cliArgs))
 				}
 				if cliArgs[0] != "-n" {
-					return fmt.Errorf("RUN has unexpected cli args: %#v", cliArgs)
+					t.Errorf("RUN has unexpected cli args: %#v", cliArgs)
 				}
 				if cliArgs[1] != "HELLO WORLD" {
-					return fmt.Errorf("RUN has unexpected cli args: %#v", cliArgs)
+					t.Errorf("RUN has unexpected cli args: %#v", cliArgs)
 				}
-				return nil
+
 			},
 		},
 		{
-			name: "RUN single-quoted named param with quoted arg",
-			source: func() string {
-				return `RUN cmd:'/bin/echo -n "HELLO WORLD"'`
-			},
-			script: func(s *Script) error {
-				if len(s.Actions) != 1 {
-					return fmt.Errorf("Script has unexpected actions, needs %d", len(s.Actions))
+			name: "RUN/param single quoted",
+			command: func(t *testing.T) Command {
+				cmd, err := NewRunCommand(0, `cmd:'/bin/echo -n "HELLO WORLD"'`)
+				if err != nil {
+					t.Fatal(err)
 				}
-				cmd := s.Actions[0].(*RunCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				cmd := c.(*RunCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
-					return fmt.Errorf("RUN action with unexpected CLI string %s", cmd.GetCmdString())
+					t.Errorf("RUN action with unexpected CLI string %s", cmd.GetCmdString())
 				}
 				cliCmd, cliArgs, err := cmd.GetParsedCmd()
 				if err != nil {
-					return fmt.Errorf("RUN command parse failed: %s", err)
+					t.Errorf("RUN command parse failed: %s", err)
 				}
 				if cliCmd != "/bin/echo" {
-					return fmt.Errorf("RUN unexpected command parsed: %s", cliCmd)
+					t.Errorf("RUN unexpected command parsed: %s", cliCmd)
 				}
 				if len(cliArgs) != 2 {
-					return fmt.Errorf("RUN unexpected command args parsed: %d", len(cliArgs))
+					t.Errorf("RUN unexpected command args parsed: %d", len(cliArgs))
 				}
 				if cliArgs[0] != "-n" {
-					return fmt.Errorf("RUN has unexpected cli args: %#v", cliArgs)
+					t.Errorf("RUN has unexpected cli args: %#v", cliArgs)
 				}
 				if cliArgs[1] != "HELLO WORLD" {
-					return fmt.Errorf("RUN has unexpected cli args: %#v", cliArgs)
+					t.Errorf("RUN has unexpected cli args: %#v", cliArgs)
 				}
-				return nil
+
 			},
 		},
 		{
-			name: "RUN double-quoted named param with quoted arg",
-			source: func() string {
-				return `RUN cmd:"/bin/echo -n 'HELLO WORLD'"`
-			},
-			script: func(s *Script) error {
-				if len(s.Actions) != 1 {
-					return fmt.Errorf("Script has unexpected actions, needs %d", len(s.Actions))
+			name: "RUN/cmd double-quoted",
+			command: func(t *testing.T) Command {
+				cmd, err := NewRunCommand(0, `cmd:"/bin/echo -n 'HELLO WORLD'"`)
+				if err != nil {
+					t.Fatal(err)
 				}
-				cmd := s.Actions[0].(*RunCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				cmd := c.(*RunCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
-					return fmt.Errorf("RUN action with unexpected CLI string %s", cmd.GetCmdString())
+					t.Errorf("RUN action with unexpected CLI string %s", cmd.GetCmdString())
 				}
 				cliCmd, cliArgs, err := cmd.GetParsedCmd()
 				if err != nil {
-					return fmt.Errorf("RUN command parse failed: %s", err)
+					t.Errorf("RUN command parse failed: %s", err)
 				}
 				if cliCmd != "/bin/echo" {
-					return fmt.Errorf("RUN unexpected command parsed: %s", cliCmd)
+					t.Errorf("RUN unexpected command parsed: %s", cliCmd)
 				}
 				if len(cliArgs) != 2 {
-					return fmt.Errorf("RUN unexpected command args parsed: %d", len(cliArgs))
+					t.Errorf("RUN unexpected command args parsed: %d", len(cliArgs))
 				}
 				if cliArgs[0] != "-n" {
-					return fmt.Errorf("RUN has unexpected cli args: %#v", cliArgs)
+					t.Errorf("RUN has unexpected cli args: %#v", cliArgs)
 				}
 				if cliArgs[1] != "HELLO WORLD" {
-					return fmt.Errorf("RUN has unexpected cli args: %#v", cliArgs)
+					t.Errorf("RUN has unexpected cli args: %#v", cliArgs)
 				}
-				return nil
+
 			},
 		},
 		{
-			name: "RUN multiple commands",
-			source: func() string {
-				return `
-				RUN /bin/echo "HELLO WORLD"
-				RUN cmd:"/bin/bash -c date"`
-			},
-			script: func(s *Script) error {
-				if len(s.Actions) != 2 {
-					return fmt.Errorf("Script has unexpected number of actions: %d", len(s.Actions))
-				}
-				cmd0 := s.Actions[0].(*RunCommand)
-				cmd2 := s.Actions[1].(*RunCommand)
-				if cmd0.Args()["cmd"] != cmd0.GetCmdString() {
-					return fmt.Errorf("RUN at 0 with unexpected command string %s", cmd0.GetCmdString())
-				}
-				if cmd2.Args()["cmd"] != cmd2.GetCmdString() {
-					return fmt.Errorf("RUN at 2 with unexpected command string %s", cmd2.GetCmdString())
-				}
-				cliCmd, cliArgs, err := cmd2.GetParsedCmd()
+			name: "RUN/cmd unquoted",
+			command: func(t *testing.T) Command {
+				cmd, err := NewRunCommand(0, "cmd:/bin/date")
 				if err != nil {
-					return fmt.Errorf("RUN command parse failed: %s", err)
+					t.Fatal(err)
 				}
-				if cliCmd != "/bin/bash" {
-					return fmt.Errorf("RUN unexpected command parsed: %s", cliCmd)
-				}
-				if len(cliArgs) != 2 {
-					return fmt.Errorf("RUN unexpected command args parsed: %d", len(cliArgs))
-				}
-				if cliArgs[0] != "-c" {
-					return fmt.Errorf("RUN has unexpected cli args: %#v", cliArgs)
-				}
-				if cliArgs[1] != "date" {
-					return fmt.Errorf("RUN has unexpected cli args: %#v", cliArgs)
-				}
-				return nil
+				return cmd
 			},
-		},
-		{
-			name: "RUN unquoted named params",
-			source: func() string {
-				return "RUN cmd:/bin/date"
-			},
-			script: func(s *Script) error {
-				cmd := s.Actions[0].(*RunCommand)
+			test: func(t *testing.T, c Command) {
+				cmd := c.(*RunCommand)
 				cliCmd, cliArgs, err := cmd.GetParsedCmd()
 				if err != nil {
-					return fmt.Errorf("RUN command parse failed: %s", err)
+					t.Errorf("RUN command parse failed: %s", err)
 				}
 				if cliCmd != "/bin/date" {
-					return fmt.Errorf("RUN parsed unexpected command name: %s", cliCmd)
+					t.Errorf("RUN parsed unexpected command name: %s", cliCmd)
 				}
 				if len(cliArgs) != 0 {
-					return fmt.Errorf("RUN parsed unexpected command args: %d", len(cliArgs))
+					t.Errorf("RUN parsed unexpected command args: %d", len(cliArgs))
 				}
 
-				return nil
 			},
 		},
 		{
-			name: "RUN with expanded vars",
-			source: func() string {
+			name: "RUN/expanded vars",
+			command: func(t *testing.T) Command {
 				os.Setenv("msg", "Hello World!")
-				return `RUN '/bin/echo "$msg"'`
+				cmd, err := NewRunCommand(0, `'/bin/echo "$msg"'`)
+				if err != nil {
+					t.Fatal(err)
+				}
+				return cmd
 			},
-			script: func(s *Script) error {
-				cmd := s.Actions[0].(*RunCommand)
+			test: func(t *testing.T, c Command) {
+				cmd := c.(*RunCommand)
 				cliCmd, cliArgs, err := cmd.GetParsedCmd()
 				if err != nil {
-					return fmt.Errorf("RUN command parse failed: %s", err)
+					t.Errorf("RUN command parse failed: %s", err)
 				}
 				if cliCmd != "/bin/echo" {
-					return fmt.Errorf("RUN parsed unexpected command name %s", cliCmd)
+					t.Errorf("RUN parsed unexpected command name %s", cliCmd)
 				}
 				if cliArgs[0] != "Hello World!" {
-					return fmt.Errorf("RUN parsed unexpected command args: %s", cliArgs)
+					t.Errorf("RUN parsed unexpected command args: %s", cliArgs)
 				}
 
-				return nil
 			},
 		},
 		{
-			name: "RUN unquoted default with quoted subproc",
-			source: func() string {
-				return `RUN /bin/bash -c 'echo "Hello World"'`
-			},
-			script: func(s *Script) error {
-				if len(s.Actions) != 1 {
-					return fmt.Errorf("Script has unexpected actions, needs %d", len(s.Actions))
+			name: "RUN/multi quotes",
+			command: func(t *testing.T) Command {
+				cmd, err := NewRunCommand(0, `/bin/bash -c 'echo "Hello World"'`)
+				if err != nil {
+					t.Fatal(err)
 				}
-				cmd := s.Actions[0].(*RunCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				cmd := c.(*RunCommand)
 				effCmd, err := cmd.GetEffectiveCmdStr()
 				if err != nil {
-					return fmt.Errorf("RUN effective command str failed: %s", err)
+					t.Errorf("RUN effective command str failed: %s", err)
 				}
 				if effCmd != `/bin/bash -c 'echo "Hello World"'` {
-					return fmt.Errorf("RUN unexpected effective command str: %s", effCmd)
+					t.Errorf("RUN unexpected effective command str: %s", effCmd)
 				}
 
 				effArgs, err := cmd.GetEffectiveCmd()
 				if err != nil {
-					return fmt.Errorf("RUN effective command args failed: %s", err)
+					t.Errorf("RUN effective command args failed: %s", err)
 				}
 				if len(effArgs) != 3 {
-					return fmt.Errorf("RUN unexpected effective command args: %#v", effArgs)
+					t.Errorf("RUN unexpected effective command args: %#v", effArgs)
 				}
 
 				cliCmd, cliArgs, err := cmd.GetParsedCmd()
 				if err != nil {
-					return fmt.Errorf("RUN command parse failed: %s", err)
+					t.Errorf("RUN command parse failed: %s", err)
 				}
 				if len(cliArgs) != 2 {
-					return fmt.Errorf("RUN unexpected command args parsed: %#v", cliArgs)
+					t.Errorf("RUN unexpected command args parsed: %#v", cliArgs)
 				}
 				if cliCmd != "/bin/bash" {
-					return fmt.Errorf("RUN unexpected command parsed: %#v", cliCmd)
+					t.Errorf("RUN unexpected command parsed: %#v", cliCmd)
 				}
 				if strings.TrimSpace(cliArgs[0]) != "-c" {
-					return fmt.Errorf("RUN has unexpected shell argument: expecting -c, got %#v", cliArgs)
+					t.Errorf("RUN has unexpected shell argument: expecting -c, got %#v", cliArgs)
 				}
 				if cliArgs[1] != `echo "Hello World"` {
-					return fmt.Errorf("RUN has unexpected subproc argument: %#v", cliArgs)
+					t.Errorf("RUN has unexpected subproc argument: %#v", cliArgs)
 				}
-				return nil
+
 			},
 		},
 		{
-			name: "RUN quoted with shell and quoted subproc",
-			source: func() string {
-				return `RUN shell:"/bin/bash -c" cmd:"echo 'HELLO WORLD'"`
-			},
-			script: func(s *Script) error {
-				if len(s.Actions) != 1 {
-					return fmt.Errorf("Script has unexpected actions, needs %d", len(s.Actions))
+			name: "RUN/shell cmd quoted",
+			command: func(t *testing.T) Command {
+				cmd, err := NewRunCommand(0, `shell:"/bin/bash -c" cmd:"echo 'HELLO WORLD'"`)
+				if err != nil {
+					t.Fatal(err)
 				}
-				cmd := s.Actions[0].(*RunCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				cmd := c.(*RunCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
-					return fmt.Errorf("RUN action with unexpected command string %s", cmd.GetCmdString())
+					t.Errorf("RUN action with unexpected command string %s", cmd.GetCmdString())
 				}
 				if cmd.Args()["shell"] != cmd.GetCmdShell() {
-					return fmt.Errorf("RUN action with unexpected shell %s", cmd.GetCmdShell())
+					t.Errorf("RUN action with unexpected shell %s", cmd.GetCmdShell())
 				}
 				effCmdStr, err := cmd.GetEffectiveCmdStr()
 				if err != nil {
-					return fmt.Errorf("RUN effective command str failed: %s", err)
+					t.Errorf("RUN effective command str failed: %s", err)
 				}
 				if effCmdStr != `/bin/bash -c "echo 'HELLO WORLD'"` {
-					return fmt.Errorf("RUN unexpected effective command string: %s", effCmdStr)
+					t.Errorf("RUN unexpected effective command string: %s", effCmdStr)
 				}
 
 				effArgs, err := cmd.GetEffectiveCmd()
 				if err != nil {
-					return fmt.Errorf("RUN effective command args failed: %s", err)
+					t.Errorf("RUN effective command args failed: %s", err)
 				}
 				if len(effArgs) != 3 {
-					return fmt.Errorf("RUN unexpected effective command args: %#v", effArgs)
+					t.Errorf("RUN unexpected effective command args: %#v", effArgs)
 				}
 
 				cliCmd, cliArgs, err := cmd.GetParsedCmd()
 				if err != nil {
-					return fmt.Errorf("RUN command parse failed: %s", err)
+					t.Errorf("RUN command parse failed: %s", err)
 				}
 				if len(cliArgs) != 2 {
-					return fmt.Errorf("RUN unexpected command args parsed: %#v", cliArgs)
+					t.Errorf("RUN unexpected command args parsed: %#v", cliArgs)
 				}
 				if cliCmd != "/bin/bash" {
-					return fmt.Errorf("RUN unexpected command parsed: %#v", cliCmd)
+					t.Errorf("RUN unexpected command parsed: %#v", cliCmd)
 				}
 				if cliArgs[0] != "-c" {
-					return fmt.Errorf("RUN has unexpected shell argument: expecting -c, got %s", cliArgs[0])
+					t.Errorf("RUN has unexpected shell argument: expecting -c, got %s", cliArgs[0])
 				}
 				if cliArgs[1] != "echo 'HELLO WORLD'" {
-					return fmt.Errorf("RUN has unexpected shell argument: %s", cliArgs[0])
+					t.Errorf("RUN has unexpected shell argument: %s", cliArgs[0])
 				}
-				return nil
+
 			},
 		},
 		{
-			name: "RUN with echo param",
-			source: func() string {
-				return `RUN shell:"/bin/bash -c" cmd:"echo 'HELLO WORLD'" echo:"true"`
-			},
-			script: func(s *Script) error {
-				if len(s.Actions) != 1 {
-					return fmt.Errorf("Script has unexpected actions, needs %d", len(s.Actions))
+			name: "RUN/echo",
+			command: func(t *testing.T) Command {
+				cmd, err := NewRunCommand(0, `shell:"/bin/bash -c" cmd:"echo 'HELLO WORLD'" echo:"true"`)
+				if err != nil {
+					t.Fatal(err)
 				}
-				cmd := s.Actions[0].(*RunCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				cmd := c.(*RunCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
-					return fmt.Errorf("RUN action with unexpected command string %s", cmd.GetCmdString())
+					t.Errorf("RUN action with unexpected command string %s", cmd.GetCmdString())
 				}
 				if cmd.Args()["shell"] != cmd.GetCmdShell() {
-					return fmt.Errorf("RUN action with unexpected shell %s", cmd.GetCmdShell())
+					t.Errorf("RUN action with unexpected shell %s", cmd.GetCmdShell())
 				}
 				if cmd.Args()["echo"] != cmd.GetEcho() {
-					return fmt.Errorf("RUN action with unexpected echo param %s", cmd.GetCmdShell())
+					t.Errorf("RUN action with unexpected echo param %s", cmd.GetCmdShell())
 				}
-				return nil
+
 			},
 		},
 	}

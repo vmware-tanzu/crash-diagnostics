@@ -4,7 +4,6 @@
 package script
 
 import (
-	"fmt"
 	"os"
 	"testing"
 )
@@ -12,151 +11,125 @@ import (
 func TestCommandKUBECONFIG(t *testing.T) {
 	tests := []commandTest{
 		{
-			name: "KUBECONFIG with single path",
-			source: func() string {
-				return "KUBECONFIG /a/b/c"
-			},
-			script: func(s *Script) error {
-				cfgs := s.Preambles[CmdKubeConfig]
-				if len(cfgs) != 1 {
-					return fmt.Errorf("Script has unexpected number of KUBECONFIG %d", len(cfgs))
+			name: "KUBECONFIG",
+			command: func(t *testing.T) Command {
+				cmd, err := NewKubeConfigCommand(0, "/a/b/c")
+				if err != nil {
+					t.Fatal(err)
 				}
-				cfg, ok := cfgs[0].(*KubeConfigCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				cfg, ok := c.(*KubeConfigCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", cfgs[0])
+					t.Errorf("Unexpected type %T in script", c)
 				}
 				if cfg.Path() != "/a/b/c" {
-					return fmt.Errorf("KUBECONFIG has unexpected config %s", cfg.Path())
+					t.Errorf("KUBECONFIG has unexpected config %s", cfg.Path())
 				}
-				return nil
+
 			},
 		},
 		{
-			name: "Script with multiple KUBECONFIG",
-			source: func() string {
-				return "KUBECONFIG /a/b/c\nKUBECONFIG '/e/f/g'"
-			},
-			script: func(s *Script) error {
-				cfgs := s.Preambles[CmdKubeConfig]
-				if len(cfgs) != 1 {
-					return fmt.Errorf("Script has unexpected number of KUBECONFIG %d", len(cfgs))
+			name: "KUBECONFIG/namped param",
+			command: func(t *testing.T) Command {
+				cmd, err := NewKubeConfigCommand(0, "path:/a/b/c")
+				if err != nil {
+					t.Fatal(err)
 				}
-				cfg, ok := cfgs[0].(*KubeConfigCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				cfg, ok := c.(*KubeConfigCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", cfgs[0])
-				}
-				if cfg.Path() != "/e/f/g" {
-					return fmt.Errorf("KUBECONFIG has unexpected config %s", cfg.Path())
-				}
-				return nil
-			},
-		},
-		{
-			name: "KUBECONFIG with single namped param",
-			source: func() string {
-				return "KUBECONFIG path:/a/b/c"
-			},
-			script: func(s *Script) error {
-				cfgs := s.Preambles[CmdKubeConfig]
-				if len(cfgs) != 1 {
-					return fmt.Errorf("Script has unexpected number of KUBECONFIG %d", len(cfgs))
-				}
-				cfg, ok := cfgs[0].(*KubeConfigCommand)
-				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", cfgs[0])
+					t.Errorf("Unexpected type %T in script", c)
 				}
 				if cfg.Path() != "/a/b/c" {
-					return fmt.Errorf("KUBECONFIG has unexpected config %s", cfg.Path())
+					t.Errorf("KUBECONFIG has unexpected config %s", cfg.Path())
 				}
-				return nil
+
 			},
 		},
 		{
-			name: "KUBECONFIG quoted named param",
-			source: func() string {
-				return `KUBECONFIG path:"/a/b/c"`
-			},
-			script: func(s *Script) error {
-				cfgs := s.Preambles[CmdKubeConfig]
-				if len(cfgs) != 1 {
-					return fmt.Errorf("Script has unexpected number of KUBECONFIG %d", len(cfgs))
+			name: "KUBECONFIG/quoted named param",
+			command: func(t *testing.T) Command {
+				cmd, err := NewKubeConfigCommand(0, `path:"/a/b/c"`)
+				if err != nil {
+					t.Fatal(err)
 				}
-				cfg, ok := cfgs[0].(*KubeConfigCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				cfg, ok := c.(*KubeConfigCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", cfgs[0])
+					t.Errorf("Unexpected type %T in script", c)
 				}
 				if cfg.Path() != "/a/b/c" {
-					return fmt.Errorf("KUBECONFIG has unexpected config %s", cfg.Path())
+					t.Errorf("KUBECONFIG has unexpected config %s", cfg.Path())
 				}
-				return nil
+
 			},
 		},
 		{
-			name: "KUBECONFIG with expanded vars",
-			source: func() string {
+			name: "KUBECONFIG/var expansion",
+			command: func(t *testing.T) Command {
+				cmd, err := NewKubeConfigCommand(0, `path:$foopath`)
+				if err != nil {
+					t.Fatal(err)
+				}
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
 				os.Setenv("foopath", "/a/b/c")
-				return `KUBECONFIG path:$foopath`
-			},
-			script: func(s *Script) error {
-				cfgs := s.Preambles[CmdKubeConfig]
-				if len(cfgs) != 1 {
-					return fmt.Errorf("Script has unexpected number of KUBECONFIG %d", len(cfgs))
-				}
-				cfg, ok := cfgs[0].(*KubeConfigCommand)
+
+				cfg, ok := c.(*KubeConfigCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", cfgs[0])
+					t.Errorf("Unexpected type %T in script", c)
 				}
 				if cfg.Path() != "/a/b/c" {
-					return fmt.Errorf("KUBECONFIG has unexpected config %s", cfg.Path())
+					t.Errorf("KUBECONFIG has unexpected config %s", cfg.Path())
 				}
-				return nil
+
 			},
 		},
 		{
-			name: "KUBECONFIG with multiple paths",
-			source: func() string {
-				return "KUBECONFIG /a/b/c /d/e/f"
-			},
-			shouldFail: true,
-		},
-		{
-			name: "KUBECONFIG default with embedded colon",
-			source: func() string {
-				return "KUBECONFIG /a/:b/c"
-			},
-			script: func(s *Script) error {
-				cfgs := s.Preambles[CmdKubeConfig]
-				if len(cfgs) != 1 {
-					return fmt.Errorf("Script has unexpected number of KUBECONFIG %d", len(cfgs))
+			name: "KUBECONFIG/embedded colon",
+			command: func(t *testing.T) Command {
+				cmd, err := NewKubeConfigCommand(0, "/a/:b/c")
+				if err != nil {
+					t.Fatal(err)
 				}
-				cfg, ok := cfgs[0].(*KubeConfigCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				cfg, ok := c.(*KubeConfigCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", cfgs[0])
+					t.Errorf("Unexpected type %T in script", c)
 				}
 				if cfg.Path() != "/a/:b/c" {
-					return fmt.Errorf("KUBECONFIG has unexpected config %s", cfg.Path())
+					t.Errorf("KUBECONFIG has unexpected config %s", cfg.Path())
 				}
-				return nil
+
 			},
 		},
 		{
-			name: "KUBECONFIG quoted named param with embedded colon",
-			source: func() string {
-				return `KUBECONFIG path:"/a/:b/c"`
-			},
-			script: func(s *Script) error {
-				cfgs := s.Preambles[CmdKubeConfig]
-				if len(cfgs) != 1 {
-					return fmt.Errorf("Script has unexpected number of KUBECONFIG %d", len(cfgs))
+			name: "KUBECONFIG/embedded colon param",
+			command: func(t *testing.T) Command {
+				cmd, err := NewKubeConfigCommand(0, `path:"/a/:b/c"`)
+				if err != nil {
+					t.Fatal(err)
 				}
-				cfg, ok := cfgs[0].(*KubeConfigCommand)
+				return cmd
+			},
+			test: func(t *testing.T, c Command) {
+				cfg, ok := c.(*KubeConfigCommand)
 				if !ok {
-					return fmt.Errorf("Unexpected type %T in script", cfgs[0])
+					t.Errorf("Unexpected type %T in script", c)
 				}
 				if cfg.Path() != "/a/:b/c" {
-					return fmt.Errorf("KUBECONFIG has unexpected config %s", cfg.Path())
+					t.Errorf("KUBECONFIG has unexpected config %s", cfg.Path())
 				}
-				return nil
+
 			},
 		},
 	}

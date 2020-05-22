@@ -2,3 +2,5 @@
 .vendor
 .build
 dist
+.idea
+.DS_Store
