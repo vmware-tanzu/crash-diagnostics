@@ -13,14 +13,14 @@ func TestCommandFROM(t *testing.T) {
 	tests := []commandTest{
 		{
 			name: "FROM",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewFromCommand(0, "local foo.bar:1234")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				fromCmd, ok := c.(*FromCommand)
 				if !ok {
 					t.Errorf("Unexpected type %T in script", c)
@@ -49,14 +49,14 @@ func TestCommandFROM(t *testing.T) {
 		},
 		{
 			name: "FROM/quoted",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewFromCommand(0, "'local foo.bar:1234'")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				fromCmd := c.(*FromCommand)
 				if len(fromCmd.Hosts()) != 2 {
 					t.Errorf("FROM has unexpected number of hosts %d", len(fromCmd.Nodes()))
@@ -72,14 +72,14 @@ func TestCommandFROM(t *testing.T) {
 		},
 		{
 			name: "FROM/all params",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewFromCommand(0, "nodes:'node.1 node.2 10.10.10.12' port:2222 retries:100 timeout:'5m'")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				fromCmd := c.(*FromCommand)
 				if len(fromCmd.Hosts()) != 0 {
 					t.Errorf("FROM has unexpected number of hosts %d", len(fromCmd.Hosts()))
@@ -102,14 +102,14 @@ func TestCommandFROM(t *testing.T) {
 
 		{
 			name: "FROM/var expansion",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewFromCommand(0, "hosts:${foohost} port:$port")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				os.Setenv("foohost", "foo.bar")
 				os.Setenv("port", "1234")
 

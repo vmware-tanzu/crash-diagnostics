@@ -21,7 +21,7 @@ import (
 )
 
 // cmdExec executes script on remote machines
-func cmdExec(fromCmd *script.FromCommand, asCmd *script.AsCommand, authCmd *script.AuthConfigCommand, action script.Command, machine *script.Machine, workdir string) error {
+func cmdExec(fromCmd *script.FromCommand, asCmd *script.AsCommand, authCmd *script.AuthConfigCommand, action script.Directive, machine *script.Machine, workdir string) error {
 
 	user := asCmd.GetUserId()
 	if authCmd.GetUsername() != "" {

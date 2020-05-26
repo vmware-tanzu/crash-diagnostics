@@ -27,7 +27,7 @@ func Parse(reader io.Reader) (*script.Script, error) {
 	lineScanner := bufio.NewScanner(reader)
 	lineScanner.Split(bufio.ScanLines)
 	var scr script.Script
-	scr.Preambles = make(map[string][]script.Command)
+	scr.Preambles = make(map[string][]script.Directive)
 	line := 1
 	for lineScanner.Scan() {
 		text := strings.TrimSpace(lineScanner.Text())
@@ -55,7 +55,7 @@ func Parse(reader io.Reader) (*script.Script, error) {
 			if err != nil {
 				return nil, err
 			}
-			scr.Preambles[script.CmdAs] = []script.Command{cmd} // save only last AS instruction
+			scr.Preambles[script.CmdAs] = []script.Directive{cmd} // save only last AS instruction
 		case script.CmdEnv:
 			cmd, err := script.NewEnvCommand(line, rawArgs)
 			if err != nil {
@@ -67,31 +67,31 @@ func Parse(reader io.Reader) (*script.Script, error) {
 			if err != nil {
 				return nil, err
 			}
-			scr.Preambles[script.CmdFrom] = []script.Command{cmd} // saves only last FROM
+			scr.Preambles[script.CmdFrom] = []script.Directive{cmd} // saves only last FROM
 		case script.CmdKubeConfig:
 			cmd, err := script.NewKubeConfigCommand(line, rawArgs)
 			if err != nil {
 				return nil, err
 			}
-			scr.Preambles[script.CmdKubeConfig] = []script.Command{cmd}
+			scr.Preambles[script.CmdKubeConfig] = []script.Directive{cmd}
 		case script.CmdAuthConfig:
 			cmd, err := script.NewAuthConfigCommand(line, rawArgs)
 			if err != nil {
 				return nil, err
 			}
-			scr.Preambles[script.CmdAuthConfig] = []script.Command{cmd}
+			scr.Preambles[script.CmdAuthConfig] = []script.Directive{cmd}
 		case script.CmdOutput:
 			cmd, err := script.NewOutputCommand(line, rawArgs)
 			if err != nil {
 				return nil, err
 			}
-			scr.Preambles[script.CmdOutput] = []script.Command{cmd}
+			scr.Preambles[script.CmdOutput] = []script.Directive{cmd}
 		case script.CmdWorkDir:
 			cmd, err := script.NewWorkdirCommand(line, rawArgs)
 			if err != nil {
 				return nil, err
 			}
-			scr.Preambles[script.CmdWorkDir] = []script.Command{cmd}
+			scr.Preambles[script.CmdWorkDir] = []script.Directive{cmd}
 		case script.CmdCapture:
 			cmd, err := script.NewCaptureCommand(line, rawArgs)
 			if err != nil {
@@ -135,7 +135,7 @@ func enforceDefaults(scr *script.Script) (*script.Script, error) {
 			return scr, err
 		}
 		logrus.Debugf("AS %s:%s (as default)", cmd.GetUserId(), cmd.GetGroupId())
-		scr.Preambles[script.CmdAs] = []script.Command{cmd}
+		scr.Preambles[script.CmdAs] = []script.Directive{cmd}
 	}
 
 	if _, ok := scr.Preambles[script.CmdFrom]; !ok {
@@ -144,7 +144,7 @@ func enforceDefaults(scr *script.Script) (*script.Script, error) {
 			return nil, err
 		}
 		logrus.Debugf("FROM %v (as default)", cmd.Nodes())
-		scr.Preambles[script.CmdFrom] = []script.Command{cmd}
+		scr.Preambles[script.CmdFrom] = []script.Directive{cmd}
 	}
 	if _, ok := scr.Preambles[script.CmdAuthConfig]; !ok {
 		cmd, err := script.NewAuthConfigCommand(0, fmt.Sprintf("username:${USER} private-key:${HOME}/.ssh/id_rsa"))
@@ -152,7 +152,7 @@ func enforceDefaults(scr *script.Script) (*script.Script, error) {
 			return nil, err
 		}
 		logrus.Debug("AUTHCONFIG set with default")
-		scr.Preambles[script.CmdAuthConfig] = []script.Command{cmd}
+		scr.Preambles[script.CmdAuthConfig] = []script.Directive{cmd}
 	}
 	if _, ok := scr.Preambles[script.CmdWorkDir]; !ok {
 		cmd, err := script.NewWorkdirCommand(0, fmt.Sprintf("path:%s", script.Defaults.WorkdirValue))
@@ -160,7 +160,7 @@ func enforceDefaults(scr *script.Script) (*script.Script, error) {
 			return nil, err
 		}
 		logrus.Debugf("WORKDIR %s (as default)", cmd.Path())
-		scr.Preambles[script.CmdWorkDir] = []script.Command{cmd}
+		scr.Preambles[script.CmdWorkDir] = []script.Directive{cmd}
 	}
 
 	if _, ok := scr.Preambles[script.CmdOutput]; !ok {
@@ -169,7 +169,7 @@ func enforceDefaults(scr *script.Script) (*script.Script, error) {
 			return nil, err
 		}
 		logrus.Debugf("OUTPUT %s (as default)", cmd.Path())
-		scr.Preambles[script.CmdOutput] = []script.Command{cmd}
+		scr.Preambles[script.CmdOutput] = []script.Directive{cmd}
 	}
 
 	if _, ok := scr.Preambles[script.CmdKubeConfig]; !ok {
@@ -178,7 +178,7 @@ func enforceDefaults(scr *script.Script) (*script.Script, error) {
 			return nil, err
 		}
 		logrus.Debugf("KUBECONFIG %s (as default)", cmd.Path())
-		scr.Preambles[script.CmdKubeConfig] = []script.Command{cmd}
+		scr.Preambles[script.CmdKubeConfig] = []script.Directive{cmd}
 	}
 	return scr, nil
 }

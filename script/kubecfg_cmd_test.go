@@ -12,14 +12,14 @@ func TestCommandKUBECONFIG(t *testing.T) {
 	tests := []commandTest{
 		{
 			name: "KUBECONFIG",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewKubeConfigCommand(0, "/a/b/c")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cfg, ok := c.(*KubeConfigCommand)
 				if !ok {
 					t.Errorf("Unexpected type %T in script", c)
@@ -32,14 +32,14 @@ func TestCommandKUBECONFIG(t *testing.T) {
 		},
 		{
 			name: "KUBECONFIG/namped param",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewKubeConfigCommand(0, "path:/a/b/c")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cfg, ok := c.(*KubeConfigCommand)
 				if !ok {
 					t.Errorf("Unexpected type %T in script", c)
@@ -52,14 +52,14 @@ func TestCommandKUBECONFIG(t *testing.T) {
 		},
 		{
 			name: "KUBECONFIG/quoted named param",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewKubeConfigCommand(0, `path:"/a/b/c"`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cfg, ok := c.(*KubeConfigCommand)
 				if !ok {
 					t.Errorf("Unexpected type %T in script", c)
@@ -72,14 +72,14 @@ func TestCommandKUBECONFIG(t *testing.T) {
 		},
 		{
 			name: "KUBECONFIG/var expansion",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewKubeConfigCommand(0, `path:$foopath`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				os.Setenv("foopath", "/a/b/c")
 
 				cfg, ok := c.(*KubeConfigCommand)
@@ -94,14 +94,14 @@ func TestCommandKUBECONFIG(t *testing.T) {
 		},
 		{
 			name: "KUBECONFIG/embedded colon",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewKubeConfigCommand(0, "/a/:b/c")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cfg, ok := c.(*KubeConfigCommand)
 				if !ok {
 					t.Errorf("Unexpected type %T in script", c)
@@ -114,14 +114,14 @@ func TestCommandKUBECONFIG(t *testing.T) {
 		},
 		{
 			name: "KUBECONFIG/embedded colon param",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewKubeConfigCommand(0, `path:"/a/:b/c"`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cfg, ok := c.(*KubeConfigCommand)
 				if !ok {
 					t.Errorf("Unexpected type %T in script", c)

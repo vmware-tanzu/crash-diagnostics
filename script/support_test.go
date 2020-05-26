@@ -17,8 +17,8 @@ func TestMain(m *testing.M) {
 
 type commandTest struct {
 	name    string
-	command func(*testing.T) Command
-	test    func(*testing.T, Command)
+	command func(*testing.T) Directive
+	test    func(*testing.T, Directive)
 }
 
 func runCommandTest(t *testing.T, test commandTest) {

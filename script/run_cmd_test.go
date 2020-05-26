@@ -13,14 +13,14 @@ func TestCommandRUN(t *testing.T) {
 	tests := []commandTest{
 		{
 			name: "RUN",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewRunCommand(0, `/bin/echo "HELLO WORLD"`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd, ok := c.(*RunCommand)
 				if !ok {
 					t.Errorf("Unexpected action type %T in script", c)
@@ -47,7 +47,7 @@ func TestCommandRUN(t *testing.T) {
 		},
 		{
 			name: "RUN/single quoted",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewRunCommand(0, `'/bin/echo -n "HELLO WORLD"'`)
 				if err != nil {
 					t.Fatal(err)
@@ -55,7 +55,7 @@ func TestCommandRUN(t *testing.T) {
 				return cmd
 
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*RunCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
 					t.Errorf("RUN action with unexpected CLI string %s", cmd.GetCmdString())
@@ -81,14 +81,14 @@ func TestCommandRUN(t *testing.T) {
 		},
 		{
 			name: "RUN/param single quoted",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewRunCommand(0, `cmd:'/bin/echo -n "HELLO WORLD"'`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*RunCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
 					t.Errorf("RUN action with unexpected CLI string %s", cmd.GetCmdString())
@@ -114,14 +114,14 @@ func TestCommandRUN(t *testing.T) {
 		},
 		{
 			name: "RUN/cmd double-quoted",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewRunCommand(0, `cmd:"/bin/echo -n 'HELLO WORLD'"`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*RunCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
 					t.Errorf("RUN action with unexpected CLI string %s", cmd.GetCmdString())
@@ -147,14 +147,14 @@ func TestCommandRUN(t *testing.T) {
 		},
 		{
 			name: "RUN/cmd unquoted",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewRunCommand(0, "cmd:/bin/date")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*RunCommand)
 				cliCmd, cliArgs, err := cmd.GetParsedCmd()
 				if err != nil {
@@ -171,7 +171,7 @@ func TestCommandRUN(t *testing.T) {
 		},
 		{
 			name: "RUN/expanded vars",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				os.Setenv("msg", "Hello World!")
 				cmd, err := NewRunCommand(0, `'/bin/echo "$msg"'`)
 				if err != nil {
@@ -179,7 +179,7 @@ func TestCommandRUN(t *testing.T) {
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*RunCommand)
 				cliCmd, cliArgs, err := cmd.GetParsedCmd()
 				if err != nil {
@@ -196,14 +196,14 @@ func TestCommandRUN(t *testing.T) {
 		},
 		{
 			name: "RUN/multi quotes",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewRunCommand(0, `/bin/bash -c 'echo "Hello World"'`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*RunCommand)
 				effCmd, err := cmd.GetEffectiveCmdStr()
 				if err != nil {
@@ -242,14 +242,14 @@ func TestCommandRUN(t *testing.T) {
 		},
 		{
 			name: "RUN/shell cmd quoted",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewRunCommand(0, `shell:"/bin/bash -c" cmd:"echo 'HELLO WORLD'"`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*RunCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
 					t.Errorf("RUN action with unexpected command string %s", cmd.GetCmdString())
@@ -294,14 +294,14 @@ func TestCommandRUN(t *testing.T) {
 		},
 		{
 			name: "RUN/echo",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewRunCommand(0, `shell:"/bin/bash -c" cmd:"echo 'HELLO WORLD'" echo:"true"`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*RunCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
 					t.Errorf("RUN action with unexpected command string %s", cmd.GetCmdString())

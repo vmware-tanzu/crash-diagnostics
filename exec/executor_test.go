@@ -236,7 +236,7 @@ func TestExecutor(t *testing.T) {
 
 				// create fake files and dirs to copy
 				var srcPaths []string
-				for _, cmd := range []script.Command{s.Actions[1], s.Actions[3]} {
+				for _, cmd := range []script.Directive{s.Actions[1], s.Actions[3]} {
 					cpCmd := cmd.(*script.CopyCommand)
 					for i, path := range cpCmd.Paths() {
 						srcPaths = append(srcPaths, path)
@@ -263,7 +263,7 @@ func TestExecutor(t *testing.T) {
 				}
 
 				// validate cap cmds
-				for _, cmd := range []script.Command{s.Actions[0], s.Actions[2]} {
+				for _, cmd := range []script.Directive{s.Actions[0], s.Actions[2]} {
 					capCmd := cmd.(*script.CaptureCommand)
 					fileName := filepath.Join(workdir.Path(), sanitizeStr(machine), fmt.Sprintf("%s.txt", sanitizeStr(capCmd.GetCmdString())))
 					if _, err := os.Stat(fileName); err != nil {

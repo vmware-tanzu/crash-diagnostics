@@ -12,7 +12,7 @@ import (
 )
 
 // exeWorkdir extract the viable WorkDir command from script, creates
-// the working directory if needed, then return the Workdir Command.
+// the working directory if needed, then return the Workdir Directive.
 func exeWorkdir(src *script.Script) (*script.WorkdirCommand, error) {
 	dirs, ok := src.Preambles[script.CmdWorkDir]
 	if !ok {

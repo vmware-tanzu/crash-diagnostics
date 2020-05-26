@@ -12,14 +12,14 @@ func TestCommandOUTPUT(t *testing.T) {
 	tests := []commandTest{
 		{
 			name: "OUTPUT",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewOutputCommand(0, "foo/bar.tar.gz")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				outCmd, ok := c.(*OutputCommand)
 				if !ok {
 					t.Errorf("Unexpected type %T in script", c)
@@ -32,14 +32,14 @@ func TestCommandOUTPUT(t *testing.T) {
 		},
 		{
 			name: "OUTPUT/quoted param",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewOutputCommand(0, "'foo/bar.tar.gz'")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				outCmd, ok := c.(*OutputCommand)
 				if !ok {
 					t.Errorf("Unexpected type %T in script", c)
@@ -52,14 +52,14 @@ func TestCommandOUTPUT(t *testing.T) {
 		},
 		{
 			name: "OUTPUT/param",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewOutputCommand(0, "path:foo/bar.tar.gz")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				outCmd, ok := c.(*OutputCommand)
 				if !ok {
 					t.Errorf("Unexpected type %T in script", c)
@@ -72,7 +72,7 @@ func TestCommandOUTPUT(t *testing.T) {
 		},
 		{
 			name: "OUTPUT/expanded var",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				os.Setenv("foopath", "foo/bar.tar.gz")
 				cmd, err := NewOutputCommand(0, "$foopath")
 				if err != nil {
@@ -80,7 +80,7 @@ func TestCommandOUTPUT(t *testing.T) {
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				outCmd, ok := c.(*OutputCommand)
 				if !ok {
 					t.Errorf("Unexpected type %T in script", c)
@@ -93,7 +93,7 @@ func TestCommandOUTPUT(t *testing.T) {
 		},
 		{
 			name: "OUTPUT/multiple args",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewOutputCommand(0, "path:foo/bar path:bazz/buzz")
 				if err == nil {
 					t.Fatal("Expecting error, but got nil")
@@ -103,7 +103,7 @@ func TestCommandOUTPUT(t *testing.T) {
 		},
 		{
 			name: "OUTPUT/no args",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewOutputCommand(0, "OUTPUT")
 				if err == nil {
 					t.Fatal("Expecting error, but got nil")
@@ -113,14 +113,14 @@ func TestCommandOUTPUT(t *testing.T) {
 		},
 		{
 			name: "OUTPUT/embedded colon",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewOutputCommand(0, "path:foo/bar.tar.gz:ignore")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				outCmd, ok := c.(*OutputCommand)
 				if !ok {
 					t.Errorf("Unexpected type %T in script", c)

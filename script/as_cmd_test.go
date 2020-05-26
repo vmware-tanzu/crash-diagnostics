@@ -13,7 +13,7 @@ func TestCommandAS(t *testing.T) {
 	tests := []commandTest{
 		{
 			name: "AS/unquoted",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewAsCommand(0, "userid:foo groupid:bar")
 				if err != nil {
 					t.Fatal(err)
@@ -21,7 +21,7 @@ func TestCommandAS(t *testing.T) {
 				return cmd
 			},
 
-			test: func(t *testing.T, cmd Command) {
+			test: func(t *testing.T, cmd Directive) {
 				asCmd, ok := cmd.(*AsCommand)
 				if !ok {
 					t.Fatalf("Unexpected type %T in script", cmd)
@@ -36,14 +36,14 @@ func TestCommandAS(t *testing.T) {
 		},
 		{
 			name: "AS/quoted",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewAsCommand(0, `userid:"foo" groupid:bar`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, cmd Command) {
+			test: func(t *testing.T, cmd Directive) {
 				asCmd, ok := cmd.(*AsCommand)
 				if !ok {
 					t.Fatalf("Unexpected type %T in script", cmd)
@@ -58,14 +58,14 @@ func TestCommandAS(t *testing.T) {
 		},
 		{
 			name: "AS/userid only",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewAsCommand(0, "userid:foo")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, cmd Command) {
+			test: func(t *testing.T, cmd Directive) {
 				asCmd, ok := cmd.(*AsCommand)
 				if !ok {
 					t.Fatalf("Unexpected type %T in script", cmd)
@@ -81,14 +81,14 @@ func TestCommandAS(t *testing.T) {
 
 		{
 			name: "AS/var expansion",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewAsCommand(0, "userid:$USER groupid:$foogid")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, cmd Command) {
+			test: func(t *testing.T, cmd Directive) {
 				os.Setenv("foogid", "barid")
 				asCmd := cmd.(*AsCommand)
 				if asCmd.GetUserId() != ExpandEnv("$USER") {

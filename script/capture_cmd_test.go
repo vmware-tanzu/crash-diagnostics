@@ -12,14 +12,14 @@ func TestCommandCAPTURE(t *testing.T) {
 	tests := []commandTest{
 		{
 			name: "CAPTURE/single unquoted param",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCaptureCommand(0, `/bin/echo "HELLO WORLD"`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd, ok := c.(*CaptureCommand)
 				if !ok {
 					t.Fatalf("Unexpected action type %T in script", c)
@@ -45,14 +45,14 @@ func TestCommandCAPTURE(t *testing.T) {
 		},
 		{
 			name: "CAPTURE/single quoted param",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCaptureCommand(0, `'/bin/echo -n "HELLO WORLD"'`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*CaptureCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
 					t.Fatalf("CAPTURE action with unexpected CLI string %s", cmd.GetCmdString())
@@ -77,14 +77,14 @@ func TestCommandCAPTURE(t *testing.T) {
 		},
 		{
 			name: "CAPTURE/single-quoted named param",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCaptureCommand(0, `cmd:'/bin/echo -n "HELLO WORLD"'`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*CaptureCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
 					t.Errorf("CAPTURE action with unexpected CLI string %s", cmd.GetCmdString())
@@ -109,14 +109,14 @@ func TestCommandCAPTURE(t *testing.T) {
 		},
 		{
 			name: "CAPTURE/double-quoted named param",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCaptureCommand(0, `cmd:"/bin/echo -n 'HELLO WORLD'"`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*CaptureCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
 					t.Errorf("CAPTURE action with unexpected CLI string %s", cmd.GetCmdString())
@@ -141,14 +141,14 @@ func TestCommandCAPTURE(t *testing.T) {
 		},
 		{
 			name: "CAPTURE/unquoted named params",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCaptureCommand(0, "cmd:/bin/date")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*CaptureCommand)
 				cliCmd, cliArgs, err := cmd.GetParsedCmd()
 				if err != nil {
@@ -164,14 +164,14 @@ func TestCommandCAPTURE(t *testing.T) {
 		},
 		{
 			name: "CAPTURE/expanded vars",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCaptureCommand(0, `'/bin/echo "$msg"'`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				os.Setenv("msg", "Hello World!")
 				cmd := c.(*CaptureCommand)
 				cliCmd, cliArgs, err := cmd.GetParsedCmd()
@@ -188,14 +188,14 @@ func TestCommandCAPTURE(t *testing.T) {
 		},
 		{
 			name: "CAPTURE/with shell",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCaptureCommand(0, `shell:"/bin/bash -c" cmd:"echo 'HELLO WORLD'"`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*CaptureCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
 					t.Errorf("CAPTURE action with unexpected command string %s", cmd.GetCmdString())
@@ -224,14 +224,14 @@ func TestCommandCAPTURE(t *testing.T) {
 		},
 		{
 			name: "CAPTURE/with echo",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCaptureCommand(0, `shell:"/bin/bash -c" cmd:"echo 'HELLO WORLD'" echo:"true"`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*CaptureCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
 					t.Fatalf("CAPTURE action with unexpected CLI string %s", cmd.GetCmdString())
@@ -246,14 +246,14 @@ func TestCommandCAPTURE(t *testing.T) {
 		},
 		{
 			name: "CAPTURE/unquote with embedded colons",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCaptureCommand(0, `/bin/echo "HELLO:WORLD"`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd, ok := c.(*CaptureCommand)
 				if !ok {
 					t.Errorf("Unexpected action type %T in script", c)
@@ -279,14 +279,14 @@ func TestCommandCAPTURE(t *testing.T) {
 		},
 		{
 			name: "CAPTURE/quoted with embedded colon",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCaptureCommand(0, `'/bin/echo -n "HELLO:WORLD"'`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*CaptureCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
 					t.Errorf("CAPTURE action with unexpected CLI string %s", cmd.GetCmdString())
@@ -311,14 +311,14 @@ func TestCommandCAPTURE(t *testing.T) {
 		},
 		{
 			name: "CAPTURE/single-quoted named-param with embedded colon",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCaptureCommand(0, `cmd:'/bin/echo -n "HELLO:WORLD"'`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*CaptureCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
 					t.Errorf("CAPTURE action with unexpected CLI string %s", cmd.GetCmdString())
@@ -343,14 +343,14 @@ func TestCommandCAPTURE(t *testing.T) {
 		},
 		{
 			name: "CAPTURE/double-quoted named-param with embedded colon",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCaptureCommand(0, `cmd:"/bin/echo -n 'HELLO:WORLD'"`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*CaptureCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
 					t.Errorf("CAPTURE action with unexpected CLI string %s", cmd.GetCmdString())
@@ -375,14 +375,14 @@ func TestCommandCAPTURE(t *testing.T) {
 		},
 		{
 			name: "CAPTURE unquoted named param with multiple embedded colons",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCaptureCommand(0, "cmd:/bin/date:time:")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*CaptureCommand)
 				cliCmd, cliArgs, err := cmd.GetParsedCmd()
 				if err != nil {
@@ -398,14 +398,14 @@ func TestCommandCAPTURE(t *testing.T) {
 		},
 		{
 			name: "CAPTURE/shell with embedded colon",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCaptureCommand(0, `shell:"/bin/bash -c" cmd:"echo 'HELLO:WORLD'"`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*CaptureCommand)
 				if cmd.Args()["cmd"] != cmd.GetCmdString() {
 					t.Errorf("CAPTURE action with unexpected command string %s", cmd.GetCmdString())

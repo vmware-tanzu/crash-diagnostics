@@ -11,14 +11,14 @@ func TestCommandENV(t *testing.T) {
 	tests := []commandTest{
 		{
 			name: "ENV",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewEnvCommand(0, "foo=bar")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				envCmd, ok := c.(*EnvCommand)
 				if !ok {
 					t.Errorf("Unexpected type %T in script", c)
@@ -35,7 +35,7 @@ func TestCommandENV(t *testing.T) {
 		},
 		{
 			name: "ENV/quoted value",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewEnvCommand(0, `foo="bar bazz"`)
 				if err != nil {
 					t.Fatal(err)
@@ -43,7 +43,7 @@ func TestCommandENV(t *testing.T) {
 				return cmd
 
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				envCmd := c.(*EnvCommand)
 				if len(envCmd.Envs()) != 1 {
 					t.Errorf("ENV has unexpected number of env %d", len(envCmd.Envs()))
@@ -57,14 +57,14 @@ func TestCommandENV(t *testing.T) {
 		},
 		{
 			name: "ENV/named param",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewEnvCommand(0, "vars:abc=defgh")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				envCmd, ok := c.(*EnvCommand)
 				if !ok {
 					t.Errorf("Unexpected type %T in script", c)
@@ -81,14 +81,14 @@ func TestCommandENV(t *testing.T) {
 		},
 		{
 			name: "ENV/multiple vars",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewEnvCommand(0, `vars:'a=b c=d e=f'`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				envCmd0 := c.(*EnvCommand)
 				if len(envCmd0.Envs()) != 3 {
 					t.Errorf("ENV has unexpected number of env %d", len(envCmd0.Envs()))
@@ -106,36 +106,36 @@ func TestCommandENV(t *testing.T) {
 		},
 		{
 			name: "ENV/bad format",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewEnvCommand(0, "a=b foo|bar")
 				if err == nil {
 					t.Fatal("Expecting failure but got nil")
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {},
+			test: func(t *testing.T, c Directive) {},
 		},
 		{
 			name: "ENV/missing params",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewEnvCommand(0, "")
 				if err == nil {
 					t.Fatal("Expecting failure but got nil")
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {},
+			test: func(t *testing.T, c Directive) {},
 		},
 		{
 			name: "ENV/embedded colon",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewEnvCommand(0, "foo=bar:Baz")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				envCmd, ok := c.(*EnvCommand)
 				if !ok {
 					t.Errorf("Unexpected type %T in script", c)
@@ -152,14 +152,14 @@ func TestCommandENV(t *testing.T) {
 		},
 		{
 			name: "ENV/quoted embedded colon",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewEnvCommand(0, `foo="bar bazz:bat"`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				envCmd := c.(*EnvCommand)
 				if len(envCmd.Envs()) != 1 {
 					t.Errorf("ENV has unexpected number of env %d", len(envCmd.Envs()))
@@ -173,14 +173,14 @@ func TestCommandENV(t *testing.T) {
 		},
 		{
 			name: "ENV/multiple embedded colon",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewEnvCommand(0, `vars:'a="b:g" c=d:d e=f'`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				envCmd0 := c.(*EnvCommand)
 				if len(envCmd0.Envs()) != 3 {
 					t.Errorf("ENV has unexpected number of env %d", len(envCmd0.Envs()))

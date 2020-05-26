@@ -12,14 +12,14 @@ func TestCommandAUTHCONFIG(t *testing.T) {
 	tests := []commandTest{
 		{
 			name: "AUTHCONFIG/all params unquoted",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewAuthConfigCommand(0, "username:test-user private-key:/a/b/c")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, cmd Command) {
+			test: func(t *testing.T, cmd Directive) {
 				authCmd, ok := cmd.(*AuthConfigCommand)
 				if !ok {
 					t.Fatalf("Unexpected type %T in script", cmd)
@@ -34,14 +34,14 @@ func TestCommandAUTHCONFIG(t *testing.T) {
 		},
 		{
 			name: "AUTHCONFIG/all params quoted",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewAuthConfigCommand(0, "username:test-user private-key:'/a/b/c'")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, cmd Command) {
+			test: func(t *testing.T, cmd Directive) {
 				authCmd, ok := cmd.(*AuthConfigCommand)
 				if !ok {
 					t.Fatalf("Unexpected type %T in script", cmd)
@@ -56,14 +56,14 @@ func TestCommandAUTHCONFIG(t *testing.T) {
 		},
 		{
 			name: "AUTHCONFIG/only private-key",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewAuthConfigCommand(0, "private-key:/a/b/c")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, cmd Command) {
+			test: func(t *testing.T, cmd Directive) {
 				authCmd, ok := cmd.(*AuthConfigCommand)
 				if !ok {
 					t.Fatalf("Unexpected type %T in script", cmd)
@@ -78,14 +78,14 @@ func TestCommandAUTHCONFIG(t *testing.T) {
 		},
 		{
 			name: "AUTHCONFIG/var expansion",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewAuthConfigCommand(0, "username:${USER} private-key:$fookey")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, cmd Command) {
+			test: func(t *testing.T, cmd Directive) {
 				os.Setenv("fookey", "/a/b/c")
 				authCmd := cmd.(*AuthConfigCommand)
 				if authCmd.GetUsername() != ExpandEnv("$USER") {
@@ -99,26 +99,26 @@ func TestCommandAUTHCONFIG(t *testing.T) {
 
 		{
 			name: "AUTHCONFIG with bad args",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewAuthConfigCommand(0, "bar private-key:buzz")
 				if err == nil {
 					t.Fatalf("Expecting failure but err == nil")
 				}
 				return cmd
 			},
-			test: func(t *testing.T, cmd Command) {},
+			test: func(t *testing.T, cmd Directive) {},
 		},
 
 		{
 			name: "AUTHCONFIG/embedded colon",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewAuthConfigCommand(0, "username:test-user private-key:'/a/:b/c'")
 				if err != nil {
 					t.Error(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, cmd Command) {
+			test: func(t *testing.T, cmd Directive) {
 				authCmd, ok := cmd.(*AuthConfigCommand)
 				if !ok {
 					t.Fatalf("Unexpected type %T in script", cmd)

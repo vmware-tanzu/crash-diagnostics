@@ -11,14 +11,14 @@ func TestCommandCOPY(t *testing.T) {
 	tests := []commandTest{
 		{
 			name: "COPY",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCopyCommand(0, "/a/b/c")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*CopyCommand)
 				if len(cmd.Paths()) != 1 {
 					t.Errorf("COPY has unexpected number of paths %d", len(cmd.Paths()))
@@ -32,14 +32,14 @@ func TestCommandCOPY(t *testing.T) {
 		},
 		{
 			name: "COPY/quoted",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCopyCommand(0, `'/a/b/c'`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*CopyCommand)
 				if len(cmd.Paths()) != 1 {
 					t.Errorf("COPY has unexpected number of paths %d", len(cmd.Paths()))
@@ -53,14 +53,14 @@ func TestCommandCOPY(t *testing.T) {
 		},
 		{
 			name: "COPY/quoted param",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCopyCommand(0, `paths:"/a/b/c"`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*CopyCommand)
 				if len(cmd.Paths()) != 1 {
 					t.Errorf("COPY has unexpected number of paths %d", len(cmd.Paths()))
@@ -74,14 +74,14 @@ func TestCommandCOPY(t *testing.T) {
 		},
 		{
 			name: "COPY/multiple paths",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCopyCommand(0, "/a/b/c /e/f/g")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*CopyCommand)
 				if len(cmd.Paths()) != 2 {
 					t.Errorf("COPY has unexpected number of args %d", len(cmd.Paths()))
@@ -96,14 +96,14 @@ func TestCommandCOPY(t *testing.T) {
 		},
 		{
 			name: "COPY/named param",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCopyCommand(0, "paths:/a/b/c")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*CopyCommand)
 				if len(cmd.Paths()) != 1 {
 					t.Errorf("COPY has unexpected number of paths %d", len(cmd.Paths()))
@@ -117,14 +117,14 @@ func TestCommandCOPY(t *testing.T) {
 		},
 		{
 			name: "COPY/named param multiple paths",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCopyCommand(0, `paths:"/a/b/c /e/f/g"`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*CopyCommand)
 				if len(cmd.Paths()) != 2 {
 					t.Errorf("COPY has unexpected number of args %d", len(cmd.Paths()))
@@ -139,14 +139,14 @@ func TestCommandCOPY(t *testing.T) {
 		},
 		{
 			name: "COPY/var expansion",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCopyCommand(0, "${foopath1} /e/f/${foodir}")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				os.Setenv("foopath1", "/a/b/c")
 				os.Setenv("foodir", "g")
 				cmd := c.(*CopyCommand)
@@ -163,25 +163,25 @@ func TestCommandCOPY(t *testing.T) {
 		},
 		{
 			name: "COPY/no path",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCopyCommand(0, "")
 				if err == nil {
 					t.Fatal("Expecting error, but got nil")
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {},
+			test: func(t *testing.T, c Directive) {},
 		},
 		{
 			name: "COPY/colon in path",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCopyCommand(0, `'/a/:b/c'`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*CopyCommand)
 				if len(cmd.Paths()) != 1 {
 					t.Errorf("COPY has unexpected number of paths %d", len(cmd.Paths()))
@@ -195,14 +195,14 @@ func TestCommandCOPY(t *testing.T) {
 		},
 		{
 			name: "COPY/multiple paths with colon",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewCopyCommand(0, `paths:"/a/b/c /e/:f/g"`)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				cmd := c.(*CopyCommand)
 				if len(cmd.Paths()) != 2 {
 					t.Errorf("COPY has unexpected number of args %d", len(cmd.Paths()))

@@ -11,14 +11,14 @@ func TestCommandKUBEGET(t *testing.T) {
 	tests := []commandTest{
 		{
 			name: "KUBEGET/objects",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewKubeGetCommand(0, "objects")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				kgCmd, ok := c.(*KubeGetCommand)
 				if !ok {
 					t.Errorf("Unexpected type %T in script", c)
@@ -30,14 +30,14 @@ func TestCommandKUBEGET(t *testing.T) {
 		},
 		{
 			name: "KUBEGET/what-param",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewKubeGetCommand(0, "what:logs")
 				if err != nil {
 					t.Fatal(err)
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				kgCmd, ok := c.(*KubeGetCommand)
 				if !ok {
 					t.Errorf("Unexpected type %T in script", c)
@@ -49,7 +49,7 @@ func TestCommandKUBEGET(t *testing.T) {
 		},
 		{
 			name: "KUBEGET/all object params",
-			command: func(t *testing.T) Command {
+			command: func(t *testing.T) Directive {
 				cmd, err := NewKubeGetCommand(0,
 					`objects namespaces:"myns testns" groups:"v1" kinds:"pods events" versions:"1" names:"my-app" labels:"prod" containers:"webapp"`,
 				)
@@ -58,7 +58,7 @@ func TestCommandKUBEGET(t *testing.T) {
 				}
 				return cmd
 			},
-			test: func(t *testing.T, c Command) {
+			test: func(t *testing.T, c Directive) {
 				kgCmd := c.(*KubeGetCommand)
 				if len(kgCmd.Args()) != 8 {
 					t.Errorf("KUBEGET unexpected param count: %d", len(kgCmd.Args()))

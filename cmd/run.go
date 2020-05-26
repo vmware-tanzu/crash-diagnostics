@@ -58,7 +58,7 @@ func run(flag *runFlags, args []string) error {
 		if err != nil {
 			return err
 		}
-		src.Preambles[script.CmdOutput] = []script.Command{cmd}
+		src.Preambles[script.CmdOutput] = []script.Directive{cmd}
 	}
 
 	exe := exec.New(src)

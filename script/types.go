@@ -77,20 +77,36 @@ var (
 
 type ArgMap = map[string]string
 
-// Command is an abtract representatio of command in a script
-type Command interface {
-	// Index is the position of the command in the script
+// Directive is a presentation of commands and configuration
+type Directive interface {
+	// Index position of the command in the script
 	Index() int
-	// Name represents the name of the command
+	// Name the raw name of the command
 	Name() string
 	// Args returns a map of parsed arguments
 	Args() ArgMap
+	// Arg returns value for a specific command argument
+	Arg(string) string
+	// Raw is the unparsed presentation of the command and args
+	Raw() string
+}
+
+// ExecDirective represents a directive with an executable command
+type ExecDirective interface {
+	Directive
+	// ParsedCommand returns the parsed command (name, args) to be executed
+	ParsedCommand() (string, []string, error)
+}
+
+// ConfigDirective represents a configuration
+type ConfigDirective interface {
+	Directive
 }
 
 // Script is a collection of commands
 type Script struct {
-	Preambles map[string][]Command // directive commands in the script
-	Actions   []Command            // action commands
+	Preambles map[string][]Directive // directive commands in the script
+	Actions   []Directive            // action commands
 }
 
 // cmd is the base representation of command
