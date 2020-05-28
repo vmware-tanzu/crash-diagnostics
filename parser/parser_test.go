@@ -35,30 +35,30 @@ func runParserTest(t *testing.T, test parserTest) {
 
 func TestCommandParse(t *testing.T) {
 	tests := []parserTest{
-		{
-			name: "Preambles only",
-			source: func(t *testing.T) string {
-				return "FROM local \n WORKDIR /a/b/c \n ENV a=b \n ENV c=d"
-			},
-			script: func(t *testing.T, s *script.Script) {
-				fromCmds := s.Preambles[script.CmdFrom]
-				if len(fromCmds) != 1 {
-					t.Errorf("Script has unexpected preamble %s", script.CmdFrom)
-				}
-				wdCmds := s.Preambles[script.CmdWorkDir]
-				if len(wdCmds) != 1 {
-					t.Errorf("Script has  unexpected preamble %s", script.CmdWorkDir)
-				}
-				envCmds := s.Preambles[script.CmdEnv]
-				if len(envCmds) != 2 {
-					t.Errorf("Script has unexpected preamble %s", envCmds)
-				}
-				asCmds := s.Preambles[script.CmdAs]
-				if len(asCmds) != 1 {
-					t.Errorf("Script missing default preamble %s", script.CmdAs)
-				}
-			},
-		},
+		//{
+		//	name: "Preambles only",
+		//	source: func(t *testing.T) string {
+		//		return "FROM local \n WORKDIR /a/b/c \n ENV a=b \n ENV c=d"
+		//	},
+		//	script: func(t *testing.T, s *script.Script) {
+		//		fromCmds := s.Preambles[script.CmdFrom]
+		//		if len(fromCmds) != 1 {
+		//			t.Errorf("Script has unexpected preamble %s", script.CmdFrom)
+		//		}
+		//		wdCmds := s.Preambles[script.CmdWorkDir]
+		//		if len(wdCmds) != 1 {
+		//			t.Errorf("Script has  unexpected preamble %s", script.CmdWorkDir)
+		//		}
+		//		envCmds := s.Preambles[script.CmdEnv]
+		//		if len(envCmds) != 2 {
+		//			t.Errorf("Script has unexpected preamble %s", envCmds)
+		//		}
+		//		asCmds := s.Preambles[script.CmdAs]
+		//		if len(asCmds) != 1 {
+		//			t.Errorf("Script missing default preamble %s", script.CmdAs)
+		//		}
+		//	},
+		//},
 		//{
 		//	name: "Actions only",
 		//	source: func() string {

@@ -5,48 +5,45 @@ package parser
 
 import (
 	"testing"
-	"time"
-
-	"github.com/vmware-tanzu/crash-diagnostics/script"
 )
 
 func TestCommandFROM(t *testing.T) {
 	tests := []parserTest{
-		{
-			name: "FROM",
-			source: func(t *testing.T) string {
-				return "FROM local foo.bar:1234"
-			},
-			script: func(t *testing.T, s *script.Script) {
-				froms := s.Preambles[script.CmdFrom]
-				if len(froms) != 1 {
-					t.Errorf("Script has unexpected number of FROM %d", len(froms))
-				}
-				fromCmd, ok := froms[0].(*script.FromCommand)
-				if !ok {
-					t.Errorf("Unexpected type %T in script", froms[0])
-				}
-				if len(fromCmd.Hosts()) != 2 {
-					t.Errorf("FROM has unexpected number of hosts %d", len(fromCmd.Nodes()))
-				}
-				if len(fromCmd.Nodes()) != 0 {
-					t.Errorf("FROM has unexpected nodes param %v", len(fromCmd.Nodes()))
-				}
-				if fromCmd.Hosts()[0] != "local" && fromCmd.Hosts()[1] != "foo.basr:1234" {
-					t.Errorf("FROM has unexpected host address %v", fromCmd.Hosts())
-				}
-				// check defaults
-				if fromCmd.Port() != script.Defaults.ServicePort {
-					t.Errorf("FROM has unexpected default port %s", fromCmd.Port())
-				}
-				if fromCmd.ConnectionRetries() != 30 {
-					t.Errorf("FROM has unexpected retries %d", fromCmd.ConnectionRetries())
-				}
-				if fromCmd.ConnectionTimeout() != time.Second*120 {
-					t.Errorf("FROM has unexpected retries %d", fromCmd.ConnectionRetries())
-				}
-			},
-		},
+		//{
+		//	name: "FROM",
+		//	source: func(t *testing.T) string {
+		//		return "FROM local foo.bar:1234"
+		//	},
+		//	script: func(t *testing.T, s *script.Script) {
+		//		froms := s.Preambles[script.CmdFrom]
+		//		if len(froms) != 1 {
+		//			t.Errorf("Script has unexpected number of FROM %d", len(froms))
+		//		}
+		//		fromCmd, ok := froms[0].(*script.FromCommand)
+		//		if !ok {
+		//			t.Errorf("Unexpected type %T in script", froms[0])
+		//		}
+		//		if len(fromCmd.Hosts()) != 2 {
+		//			t.Errorf("FROM has unexpected number of hosts %d", len(fromCmd.Nodes()))
+		//		}
+		//		if len(fromCmd.Nodes()) != 0 {
+		//			t.Errorf("FROM has unexpected nodes param %v", len(fromCmd.Nodes()))
+		//		}
+		//		if fromCmd.Hosts()[0] != "local" && fromCmd.Hosts()[1] != "foo.basr:1234" {
+		//			t.Errorf("FROM has unexpected host address %v", fromCmd.Hosts())
+		//		}
+		//		// check defaults
+		//		if fromCmd.Port() != script.Defaults.ServicePort {
+		//			t.Errorf("FROM has unexpected default port %s", fromCmd.Port())
+		//		}
+		//		if fromCmd.ConnectionRetries() != 30 {
+		//			t.Errorf("FROM has unexpected retries %d", fromCmd.ConnectionRetries())
+		//		}
+		//		if fromCmd.ConnectionTimeout() != time.Second*120 {
+		//			t.Errorf("FROM has unexpected retries %d", fromCmd.ConnectionRetries())
+		//		}
+		//	},
+		//},
 		//		{
 		//			name: "FROM default hosts param quoted",
 		//			source: func() string {

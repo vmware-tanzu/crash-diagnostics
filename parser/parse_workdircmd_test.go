@@ -5,31 +5,29 @@ package parser
 
 import (
 	"testing"
-
-	"github.com/vmware-tanzu/crash-diagnostics/script"
 )
 
 func TestCommandWORKDIR(t *testing.T) {
 	tests := []parserTest{
-		{
-			name: "WORKDIR with default param",
-			source: func(t *testing.T) string {
-				return "WORKDIR foo/bar"
-			},
-			script: func(t *testing.T, s *script.Script) {
-				dirs := s.Preambles[script.CmdWorkDir]
-				if len(dirs) != 1 {
-					t.Errorf("Script has unexpected number of WORKDIR %d", len(dirs))
-				}
-				wdCmd, ok := dirs[0].(*script.WorkdirCommand)
-				if !ok {
-					t.Errorf("Unexpected type %T in script", dirs[0])
-				}
-				if wdCmd.Path() != "foo/bar" {
-					t.Errorf("WORKDIR has unexpected directory %s", wdCmd.Path())
-				}
-			},
-		},
+		//{
+		//	name: "WORKDIR with default param",
+		//	source: func(t *testing.T) string {
+		//		return "WORKDIR foo/bar"
+		//	},
+		//	script: func(t *testing.T, s *script.Script) {
+		//		dirs := s.Preambles[script.CmdWorkDir]
+		//		if len(dirs) != 1 {
+		//			t.Errorf("Script has unexpected number of WORKDIR %d", len(dirs))
+		//		}
+		//		wdCmd, ok := dirs[0].(*script.WorkdirCommand)
+		//		if !ok {
+		//			t.Errorf("Unexpected type %T in script", dirs[0])
+		//		}
+		//		if wdCmd.Path() != "foo/bar" {
+		//			t.Errorf("WORKDIR has unexpected directory %s", wdCmd.Path())
+		//		}
+		//	},
+		//},
 		//		{
 		//			name: "Multiple WORKDIRs",
 		//			source: func() string {

@@ -5,31 +5,29 @@ package parser
 
 import (
 	"testing"
-
-	"github.com/vmware-tanzu/crash-diagnostics/script"
 )
 
 func TestCommandOUTPUT(t *testing.T) {
 	tests := []parserTest{
-		{
-			name: "OUTPUT",
-			source: func(t *testing.T) string {
-				return "OUTPUT foo/bar.tar.gz"
-			},
-			script: func(t *testing.T, s *script.Script) {
-				outs := s.Preambles[script.CmdOutput]
-				if len(outs) != 1 {
-					t.Errorf("Script has unexpected number of OUTPUT %d", len(outs))
-				}
-				outCmd, ok := outs[0].(*script.OutputCommand)
-				if !ok {
-					t.Errorf("Unexpected type %T in script", outs[0])
-				}
-				if outCmd.Path() != "foo/bar.tar.gz" {
-					t.Errorf("OUTPUT has unexpected directory %s", outCmd.Path())
-				}
-			},
-		},
+		//{
+		//	name: "OUTPUT",
+		//	source: func(t *testing.T) string {
+		//		return "OUTPUT foo/bar.tar.gz"
+		//	},
+		//	script: func(t *testing.T, s *script.Script) {
+		//		outs := s.Preambles[script.CmdOutput]
+		//		if len(outs) != 1 {
+		//			t.Errorf("Script has unexpected number of OUTPUT %d", len(outs))
+		//		}
+		//		outCmd, ok := outs[0].(*script.OutputCommand)
+		//		if !ok {
+		//			t.Errorf("Unexpected type %T in script", outs[0])
+		//		}
+		//		if outCmd.Path() != "foo/bar.tar.gz" {
+		//			t.Errorf("OUTPUT has unexpected directory %s", outCmd.Path())
+		//		}
+		//	},
+		//},
 		//		{
 		//			name: "OUTPUT with quoted default param",
 		//			source: func() string {

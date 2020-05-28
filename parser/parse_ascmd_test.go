@@ -17,19 +17,13 @@ func TestCommandAS(t *testing.T) {
 				return "AS userid:foo groupid:bar"
 			},
 			script: func(t *testing.T, s *script.Script) {
-				cmds := s.Preambles[script.CmdAs]
-				if len(cmds) != 1 {
-					t.Errorf("Script missing preamble %s", script.CmdAs)
+				directives := s.ConfigDirectives(script.CmdAsConfig)
+				if len(directives) != 1 {
+					t.Errorf("directive not found: %s", script.CmdAsConfig)
 				}
-				asCmd, ok := cmds[0].(*script.AsCommand)
-				if !ok {
-					t.Errorf("Unexpected type %T in script", cmds[0])
-				}
-				if asCmd.GetUserId() != "foo" {
-					t.Errorf("Unexpected AS userid %s", asCmd.GetUserId())
-				}
-				if asCmd.GetGroupId() != "bar" {
-					t.Errorf("Unexpected AS groupid %s", asCmd.GetUserId())
+				dir := directives[0]
+				if dir.Raw() != "userid:foo groupid:bar" {
+					t.Errorf("unexpected directive arguments: %s", dir.Raw())
 				}
 			},
 		},

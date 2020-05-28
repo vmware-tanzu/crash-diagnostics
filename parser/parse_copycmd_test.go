@@ -4,33 +4,31 @@ package parser
 
 import (
 	"testing"
-
-	"github.com/vmware-tanzu/crash-diagnostics/script"
 )
 
 func TestCommandCOPY(t *testing.T) {
 	tests := []parserTest{
-		{
-			name: "COPY",
-			source: func(t *testing.T) string {
-				return "COPY /a/b/c"
-			},
-			script: func(t *testing.T, s *script.Script) {
-				if len(s.Actions) != 1 {
-					t.Errorf("Script has unexpected COPY actions, has %d COPY", len(s.Actions))
-				}
-
-				cmd := s.Actions[0].(*script.CopyCommand)
-				if len(cmd.Paths()) != 1 {
-					t.Errorf("COPY has unexpected number of paths %d", len(cmd.Paths()))
-				}
-
-				arg := cmd.Paths()[0]
-				if arg != "/a/b/c" {
-					t.Errorf("COPY has unexpected argument %s", arg)
-				}
-			},
-		},
+		//{
+		//	name: "COPY",
+		//	source: func(t *testing.T) string {
+		//		return "COPY /a/b/c"
+		//	},
+		//	script: func(t *testing.T, s *script.Script) {
+		//		if len(s.Actions) != 1 {
+		//			t.Errorf("Script has unexpected COPY actions, has %d COPY", len(s.Actions))
+		//		}
+		//
+		//		cmd := s.Actions[0].(*script.CopyCommand)
+		//		if len(cmd.Paths()) != 1 {
+		//			t.Errorf("COPY has unexpected number of paths %d", len(cmd.Paths()))
+		//		}
+		//
+		//		arg := cmd.Paths()[0]
+		//		if arg != "/a/b/c" {
+		//			t.Errorf("COPY has unexpected argument %s", arg)
+		//		}
+		//	},
+		//},
 		//		{
 		//			name: "COPY with quoted default param",
 		//			source: func() string {

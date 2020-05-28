@@ -10,6 +10,7 @@ import (
 
 var (
 	CmdAs         = "AS"
+	CmdAsConfig   = "ASCONFIG"
 	CmdAuthConfig = "AUTHCONFIG"
 	CmdCapture    = "CAPTURE"
 	CmdCopy       = "COPY"
@@ -77,36 +78,26 @@ var (
 
 type ArgMap = map[string]string
 
-// Directive is a presentation of commands and configuration
+// Directive base interface that represents a directive
+// Implementation should provide capture ample parameters
+// so the directive is properly handled at runtime.
 type Directive interface {
 	// Index position of the command in the script
 	Index() int
 	// Name the raw name of the command
 	Name() string
-	// Args returns a map of parsed arguments
-	Args() ArgMap
-	// Arg returns value for a specific command argument
-	Arg(string) string
-	// Raw is the unparsed presentation of the command and args
+
 	Raw() string
 }
 
-// ExecDirective represents a directive with an executable command
-type ExecDirective interface {
-	Directive
-	// ParsedCommand returns the parsed command (name, args) to be executed
-	ParsedCommand() (string, []string, error)
-}
-
-// ConfigDirective represents a configuration
+// ConfigDirective marker interface that represents a configuration
 type ConfigDirective interface {
 	Directive
 }
 
-// Script is a collection of commands
-type Script struct {
-	Preambles map[string][]Directive // directive commands in the script
-	Actions   []Directive            // action commands
+// ExecDirective marker interface for an executable directive
+type ExecDirective interface {
+	Directive
 }
 
 // cmd is the base representation of command

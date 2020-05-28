@@ -5,44 +5,42 @@ package parser
 
 import (
 	"testing"
-
-	"github.com/vmware-tanzu/crash-diagnostics/script"
 )
 
 func TestCommandRUN(t *testing.T) {
 	tests := []parserTest{
-		{
-			name: "RUN",
-			source: func(t *testing.T) string {
-				return `RUN /bin/echo "HELLO WORLD"`
-			},
-			script: func(t *testing.T, s *script.Script) {
-				if len(s.Actions) != 1 {
-					t.Errorf("Script has unexpected action count, needs %d", len(s.Actions))
-				}
-				cmd, ok := s.Actions[0].(*script.RunCommand)
-				if !ok {
-					t.Fatalf("Unexpected action type %T in script", s.Actions[0])
-				}
-
-				if cmd.Args()["cmd"] != cmd.GetCmdString() {
-					t.Errorf("RUN action with unexpected command string %s", cmd.GetCmdString())
-				}
-				cliCmd, cliArgs, err := cmd.GetParsedCmd()
-				if err != nil {
-					t.Errorf("RUN command parse failed: %s", err)
-				}
-				if cliCmd != "/bin/echo" {
-					t.Errorf("RUN unexpected command parsed: %s", cliCmd)
-				}
-				if len(cliArgs) != 1 {
-					t.Errorf("RUN unexpected command args parsed: %d", len(cliArgs))
-				}
-				if cliArgs[0] != "HELLO WORLD" {
-					t.Errorf("RUN has unexpected cli args: %#v", cliArgs)
-				}
-			},
-		},
+		//{
+		//	name: "RUN",
+		//	source: func(t *testing.T) string {
+		//		return `RUN /bin/echo "HELLO WORLD"`
+		//	},
+		//	script: func(t *testing.T, s *script.Script) {
+		//		if len(s.Actions) != 1 {
+		//			t.Errorf("Script has unexpected action count, needs %d", len(s.Actions))
+		//		}
+		//		cmd, ok := s.Actions[0].(*script.RunCommand)
+		//		if !ok {
+		//			t.Fatalf("Unexpected action type %T in script", s.Actions[0])
+		//		}
+		//
+		//		if cmd.Args()["cmd"] != cmd.GetCmdString() {
+		//			t.Errorf("RUN action with unexpected command string %s", cmd.GetCmdString())
+		//		}
+		//		cliCmd, cliArgs, err := cmd.GetParsedCmd()
+		//		if err != nil {
+		//			t.Errorf("RUN command parse failed: %s", err)
+		//		}
+		//		if cliCmd != "/bin/echo" {
+		//			t.Errorf("RUN unexpected command parsed: %s", cliCmd)
+		//		}
+		//		if len(cliArgs) != 1 {
+		//			t.Errorf("RUN unexpected command args parsed: %d", len(cliArgs))
+		//		}
+		//		if cliArgs[0] != "HELLO WORLD" {
+		//			t.Errorf("RUN has unexpected cli args: %#v", cliArgs)
+		//		}
+		//	},
+		//},
 		//		{
 		//			name: "RUN single-quoted default with quoted param",
 		//			source: func() string {

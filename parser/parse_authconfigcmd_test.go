@@ -5,34 +5,32 @@ package parser
 
 import (
 	"testing"
-
-	"github.com/vmware-tanzu/crash-diagnostics/script"
 )
 
 func TestCommandAUTHCONFIG(t *testing.T) {
 	tests := []parserTest{
-		{
-			name: "AUTHCONFIG",
-			source: func(t *testing.T) string {
-				return "AUTHCONFIG username:test-user private-key:/a/b/c"
-			},
-			script: func(t *testing.T, s *script.Script) {
-				cmds := s.Preambles[script.CmdAuthConfig]
-				if len(cmds) != 1 {
-					t.Errorf("Script missing preamble %s", script.CmdAuthConfig)
-				}
-				authCmd, ok := cmds[0].(*script.AuthConfigCommand)
-				if !ok {
-					t.Errorf("Unexpected type %T in script", cmds[0])
-				}
-				if authCmd.GetUsername() != "test-user" {
-					t.Errorf("Unexpected username %s", authCmd.GetUsername())
-				}
-				if authCmd.GetPrivateKey() != "/a/b/c" {
-					t.Errorf("Unexpected private-key %s", authCmd.GetPrivateKey())
-				}
-			},
-		},
+		//{
+		//	name: "AUTHCONFIG",
+		//	source: func(t *testing.T) string {
+		//		return "AUTHCONFIG username:test-user private-key:/a/b/c"
+		//	},
+		//	script: func(t *testing.T, s *script.Script) {
+		//		cmds := s.Preambles[script.CmdAuthConfig]
+		//		if len(cmds) != 1 {
+		//			t.Errorf("Script missing preamble %s", script.CmdAuthConfig)
+		//		}
+		//		authCmd, ok := cmds[0].(*script.AuthConfigCommand)
+		//		if !ok {
+		//			t.Errorf("Unexpected type %T in script", cmds[0])
+		//		}
+		//		if authCmd.GetUsername() != "test-user" {
+		//			t.Errorf("Unexpected username %s", authCmd.GetUsername())
+		//		}
+		//		if authCmd.GetPrivateKey() != "/a/b/c" {
+		//			t.Errorf("Unexpected private-key %s", authCmd.GetPrivateKey())
+		//		}
+		//	},
+		//},
 		//		{
 		//			name: "AUTHCONFIG - quoted params",
 		//			source: func() string {
