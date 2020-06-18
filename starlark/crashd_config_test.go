@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"go.starlark.net/starlark"
+	"go.starlark.net/starlarkstruct"
 )
 
 func TestCrashdConfigNew(t *testing.T) {
@@ -39,19 +39,16 @@ func TestCrashdConfigFunc(t *testing.T) {
 				if data == nil {
 					t.Fatal("crashd_config not saved in thread local")
 				}
-				cfg, ok := data.(*starlark.Dict)
+				cfg, ok := data.(*starlarkstruct.Struct)
 				if !ok {
 					t.Fatalf("unexpected type for thread local key configs.crashd: %T", data)
 				}
-				if cfg.Len() != 2 {
-					t.Fatalf("unexpected item count in configs.crashd: %d", cfg.Len())
+				if len(cfg.AttrNames()) != 2 {
+					t.Fatalf("unexpected item count in configs.crashd: %d", len(cfg.AttrNames()))
 				}
-				val, found, err := cfg.Get(starlark.String("foo"))
+				val, err := cfg.Attr("foo")
 				if err != nil {
-					t.Fatal(err)
-				}
-				if !found {
-					t.Fatalf("key 'foo' not found in configs.crashd")
+					t.Fatalf("key 'foo' not found in crashd_config: %s", err)
 				}
 				if trimQuotes(val.String()) != "fooval" {
 					t.Fatalf("unexpected value for key 'foo': %s", val.String())
@@ -71,19 +68,16 @@ func TestCrashdConfigFunc(t *testing.T) {
 				if data == nil {
 					t.Fatal("crashd_config function not returning value")
 				}
-				cfg, ok := data.(*starlark.Dict)
+				cfg, ok := data.(*starlarkstruct.Struct)
 				if !ok {
 					t.Fatalf("unexpected type for thread local key configs.crashd: %T", data)
 				}
-				if cfg.Len() != 2 {
-					t.Fatalf("unexpected item count in configs.crashd: %d", cfg.Len())
+				if len(cfg.AttrNames()) != 2 {
+					t.Fatalf("unexpected item count in configs.crashd: %d", len(cfg.AttrNames()))
 				}
-				val, found, err := cfg.Get(starlark.String("foo"))
+				val, err := cfg.Attr("foo")
 				if err != nil {
 					t.Fatal(err)
-				}
-				if !found {
-					t.Fatalf("key 'foo' not found in configs.crashd")
 				}
 				if trimQuotes(val.String()) != "fooval" {
 					t.Fatalf("unexpected value for key %s in configs.crashd", val.String())
@@ -104,19 +98,16 @@ func TestCrashdConfigFunc(t *testing.T) {
 					t.Fatal("default crashd_config not saved in thread local")
 				}
 
-				cfg, ok := data.(*starlark.Dict)
+				cfg, ok := data.(*starlarkstruct.Struct)
 				if !ok {
 					t.Fatalf("unexpected type for thread local key crashd_config: %T", data)
 				}
-				if cfg.Len() != 4 {
-					t.Fatalf("unexpected item count in configs.crashd: %d", cfg.Len())
+				if len(cfg.AttrNames()) != 4 {
+					t.Fatalf("unexpected item count in configs.crashd: %d", len(cfg.AttrNames()))
 				}
-				val, found, err := cfg.Get(starlark.String("uid"))
+				val, err := cfg.Attr("uid")
 				if err != nil {
-					t.Fatal(err)
-				}
-				if !found {
-					t.Fatalf("key 'foo' not found in configs.crashd")
+					t.Fatalf("key 'foo' not found in configs.crashd: %s", err)
 				}
 				if trimQuotes(val.String()) != getUid() {
 					t.Fatalf("unexpected value for key %s in configs.crashd", val.String())

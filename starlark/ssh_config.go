@@ -5,6 +5,7 @@ package starlark
 
 import (
 	"go.starlark.net/starlark"
+	"go.starlark.net/starlarkstruct"
 )
 
 // addDefaultSshConf initalizes a Starlark Dict with default
@@ -25,21 +26,22 @@ func addDefaultSSHConf(thread *starlark.Thread) error {
 	return nil
 }
 
-// sshConfigFn is the backing built-in function for the `ssh_config` configuration function.
-// It creates and returns a dictionary from collected configs (as kwargs)
-// It also saves the dict into the thread as the last known ssh config to be used as default.
+// sshConfigFn is the backing built-in fn that saves and returns its argument as struct value.
+// Starlark format: ssh_config(conf0=val0, ..., confN=valN)
 func sshConfigFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	var dictionary *starlark.Dict
+	var dictionary starlark.StringDict
 	if kwargs != nil {
-		dict, err := tupleSliceToDict(kwargs)
+		dict, err := kwargsToStringDict(kwargs)
 		if err != nil {
 			return starlark.None, err
 		}
 		dictionary = dict
 	}
 
-	// save to be used as default when needed
-	thread.SetLocal(identifiers.sshCfg, dictionary)
+	structVal := starlarkstruct.FromStringDict(starlarkstruct.Default, dictionary)
 
-	return dictionary, nil
+	// save to be used as default when needed
+	thread.SetLocal(identifiers.sshCfg, structVal)
+
+	return structVal, nil
 }

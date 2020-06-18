@@ -10,11 +10,17 @@ import (
 
 var (
 	identifiers = struct {
-		crashdCfg string
-		sshCfg    string
+		crashdCfg        string
+		sshCfg           string
+		hostListProvider string
+		hostListResources string
+		resources        string
 	}{
-		crashdCfg: "crashd_config",
-		sshCfg:    "ssh_config",
+		crashdCfg:        "crashd_config",
+		sshCfg:           "ssh_config",
+		hostListProvider: "host_list_provider",
+		hostListResources: "host_list_resources",
+		resources:        "resources",
 	}
 
 	defaults = struct {
