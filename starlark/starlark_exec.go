@@ -43,6 +43,7 @@ func newThreadLocal() *starlark.Thread {
 	thread := &starlark.Thread{Name: "crashd"}
 	addDefaultCrashdConf(thread)
 	addDefaultSSHConf(thread)
+	addDefaultKubeConf(thread)
 	return thread
 }
 
@@ -57,6 +58,7 @@ func newPredeclareds() starlark.StringDict {
 		identifiers.hostListProvider: starlark.NewBuiltin(identifiers.hostListProvider, hostListProvider),
 		identifiers.resources:        starlark.NewBuiltin(identifiers.resources, resourcesFunc),
 		identifiers.run:              starlark.NewBuiltin(identifiers.run, runFunc),
+		identifiers.kubeCfg:          starlark.NewBuiltin(identifiers.kubeCfg, kubeConfigFn),
 	}
 }
 

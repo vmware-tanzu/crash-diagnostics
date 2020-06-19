@@ -11,6 +11,7 @@ import (
 var (
 	identifiers = struct {
 		crashdCfg string
+		kubeCfg   string
 
 		sshCfg         string
 		port           string
@@ -26,6 +27,7 @@ var (
 		run              string
 	}{
 		crashdCfg: "crashd_config",
+		kubeCfg:   "kube_config",
 
 		sshCfg:         "ssh_config",
 		port:           "port",

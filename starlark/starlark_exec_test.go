@@ -23,6 +23,15 @@ func TestExec(t *testing.T) {
 				}
 			},
 		},
+		{
+			name:   "kube_config only",
+			script: `kube_config()`,
+			eval: func(t *testing.T, script string) {
+				if err := New().Exec("test.file", strings.NewReader(script)); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
 	}
 
 	for _, test := range tests {
