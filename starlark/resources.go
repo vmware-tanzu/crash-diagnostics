@@ -13,6 +13,9 @@ import (
 // resourcesFunc is a built-in starlark function that prepares returns compute resources as a struct.
 // Starlark format: resources(provider=<provider-function>)
 func resourcesFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+	if kwargs == nil {
+		return starlark.None, fmt.Errorf("%s: missing arguments", identifiers.resources)
+	}
 	var dictionary starlark.StringDict
 	if kwargs != nil {
 		dict, err := kwargsToStringDict(kwargs)
@@ -30,11 +33,27 @@ func resourcesFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.T
 		}
 		provider = prov
 	} else if prov, ok := dictionary["provider"]; ok {
-		provider = prov.(*starlarkstruct.Struct)
+		prov, ok := prov.(*starlarkstruct.Struct)
+		if !ok {
+			return starlark.None, fmt.Errorf("%s: provider not a struct", identifiers.resources)
+		}
+		provider = prov
 	}
 
-	// enumerates resources
-	return enum(provider)
+	if provider == nil {
+		return starlark.None, fmt.Errorf("%s: hosts or provider argument required", identifiers.resources)
+	}
+
+	// enumerate resources from provider
+	resources, err := enum(provider)
+	if err != nil {
+		return starlark.None, err
+	}
+
+	// save resources for future use
+	thread.SetLocal(identifiers.resources, resources)
+
+	return resources, nil
 }
 
 // enum returns a struct containing the fully enumerated compute resource
@@ -55,7 +74,7 @@ func enum(provider *starlarkstruct.Struct) (*starlarkstruct.Struct, error) {
 
 	switch kind {
 	case identifiers.hostListProvider:
-		names, err := provider.Attr("hosts")
+		hosts, err := provider.Attr("hosts")
 		if err != nil {
 			return nil, fmt.Errorf("hosts not found in %s", identifiers.hostListProvider)
 		}
@@ -70,11 +89,10 @@ func enum(provider *starlarkstruct.Struct) (*starlarkstruct.Struct, error) {
 		}
 
 		dict := starlark.StringDict{
-			"kind":         starlark.String("host_list_resources"),
-			"names":        names,
-			"ip_addresses": names,
-			"transport":    transport,
-			"ssh_config":   sshCfg,
+			"kind":       starlark.String(identifiers.hostListResources),
+			"hosts":      hosts,
+			"transport":  transport,
+			"ssh_config": sshCfg,
 		}
 		resStruct = starlarkstruct.FromStringDict(starlarkstruct.Default, dict)
 	}

@@ -54,6 +54,7 @@ func newPredeclareds() starlark.StringDict {
 		identifiers.crashdCfg:        starlark.NewBuiltin(identifiers.crashdCfg, crashdConfigFn),
 		identifiers.sshCfg:           starlark.NewBuiltin(identifiers.sshCfg, sshConfigFn),
 		identifiers.hostListProvider: starlark.NewBuiltin(identifiers.hostListProvider, hostListProvider),
+		identifiers.resources:        starlark.NewBuiltin(identifiers.resources, resourcesFunc),
 	}
 }
 

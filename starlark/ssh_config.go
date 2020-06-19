@@ -11,18 +11,11 @@ import (
 // addDefaultSshConf initalizes a Starlark Dict with default
 // ssh_config configuration data
 func addDefaultSSHConf(thread *starlark.Thread) error {
-	args := []starlark.Tuple{
-		starlark.Tuple{starlark.String("username"), starlark.String(getUsername())},
-		starlark.Tuple{starlark.String("private_key_path"), starlark.String(defaults.pkPath)},
-		starlark.Tuple{starlark.String("conn_retries"), starlark.MakeInt(defaults.connRetries)},
-		starlark.Tuple{starlark.String("conn_timeout"), starlark.MakeInt(defaults.connTimeout)},
-	}
-
+	args := makeDefaultSSHConfig()
 	_, err := sshConfigFn(thread, nil, nil, args)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -44,4 +37,13 @@ func sshConfigFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tup
 	thread.SetLocal(identifiers.sshCfg, structVal)
 
 	return structVal, nil
+}
+
+func makeDefaultSSHConfig() []starlark.Tuple {
+	return []starlark.Tuple{
+		starlark.Tuple{starlark.String("username"), starlark.String(getUsername())},
+		starlark.Tuple{starlark.String("private_key_path"), starlark.String(defaults.pkPath)},
+		starlark.Tuple{starlark.String("conn_retries"), starlark.MakeInt(defaults.connRetries)},
+		starlark.Tuple{starlark.String("conn_timeout"), starlark.MakeInt(defaults.connTimeout)},
+	}
 }

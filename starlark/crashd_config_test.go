@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
 
@@ -68,19 +69,9 @@ func TestCrashdConfigFunc(t *testing.T) {
 				if data == nil {
 					t.Fatal("crashd_config function not returning value")
 				}
-				cfg, ok := data.(*starlarkstruct.Struct)
+				_, ok := data.(starlark.NoneType)
 				if !ok {
-					t.Fatalf("unexpected type for thread local key configs.crashd: %T", data)
-				}
-				if len(cfg.AttrNames()) != 2 {
-					t.Fatalf("unexpected item count in configs.crashd: %d", len(cfg.AttrNames()))
-				}
-				val, err := cfg.Attr("foo")
-				if err != nil {
-					t.Fatal(err)
-				}
-				if trimQuotes(val.String()) != "fooval" {
-					t.Fatalf("unexpected value for key %s in configs.crashd", val.String())
+					t.Fatalf("crashd_config should not return a value, but returned a %T", data)
 				}
 			},
 		},

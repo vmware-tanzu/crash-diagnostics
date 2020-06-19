@@ -33,15 +33,21 @@ func TestHostListProvider(t *testing.T) {
 				if !ok {
 					t.Fatalf("expecting *starlark.Struct, got %T", data)
 				}
-				if len(provider.AttrNames()) != 1 {
-					t.Fatalf("unexpected item count in configs.crashd: %d", len(provider.AttrNames()))
-				}
 				val, err := provider.Attr("hosts")
 				if err != nil {
 					t.Fatal(err)
 				}
-				if trimQuotes(val.String()) != "foo.host" {
-					t.Fatalf("unexpected value for key %s in configs.crashd", val.String())
+				list := val.(*starlark.List)
+				if list.Len() != 1 {
+					t.Fatalf("expecting %d items for argument 'hosts', got %d", 2, list.Len())
+				}
+
+				sshcfg, err := provider.Attr(identifiers.sshCfg)
+				if err != nil {
+					t.Error(err)
+				}
+				if sshcfg == nil {
+					t.Errorf("%s missing ssh_config", identifiers.hostListProvider)
 				}
 			},
 		},
@@ -61,9 +67,7 @@ func TestHostListProvider(t *testing.T) {
 				if !ok {
 					t.Fatalf("expecting *starlark.Struct, got %T", data)
 				}
-				if len(provider.AttrNames()) != 1 {
-					t.Fatalf("unexpected item %s: %d", identifiers.hostListProvider, len(provider.AttrNames()))
-				}
+
 				val, err := provider.Attr("hosts")
 				if err != nil {
 					t.Fatal(err)
