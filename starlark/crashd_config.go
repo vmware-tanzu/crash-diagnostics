@@ -5,6 +5,7 @@ package starlark
 
 import (
 	"go.starlark.net/starlark"
+	"go.starlark.net/starlarkstruct"
 )
 
 // addDefaultCrashdConf initalizes a Starlark Dict with default
@@ -25,20 +26,23 @@ func addDefaultCrashdConf(thread *starlark.Thread) error {
 	return nil
 }
 
-// crashConfig is built-in starlark function that wraps the kwargs into a dictionary value.
-// The result is also added to the thread for other built-in to access.
+// crashConfig is built-in starlark function that saves and returns the kwargs as a struct value.
+// Starlark format: crashd_config(conf0=val0, ..., confN=ValN)
 func crashdConfigFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	var dictionary *starlark.Dict
+	var dictionary starlark.StringDict
 	if kwargs != nil {
-		dict, err := tupleSliceToDict(kwargs)
+		dict, err := kwargsToStringDict(kwargs)
 		if err != nil {
 			return starlark.None, err
 		}
 		dictionary = dict
 	}
 
-	// save dict to be used as default
-	thread.SetLocal(identifiers.crashdCfg, dictionary)
+	structVal := starlarkstruct.FromStringDict(starlarkstruct.Default, dictionary)
 
-	return dictionary, nil
+	// save values to be used as default
+	thread.SetLocal(identifiers.crashdCfg, structVal)
+
+	// return values as a struct (i.e. config.arg0, ... , config.argN)
+	return starlark.None, nil
 }

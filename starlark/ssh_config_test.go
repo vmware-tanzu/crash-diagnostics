@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"go.starlark.net/starlark"
+	"go.starlark.net/starlarkstruct"
 )
 
 func TestSSHConfigNew(t *testing.T) {
@@ -39,19 +40,16 @@ func TestSSHConfigFunc(t *testing.T) {
 				if data == nil {
 					t.Fatal("ssh_config not saved in thread local")
 				}
-				cfg, ok := data.(*starlark.Dict)
+				cfg, ok := data.(*starlarkstruct.Struct)
 				if !ok {
 					t.Fatalf("unexpected type for thread local key ssh_config: %T", data)
 				}
-				if cfg.Len() != 2 {
-					t.Fatalf("unexpected item count in ssh_config: %d", cfg.Len())
+				if len(cfg.AttrNames()) != 2 {
+					t.Fatalf("unexpected item count in ssh_config: %d", len(cfg.AttrNames()))
 				}
-				val, found, err := cfg.Get(starlark.String("username"))
+				val, err := cfg.Attr("username")
 				if err != nil {
 					t.Fatal(err)
-				}
-				if !found {
-					t.Fatalf("key 'username' not found in ssh_config")
 				}
 				if trimQuotes(val.String()) != "uname" {
 					t.Fatalf("unexpected value for key 'foo': %s", val.String())
@@ -71,19 +69,16 @@ func TestSSHConfigFunc(t *testing.T) {
 				if data == nil {
 					t.Fatal("ssh_config function not returning value")
 				}
-				cfg, ok := data.(*starlark.Dict)
+				cfg, ok := data.(*starlarkstruct.Struct)
 				if !ok {
 					t.Fatalf("unexpected type for thread local key ssh_config: %T", data)
 				}
-				if cfg.Len() != 2 {
-					t.Fatalf("unexpected item count in ssh_config: %d", cfg.Len())
+				if len(cfg.AttrNames()) != 2 {
+					t.Fatalf("unexpected item count in ssh_config: %d", len(cfg.AttrNames()))
 				}
-				val, found, err := cfg.Get(starlark.String("private_key_path"))
+				val, err := cfg.Attr("private_key_path")
 				if err != nil {
 					t.Fatal(err)
-				}
-				if !found {
-					t.Fatalf("key 'private_key_path' not found in ssh_config")
 				}
 				if trimQuotes(val.String()) != "path" {
 					t.Fatalf("unexpected value for key %s in ssh_config", val.String())
@@ -104,19 +99,16 @@ func TestSSHConfigFunc(t *testing.T) {
 					t.Fatal("default ssh_config not saved in thread local")
 				}
 
-				cfg, ok := data.(*starlark.Dict)
+				cfg, ok := data.(*starlarkstruct.Struct)
 				if !ok {
 					t.Fatalf("unexpected type for thread local key ssh_config: %T", data)
 				}
-				if cfg.Len() != 4 {
-					t.Fatalf("unexpected item count in ssh_config: %d", cfg.Len())
+				if len(cfg.AttrNames()) != 4 {
+					t.Fatalf("unexpected item count in ssh_config: %d", len(cfg.AttrNames()))
 				}
-				val, found, err := cfg.Get(starlark.String("conn_retries"))
+				val, err := cfg.Attr("conn_retries")
 				if err != nil {
 					t.Fatal(err)
-				}
-				if !found {
-					t.Fatalf("key 'conn_retries' not found in ssh_config")
 				}
 				retries := val.(starlark.Int)
 				if retries.BigInt().Int64() != int64(10) {
