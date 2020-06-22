@@ -10,7 +10,7 @@ import (
 	"go.starlark.net/starlarkstruct"
 )
 
-// resourcesFunc is a built-in starlark function that prepares returns compute resources as a struct.
+// resourcesFunc is a built-in starlark function that prepares returns compute list of resources.
 // Starlark format: resources(provider=<provider-function>)
 func resourcesFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	if kwargs == nil {
@@ -56,14 +56,14 @@ func resourcesFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.T
 	return resources, nil
 }
 
-// enum returns a struct containing the fully enumerated compute resource
+// enum returns a list of structs containing the fully enumerated compute resource
 // info needed to execute commands.
-func enum(provider *starlarkstruct.Struct) (*starlarkstruct.Struct, error) {
+func enum(provider *starlarkstruct.Struct) (*starlark.List, error) {
 	if provider == nil {
 		fmt.Errorf("missing provider")
 	}
 
-	var resStruct *starlarkstruct.Struct
+	var resources []starlark.Value
 
 	kindVal, err := provider.Attr("kind")
 	if err != nil {
@@ -78,6 +78,12 @@ func enum(provider *starlarkstruct.Struct) (*starlarkstruct.Struct, error) {
 		if err != nil {
 			return nil, fmt.Errorf("hosts not found in %s", identifiers.hostListProvider)
 		}
+
+		hostList, ok := hosts.(*starlark.List)
+		if !ok {
+			return nil, fmt.Errorf("%s: unexpected type for hosts: %T", identifiers.hostListProvider, hosts)
+		}
+
 		transport, err := provider.Attr("transport")
 		if err != nil {
 			return nil, fmt.Errorf("transport not found in %s", identifiers.hostListProvider)
@@ -88,13 +94,17 @@ func enum(provider *starlarkstruct.Struct) (*starlarkstruct.Struct, error) {
 			return nil, fmt.Errorf("ssh_config not found in %s", identifiers.hostListProvider)
 		}
 
-		dict := starlark.StringDict{
-			"kind":       starlark.String(identifiers.hostListResources),
-			"hosts":      hosts,
-			"transport":  transport,
-			"ssh_config": sshCfg,
+		for i := 0; i < hostList.Len(); i++ {
+			dict := starlark.StringDict{
+				"kind":       starlark.String(identifiers.hostResource),
+				"provider":   starlark.String(identifiers.hostListProvider),
+				"host":       hostList.Index(i),
+				"transport":  transport,
+				"ssh_config": sshCfg,
+			}
+			resources = append(resources, starlarkstruct.FromStringDict(starlarkstruct.Default, dict))
 		}
-		resStruct = starlarkstruct.FromStringDict(starlarkstruct.Default, dict)
 	}
-	return resStruct, nil
+
+	return starlark.NewList(resources), nil
 }

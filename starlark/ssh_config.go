@@ -4,6 +4,8 @@
 package starlark
 
 import (
+	"fmt"
+
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
@@ -31,6 +33,20 @@ func sshConfigFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tup
 		dictionary = dict
 	}
 
+	// validation
+	if _, ok := dictionary[identifiers.username]; !ok {
+		return starlark.None, fmt.Errorf("%s: username required", identifiers.sshCfg)
+	}
+	if _, ok := dictionary[identifiers.port]; !ok {
+		dictionary[identifiers.port] = starlark.String(defaults.sshPort)
+	}
+	if _, ok := dictionary[identifiers.maxRetries]; !ok {
+		dictionary[identifiers.maxRetries] = starlark.MakeInt(defaults.connRetries)
+	}
+	if _, ok := dictionary[identifiers.privateKeyPath]; !ok {
+		dictionary[identifiers.privateKeyPath] = starlark.String(defaults.pkPath)
+	}
+
 	structVal := starlarkstruct.FromStringDict(starlarkstruct.Default, dictionary)
 
 	// save to be used as default when needed
@@ -42,8 +58,9 @@ func sshConfigFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tup
 func makeDefaultSSHConfig() []starlark.Tuple {
 	return []starlark.Tuple{
 		starlark.Tuple{starlark.String("username"), starlark.String(getUsername())},
+		starlark.Tuple{starlark.String("port"), starlark.String("22")},
 		starlark.Tuple{starlark.String("private_key_path"), starlark.String(defaults.pkPath)},
-		starlark.Tuple{starlark.String("conn_retries"), starlark.MakeInt(defaults.connRetries)},
+		starlark.Tuple{starlark.String("max_retries"), starlark.MakeInt(defaults.connRetries)},
 		starlark.Tuple{starlark.String("conn_timeout"), starlark.MakeInt(defaults.connTimeout)},
 	}
 }

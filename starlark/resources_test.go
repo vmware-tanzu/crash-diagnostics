@@ -63,41 +63,50 @@ func TestResourcesFunc(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				resStruct, ok := res.(*starlarkstruct.Struct)
+				resources, ok := res.(*starlark.List)
 				if !ok {
-					t.Fatalf("unexpected type for resource: %T", res)
-				}
-				val, err := resStruct.Attr("kind")
-				if err != nil {
-					t.Error(err)
-				}
-				if trimQuotes(val.String()) != identifiers.hostListResources {
-					t.Errorf("unexpected resource kind for host list provider")
+					t.Fatalf("unexpected type for resource: %T", resources)
 				}
 
-				transport, err := resStruct.Attr("transport")
-				if err != nil {
-					t.Error(err)
-				}
-				if trimQuotes(transport.String()) != "ssh" {
-					t.Errorf("unexpected %s transport: %s", identifiers.resources, transport)
-				}
+				expectedHosts := []string{"foo.host.1"}
+				for i := 0; i < resources.Len(); i++ {
+					resStruct, ok := resources.Index(i).(*starlarkstruct.Struct)
+					if !ok {
+						t.Fatalf("unexpected type for resource: %T", resources.Index(i))
+					}
 
-				sshCfg, err := resStruct.Attr(identifiers.sshCfg)
-				if err != nil {
-					t.Error(err)
-				}
-				if sshCfg == nil {
-					t.Error("resources missing ssh_config")
-				}
+					val, err := resStruct.Attr("kind")
+					if err != nil {
+						t.Error(err)
+					}
+					if trimQuotes(val.String()) != identifiers.hostResource {
+						t.Errorf("unexpected resource kind for host list provider")
+					}
 
-				hosts, err := resStruct.Attr("hosts")
-				if err != nil {
-					t.Error(err)
-				}
-				hostList := hosts.(*starlark.List)
-				if trimQuotes(hostList.Index(0).String()) != "foo.host.1" {
-					t.Error("unexpected value for names list in resources")
+					transport, err := resStruct.Attr("transport")
+					if err != nil {
+						t.Error(err)
+					}
+					if trimQuotes(transport.String()) != "ssh" {
+						t.Errorf("unexpected %s transport: %s", identifiers.resources, transport)
+					}
+
+					sshCfg, err := resStruct.Attr(identifiers.sshCfg)
+					if err != nil {
+						t.Error(err)
+					}
+					if sshCfg == nil {
+						t.Error("resources missing ssh_config")
+					}
+
+					host, err := resStruct.Attr("host")
+					if err != nil {
+						t.Error(err)
+					}
+
+					if trimQuotes(host.String()) != expectedHosts[0] {
+						t.Error("unexpected value for names list in resources")
+					}
 				}
 			},
 		},
@@ -106,7 +115,12 @@ func TestResourcesFunc(t *testing.T) {
 			kwargs: func(t *testing.T) []starlark.Tuple {
 				provider, err := newHostListProvider(
 					newThreadLocal(),
-					starlark.StringDict{"hosts": starlark.NewList([]starlark.Value{starlark.String("local.host")})},
+					starlark.StringDict{"hosts": starlark.NewList(
+						[]starlark.Value{
+							starlark.String("local.host"),
+							starlark.String("192.168.10.10"),
+						},
+					)},
 				)
 				if err != nil {
 					t.Fatal(err)
@@ -120,41 +134,49 @@ func TestResourcesFunc(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				resStruct, ok := res.(*starlarkstruct.Struct)
+
+				resources, ok := res.(*starlark.List)
 				if !ok {
-					t.Fatalf("unexpected type for resource: %T", res)
-				}
-				val, err := resStruct.Attr("kind")
-				if err != nil {
-					t.Error(err)
-				}
-				if trimQuotes(val.String()) != identifiers.hostListResources {
-					t.Errorf("unexpected resource kind for host list provider")
+					t.Fatalf("unexpected type for resource: %T", resources)
 				}
 
-				transport, err := resStruct.Attr("transport")
-				if err != nil {
-					t.Error(err)
-				}
-				if trimQuotes(transport.String()) != "ssh" {
-					t.Errorf("unexpected %s transport: %s", identifiers.resources, transport)
-				}
+				expectedHosts := []string{"local.host", "192.168.10.10"}
+				for i := 0; i < resources.Len(); i++ {
+					resStruct, ok := resources.Index(i).(*starlarkstruct.Struct)
+					if !ok {
+						t.Fatalf("unexpected type for resource: %T", res)
+					}
+					val, err := resStruct.Attr("kind")
+					if err != nil {
+						t.Error(err)
+					}
+					if trimQuotes(val.String()) != identifiers.hostResource {
+						t.Errorf("unexpected resource kind for host list provider")
+					}
 
-				sshCfg, err := resStruct.Attr(identifiers.sshCfg)
-				if err != nil {
-					t.Error(err)
-				}
-				if sshCfg == nil {
-					t.Error("resources missing ssh_config")
-				}
+					transport, err := resStruct.Attr("transport")
+					if err != nil {
+						t.Error(err)
+					}
+					if trimQuotes(transport.String()) != "ssh" {
+						t.Errorf("unexpected %s transport: %s", identifiers.resources, transport)
+					}
 
-				hosts, err := resStruct.Attr("hosts")
-				if err != nil {
-					t.Error(err)
-				}
-				hostList := hosts.(*starlark.List)
-				if trimQuotes(hostList.Index(0).String()) != "local.host" {
-					t.Error("unexpected value for names list in resources")
+					sshCfg, err := resStruct.Attr(identifiers.sshCfg)
+					if err != nil {
+						t.Error(err)
+					}
+					if sshCfg == nil {
+						t.Error("resources missing ssh_config")
+					}
+
+					host, err := resStruct.Attr("host")
+					if err != nil {
+						t.Error(err)
+					}
+					if trimQuotes(host.String()) != expectedHosts[i] {
+						t.Error("unexpected value for names list in resources")
+					}
 				}
 			},
 		},
@@ -185,48 +207,56 @@ func TestResourceScript(t *testing.T) {
 				if data == nil {
 					t.Fatalf("default %s not found in thread", identifiers.resources)
 				}
-				resStruct, ok := data.(*starlarkstruct.Struct)
+				resources, ok := data.(*starlark.List)
 				if !ok {
 					t.Fatalf("expecting *starlark.Struct, got %T", data)
 				}
 
-				val, err := resStruct.Attr("kind")
-				if err != nil {
-					t.Error(err)
-				}
-				if trimQuotes(val.String()) != identifiers.hostListResources {
-					t.Errorf("unexpected resource kind for host list provider")
-				}
+				expectedHosts := []string{"foo.host.1"}
+				for i := 0; i < resources.Len(); i++ {
+					resStruct := resources.Index(i).(*starlarkstruct.Struct)
+					if !ok {
+						t.Fatalf("expecting *starlark.Struct, got %T", resources.Index(i))
+					}
 
-				transport, err := resStruct.Attr("transport")
-				if err != nil {
-					t.Error(err)
-				}
-				if trimQuotes(transport.String()) != "ssh" {
-					t.Errorf("unexpected %s transport: %s", identifiers.resources, transport)
-				}
+					val, err := resStruct.Attr("kind")
+					if err != nil {
+						t.Error(err)
+					}
+					if trimQuotes(val.String()) != identifiers.hostResource {
+						t.Errorf("unexpected resource kind for host list provider: %s", val.String())
+					}
 
-				sshCfg, err := resStruct.Attr(identifiers.sshCfg)
-				if err != nil {
-					t.Error(err)
-				}
-				if sshCfg == nil {
-					t.Error("resources missing ssh_config")
-				}
+					transport, err := resStruct.Attr("transport")
+					if err != nil {
+						t.Error(err)
+					}
+					if trimQuotes(transport.String()) != "ssh" {
+						t.Errorf("unexpected %s transport: %s", identifiers.resources, transport)
+					}
 
-				hosts, err := resStruct.Attr("hosts")
-				if err != nil {
-					t.Error(err)
-				}
-				hostList := hosts.(*starlark.List)
-				if trimQuotes(hostList.Index(0).String()) != "foo.host.1" {
-					t.Error("unexpected value for names list in resources")
+					sshCfg, err := resStruct.Attr(identifiers.sshCfg)
+					if err != nil {
+						t.Error(err)
+					}
+					if sshCfg == nil {
+						t.Error("resources missing ssh_config")
+					}
+
+					host, err := resStruct.Attr("host")
+					if err != nil {
+						t.Error(err)
+					}
+
+					if trimQuotes(host.String()) != expectedHosts[i] {
+						t.Error("unexpected value for names list in resources")
+					}
 				}
 			},
 		},
 		{
 			name:   "default resource with provider",
-			script: `resources(provider=host_list_provider(hosts="foo.host.1"))`,
+			script: `resources(provider=host_list_provider(hosts=["foo.host.1","foo.host.2"]))`,
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
@@ -236,48 +266,55 @@ func TestResourceScript(t *testing.T) {
 				if data == nil {
 					t.Fatalf("default %s not found in thread", identifiers.resources)
 				}
-				resStruct, ok := data.(*starlarkstruct.Struct)
+				resources, ok := data.(*starlark.List)
 				if !ok {
 					t.Fatalf("expecting *starlark.Struct, got %T", data)
 				}
 
-				val, err := resStruct.Attr("kind")
-				if err != nil {
-					t.Error(err)
-				}
-				if trimQuotes(val.String()) != identifiers.hostListResources {
-					t.Errorf("unexpected resource kind for host list provider")
-				}
+				expectedHosts := []string{"foo.host.1", "foo.host.2"}
+				for i := 0; i < resources.Len(); i++ {
+					resStruct, ok := resources.Index(i).(*starlarkstruct.Struct)
+					if !ok {
+						t.Fatalf("expecting *starlark.Struct, got %T", resources.Index(i))
+					}
 
-				transport, err := resStruct.Attr("transport")
-				if err != nil {
-					t.Error(err)
-				}
-				if trimQuotes(transport.String()) != "ssh" {
-					t.Errorf("unexpected %s transport: %s", identifiers.resources, transport)
-				}
+					val, err := resStruct.Attr("kind")
+					if err != nil {
+						t.Error(err)
+					}
+					if trimQuotes(val.String()) != identifiers.hostResource {
+						t.Errorf("unexpected resource kind for host list provider")
+					}
 
-				sshCfg, err := resStruct.Attr(identifiers.sshCfg)
-				if err != nil {
-					t.Error(err)
-				}
-				if sshCfg == nil {
-					t.Error("resources missing ssh_config")
-				}
+					transport, err := resStruct.Attr("transport")
+					if err != nil {
+						t.Error(err)
+					}
+					if trimQuotes(transport.String()) != "ssh" {
+						t.Errorf("unexpected %s transport: %s", identifiers.resources, transport)
+					}
 
-				hosts, err := resStruct.Attr("hosts")
-				if err != nil {
-					t.Error(err)
-				}
-				hostList := hosts.(*starlark.List)
-				if trimQuotes(hostList.Index(0).String()) != "foo.host.1" {
-					t.Error("unexpected value for names list in resources")
+					sshCfg, err := resStruct.Attr(identifiers.sshCfg)
+					if err != nil {
+						t.Error(err)
+					}
+					if sshCfg == nil {
+						t.Error("resources missing ssh_config")
+					}
+
+					host, err := resStruct.Attr("host")
+					if err != nil {
+						t.Error(err)
+					}
+					if trimQuotes(host.String()) != expectedHosts[i] {
+						t.Error("unexpected value for names list in resources")
+					}
 				}
 			},
 		},
 		{
 			name:   "resources assigned",
-			script: `res = resources(hosts="foo.host.1")`,
+			script: `res = resources(hosts=["foo.host.1", "local.host", "10.10.10.1"])`,
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
@@ -287,72 +324,54 @@ func TestResourceScript(t *testing.T) {
 				if data == nil {
 					t.Fatalf("%s function call not returning value", identifiers.resources)
 				}
-				resStruct, ok := data.(*starlarkstruct.Struct)
+
+				resources, ok := data.(*starlark.List)
 				if !ok {
 					t.Fatalf("expecting *starlark.Struct, got %T", data)
 				}
 
-				val, err := resStruct.Attr("kind")
-				if err != nil {
-					t.Error(err)
-				}
-				if trimQuotes(val.String()) != identifiers.hostListResources {
-					t.Errorf("unexpected resource kind for host list provider")
-				}
+				expectedHosts := []string{"foo.host.1", "local.host", "10.10.10.1"}
+				for i := 0; i < resources.Len(); i++ {
+					resStruct, ok := resources.Index(i).(*starlarkstruct.Struct)
+					if !ok {
+						t.Fatalf("expecting *starlark.Struct, got %T", resources.Index(i))
+					}
 
-				transport, err := resStruct.Attr("transport")
-				if err != nil {
-					t.Error(err)
-				}
-				if trimQuotes(transport.String()) != "ssh" {
-					t.Errorf("unexpected %s transport: %s", identifiers.resources, transport)
-				}
+					val, err := resStruct.Attr("kind")
+					if err != nil {
+						t.Error(err)
+					}
+					if trimQuotes(val.String()) != identifiers.hostResource {
+						t.Errorf("unexpected resource kind for host list provider")
+					}
 
-				sshCfg, err := resStruct.Attr(identifiers.sshCfg)
-				if err != nil {
-					t.Error(err)
-				}
-				if sshCfg == nil {
-					t.Error("resources missing ssh_config")
-				}
+					transport, err := resStruct.Attr("transport")
+					if err != nil {
+						t.Error(err)
+					}
+					if trimQuotes(transport.String()) != "ssh" {
+						t.Errorf("unexpected %s transport: %s", identifiers.resources, transport)
+					}
 
-				hosts, err := resStruct.Attr("hosts")
-				if err != nil {
-					t.Error(err)
-				}
-				hostList := hosts.(*starlark.List)
-				if trimQuotes(hostList.Index(0).String()) != "foo.host.1" {
-					t.Error("unexpected value for names list in resources")
+					sshCfg, err := resStruct.Attr(identifiers.sshCfg)
+					if err != nil {
+						t.Error(err)
+					}
+					if sshCfg == nil {
+						t.Error("resources missing ssh_config")
+					}
+
+					host, err := resStruct.Attr("host")
+					if err != nil {
+						t.Error(err)
+					}
+
+					if trimQuotes(host.String()) != expectedHosts[i] {
+						t.Error("unexpected value for names list in resources")
+					}
 				}
 			},
 		},
-		//{
-		//	name:   "multiple hosts",
-		//	script: `provider = host_list_provider(hosts=["foo.host.1", "foo.host.2"])`,
-		//	eval: func(t *testing.T, script string) {
-		//		exe := New()
-		//		if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
-		//			t.Fatal(err)
-		//		}
-		//		data := exe.result["provider"]
-		//		if data == nil {
-		//			t.Fatalf("%s function not returning value", identifiers.hostListProvider)
-		//		}
-		//		provider, ok := data.(*starlarkstruct.Struct)
-		//		if !ok {
-		//			t.Fatalf("expecting *starlark.Struct, got %T", data)
-		//		}
-		//
-		//		val, err := provider.Attr("hosts")
-		//		if err != nil {
-		//			t.Fatal(err)
-		//		}
-		//		list := val.(*starlark.List)
-		//		if list.Len() != 2 {
-		//			t.Fatalf("expecting %d items for argument 'hosts', got %d", 2, list.Len())
-		//		}
-		//	},
-		//},
 	}
 
 	for _, test := range tests {

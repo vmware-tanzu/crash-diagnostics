@@ -5,11 +5,17 @@ package testing
 
 import (
 	"flag"
+	"fmt"
+	"math/rand"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
 
 var (
+	InfraSetupWait = time.Second * 11
+
+	rnd              = rand.New(rand.NewSource(time.Now().Unix()))
 	sshContainerName = "test-sshd"
 	sshPort          = "2222"
 )
@@ -27,7 +33,12 @@ func Init() {
 	logrus.SetLevel(logLevel)
 }
 
-// DefaultSSHPort is the default SSH port
-func DefaultSSHPort() string {
-	return sshPort
+//NextSSHPort returns a pseudo-rando test [2200 .. 2230]
+func NextSSHPort() string {
+	port := 2200 + rnd.Intn(30)
+	return fmt.Sprintf("%d", port)
+}
+
+func NextSSHContainerName() string {
+	return fmt.Sprintf("crashd-test-%x", rnd.Uint64())
 }
