@@ -10,23 +10,42 @@ import (
 
 var (
 	identifiers = struct {
-		crashdCfg        string
-		sshCfg           string
+		crashdCfg string
+
+		sshCfg         string
+		port           string
+		username       string
+		privateKeyPath string
+		maxRetries     string
+		jumpUser       string
+		jumpHost       string
+
 		hostListProvider string
-		hostListResources string
+		hostResource     string
 		resources        string
+		run              string
 	}{
-		crashdCfg:        "crashd_config",
-		sshCfg:           "ssh_config",
+		crashdCfg: "crashd_config",
+
+		sshCfg:         "ssh_config",
+		port:           "port",
+		username:       "username",
+		privateKeyPath: "private_key_path",
+		maxRetries:     "max_retries",
+		jumpUser:       "jump_user",
+		jumpHost:       "jump_host",
+
 		hostListProvider: "host_list_provider",
-		hostListResources: "host_list_resources",
+		hostResource:     "host_resource",
 		resources:        "resources",
+		run:              "run",
 	}
 
 	defaults = struct {
 		crashdir    string
 		workdir     string
 		kubeconfig  string
+		sshPort     string
 		pkPath      string
 		outPath     string
 		connRetries int
@@ -41,11 +60,12 @@ var (
 			}
 			return kubecfg
 		}(),
+		sshPort: "22",
 		pkPath: func() string {
 			return filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa")
 		}(),
 		outPath:     "./crashd.tar.gz",
-		connRetries: 10,
+		connRetries: 20,
 		connTimeout: 30,
 	}
 )

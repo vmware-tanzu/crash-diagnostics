@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
 
@@ -44,7 +43,7 @@ func TestSSHConfigFunc(t *testing.T) {
 				if !ok {
 					t.Fatalf("unexpected type for thread local key ssh_config: %T", data)
 				}
-				if len(cfg.AttrNames()) != 2 {
+				if len(cfg.AttrNames()) != 4 {
 					t.Fatalf("unexpected item count in ssh_config: %d", len(cfg.AttrNames()))
 				}
 				val, err := cfg.Attr("username")
@@ -73,7 +72,7 @@ func TestSSHConfigFunc(t *testing.T) {
 				if !ok {
 					t.Fatalf("unexpected type for thread local key ssh_config: %T", data)
 				}
-				if len(cfg.AttrNames()) != 2 {
+				if len(cfg.AttrNames()) != 4 {
 					t.Fatalf("unexpected item count in ssh_config: %d", len(cfg.AttrNames()))
 				}
 				val, err := cfg.Attr("private_key_path")
@@ -103,16 +102,8 @@ func TestSSHConfigFunc(t *testing.T) {
 				if !ok {
 					t.Fatalf("unexpected type for thread local key ssh_config: %T", data)
 				}
-				if len(cfg.AttrNames()) != 4 {
+				if len(cfg.AttrNames()) != 5 {
 					t.Fatalf("unexpected item count in ssh_config: %d", len(cfg.AttrNames()))
-				}
-				val, err := cfg.Attr("conn_retries")
-				if err != nil {
-					t.Fatal(err)
-				}
-				retries := val.(starlark.Int)
-				if retries.BigInt().Int64() != int64(10) {
-					t.Fatalf("unexpected value for key %s in configs.crashd", val.String())
 				}
 			},
 		},
