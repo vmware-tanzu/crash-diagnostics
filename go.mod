@@ -4,6 +4,8 @@ go 1.12
 
 require (
 	github.com/imdario/mergo v0.3.7 // indirect
+	github.com/onsi/ginkgo v1.10.1
+	github.com/onsi/gomega v1.7.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.5
 	github.com/vladimirvivien/echo v0.0.1-alpha.4
