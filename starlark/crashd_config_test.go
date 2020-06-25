@@ -4,6 +4,7 @@
 package starlark
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -11,18 +12,14 @@ import (
 	"go.starlark.net/starlarkstruct"
 )
 
-func TestCrashdConfigNew(t *testing.T) {
+func testCrashdConfigNew(t *testing.T) {
 	e := New()
 	if e.thread == nil {
 		t.Error("thread is nil")
 	}
-	cfg := e.thread.Local(identifiers.crashdCfg)
-	if cfg == nil {
-		t.Error("crashd_config dict not found in thread")
-	}
 }
 
-func TestCrashdConfigFunc(t *testing.T) {
+func testCrashdConfigFunc(t *testing.T) {
 	tests := []struct {
 		name   string
 		script string
@@ -110,6 +107,23 @@ func TestCrashdConfigFunc(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			test.eval(t, test.script)
+		})
+	}
+}
+
+func TestCrashdCfgAll(t *testing.T) {
+	tests := []struct {
+		name string
+		test func(*testing.T)
+	}{
+		{name: "testCrashdConfigNew", test: testCrashdConfigNew},
+		{name: "testCrashdConfigFunc", test: testCrashdConfigFunc},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			defer os.RemoveAll(defaults.workdir)
+			test.test(t)
 		})
 	}
 }

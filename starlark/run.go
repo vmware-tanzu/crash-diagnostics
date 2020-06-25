@@ -61,15 +61,14 @@ func runFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, 
 	}
 
 	if dictionary["cmd"] != nil {
-		cmd, ok := dictionary["cmd"].(starlark.String)
-		if ok {
+		if cmd, ok := dictionary["cmd"].(starlark.String); ok {
 			cmdStr = string(cmd)
 		}
 	}
 
 	// extract resources
 	var resources *starlark.List
-	if dictionary["resources"] != nil {
+	if dictionary[identifiers.resources] != nil {
 		res, ok := dictionary[identifiers.resources].(*starlark.List)
 		if !ok {
 			return starlark.None, fmt.Errorf("%s: unexpected resources type", identifiers.run)

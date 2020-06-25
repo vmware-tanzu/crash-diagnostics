@@ -15,10 +15,6 @@ func TestSSHConfigNew(t *testing.T) {
 	if e.thread == nil {
 		t.Error("thread is nil")
 	}
-	cfg := e.thread.Local(identifiers.sshCfg)
-	if cfg == nil {
-		t.Error("ssh_config dict not found in thread")
-	}
 }
 
 func TestSSHConfigFunc(t *testing.T) {

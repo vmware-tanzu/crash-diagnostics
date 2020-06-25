@@ -4,6 +4,7 @@
 package ssh
 
 import (
+	"bytes"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -11,7 +12,7 @@ import (
 	"testing"
 )
 
-func TestSSHRun(t *testing.T) {
+func TestRun(t *testing.T) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		t.Fatal(err)
@@ -31,7 +32,7 @@ func TestSSHRun(t *testing.T) {
 	}{
 		{
 			name:   "simple cmd",
-			args:   SSHArgs{User: usr.Username, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: 100},
+			args:   SSHArgs{User: usr.Username, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: 10},
 			cmd:    "echo 'Hello World!'",
 			result: "Hello World!",
 		},
@@ -43,6 +44,50 @@ func TestSSHRun(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			if test.result != expected {
+				t.Fatalf("unexpected result %s", expected)
+			}
+		})
+	}
+}
+
+func TestRunRead(t *testing.T) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	usr, err := user.Current()
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkPath := filepath.Join(homeDir, ".ssh/id_rsa")
+
+	tests := []struct {
+		name   string
+		args   SSHArgs
+		cmd    string
+		result string
+	}{
+		{
+			name:   "simple cmd",
+			args:   SSHArgs{User: usr.Username, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: 10},
+			cmd:    "echo 'Hello World!'",
+			result: "Hello World!",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			reader, err := RunRead(test.args, test.cmd)
+			if err != nil {
+				t.Fatal(err)
+			}
+			buf := new(bytes.Buffer)
+			if _, err := buf.ReadFrom(reader); err != nil {
+				t.Fatal(err)
+			}
+			expected := strings.TrimSpace(buf.String())
 			if test.result != expected {
 				t.Fatalf("unexpected result %s", expected)
 			}
