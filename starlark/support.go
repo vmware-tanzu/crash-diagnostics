@@ -25,6 +25,10 @@ var (
 		hostResource     string
 		resources        string
 		run              string
+
+		// Directives
+		kubeCaptureDirective string
+		kubeGetDirective     string
 	}{
 		crashdCfg: "crashd_config",
 		kubeCfg:   "kube_config",
@@ -41,6 +45,9 @@ var (
 		hostResource:     "host_resource",
 		resources:        "resources",
 		run:              "run",
+
+		kubeGetDirective:     "kube_get",
+		kubeCaptureDirective: "kube_capture",
 	}
 
 	defaults = struct {

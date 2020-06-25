@@ -12,10 +12,10 @@ import (
 // crashd_config configuration data
 func addDefaultCrashdConf(thread *starlark.Thread) error {
 	args := []starlark.Tuple{
-		starlark.Tuple{starlark.String("gid"), starlark.String(getGid())},
-		starlark.Tuple{starlark.String("uid"), starlark.String(getUid())},
-		starlark.Tuple{starlark.String("workdir"), starlark.String(defaults.workdir)},
-		starlark.Tuple{starlark.String("output_path"), starlark.String(defaults.outPath)},
+		{starlark.String("gid"), starlark.String(getGid())},
+		{starlark.String("uid"), starlark.String(getUid())},
+		{starlark.String("workdir"), starlark.String(defaults.workdir)},
+		{starlark.String("output_path"), starlark.String(defaults.outPath)},
 	}
 
 	_, err := crashdConfigFn(thread, nil, nil, args)

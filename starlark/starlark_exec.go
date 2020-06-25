@@ -52,13 +52,14 @@ func newThreadLocal() *starlark.Thread {
 // runing script.
 func newPredeclareds() starlark.StringDict {
 	return starlark.StringDict{
-		"os":                         setupOSStruct(),
-		identifiers.crashdCfg:        starlark.NewBuiltin(identifiers.crashdCfg, crashdConfigFn),
-		identifiers.sshCfg:           starlark.NewBuiltin(identifiers.sshCfg, sshConfigFn),
-		identifiers.hostListProvider: starlark.NewBuiltin(identifiers.hostListProvider, hostListProvider),
-		identifiers.resources:        starlark.NewBuiltin(identifiers.resources, resourcesFunc),
-		identifiers.run:              starlark.NewBuiltin(identifiers.run, runFunc),
-		identifiers.kubeCfg:          starlark.NewBuiltin(identifiers.kubeCfg, kubeConfigFn),
+		"os":                             setupOSStruct(),
+		identifiers.crashdCfg:            starlark.NewBuiltin(identifiers.crashdCfg, crashdConfigFn),
+		identifiers.sshCfg:               starlark.NewBuiltin(identifiers.sshCfg, sshConfigFn),
+		identifiers.hostListProvider:     starlark.NewBuiltin(identifiers.hostListProvider, hostListProvider),
+		identifiers.resources:            starlark.NewBuiltin(identifiers.resources, resourcesFunc),
+		identifiers.run:                  starlark.NewBuiltin(identifiers.run, runFunc),
+		identifiers.kubeCfg:              starlark.NewBuiltin(identifiers.kubeCfg, kubeConfigFn),
+		identifiers.kubeCaptureDirective: starlark.NewBuiltin(identifiers.kubeGetDirective, KubeCaptureFn),
 	}
 }
 

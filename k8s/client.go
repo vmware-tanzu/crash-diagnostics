@@ -31,16 +31,6 @@ type Client struct {
 	JsonPrinter printers.JSONPrinter
 }
 
-type SearchResult struct {
-	ListKind             string
-	ResourceName         string
-	ResourceKind         string
-	GroupVersionResource schema.GroupVersionResource
-	List                 *unstructured.UnstructuredList
-	Namespaced           bool
-	Namespace            string
-}
-
 // New returns a *Client
 func New(kubeconfig string) (*Client, error) {
 	// creating cfg for each client type because each
