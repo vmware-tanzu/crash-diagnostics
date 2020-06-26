@@ -26,13 +26,13 @@ func KubeCaptureFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.T
 	}
 	structVal := starlarkstruct.FromStringDict(starlarkstruct.Default, argDict)
 
-	kubeconfig, err := kubeconfigPath(thread, structVal)
+	kubeconfig, err := getKubeConfigPath(thread, structVal)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to kubeconfig")
+		return starlark.None, errors.Wrap(err, "failed to kubeconfig")
 	}
 	client, err := k8s.New(kubeconfig)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not initialize search client")
+		return starlark.None, errors.Wrap(err, "could not initialize search client")
 	}
 
 	data := thread.Local(identifiers.crashdCfg)
@@ -40,15 +40,17 @@ func KubeCaptureFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.T
 	workDirVal, _ := cfg.Attr("workdir")
 	resultDir, err := write(trimQuotes(workDirVal.String()), client, structVal)
 
-	dict := starlark.StringDict{
-		"error": starlark.String(""),
-	}
-	if err != nil {
-		dict["error"] = starlark.String(err.Error())
-	} else {
-		dict["file"] = starlark.String(resultDir)
-	}
-	return starlarkstruct.FromStringDict(starlarkstruct.Default, dict), nil
+	return starlarkstruct.FromStringDict(
+		starlarkstruct.Default,
+		starlark.StringDict{
+			"file": starlark.String(resultDir),
+			"error": func() starlark.String {
+				if err != nil {
+					return starlark.String(err.Error())
+				}
+				return ""
+			}(),
+		}), nil
 }
 
 func write(workdir string, client *k8s.Client, structVal *starlarkstruct.Struct) (string, error) {
@@ -90,29 +92,29 @@ func write(workdir string, client *k8s.Client, structVal *starlarkstruct.Struct)
 	return resultWriter.GetResultDir(), nil
 }
 
-// kubeconfigPath is responsible to obtain the path to the kubeconfig
+// getKubeConfigPath is responsible to obtain the path to the kubeconfig
 // It checks for the `path` key in the input args for the directive otherwise
 // falls back to the default kube_config from the thread context
-func kubeconfigPath(thread *starlark.Thread, structVal *starlarkstruct.Struct) (string, error) {
-	var kubeConfigPath string
+func getKubeConfigPath(thread *starlark.Thread, structVal *starlarkstruct.Struct) (string, error) {
+	var (
+		kubeConfigPath string
+		err            error
+		kcVal          starlark.Value
+	)
 
-	if v, err := structVal.Attr("path"); err == nil {
-		kubeConfigPath = v.String()
-	} else {
+	if kcVal, err = structVal.Attr("kube_config"); err != nil {
 		kubeConfigData := thread.Local(identifiers.kubeCfg)
-		if kubeConfigData == nil {
-			return kubeConfigPath, errors.New("unable to find kubeconfig data")
-		}
-		cfg, ok := kubeConfigData.(*starlarkstruct.Struct)
-		if !ok {
-			return kubeConfigPath, errors.New("unable to process kubeconfig data")
-		}
-		path, err := cfg.Attr("path")
-		if err != nil {
-			return kubeConfigPath, errors.New("unable to find path to kubeconfig")
-		}
-		kubeConfigPath = path.String()
+		kcVal = kubeConfigData.(starlark.Value)
 	}
 
+	if kubeConfigVal, ok := kcVal.(*starlarkstruct.Struct); ok {
+		kvPathVal, err := kubeConfigVal.Attr("path")
+		if err != nil {
+			return kubeConfigPath, errors.Wrap(err, "unable to extract kubeconfig path")
+		}
+		if kvPathStrVal, ok := kvPathVal.(starlark.String); ok {
+			kubeConfigPath = kvPathStrVal.GoString()
+		}
+	}
 	return trimQuotes(kubeConfigPath), nil
 }
