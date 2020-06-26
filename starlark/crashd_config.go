@@ -4,6 +4,10 @@
 package starlark
 
 import (
+	"fmt"
+	"os"
+
+	"github.com/sirupsen/logrus"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
@@ -38,6 +42,17 @@ func crashdConfigFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.
 		dictionary = dict
 	}
 
+	// validate
+	workdir := defaults.workdir
+	if dictionary["workdir"] != nil {
+		if dir, ok := dictionary["workdir"].(starlark.String); ok {
+			workdir = string(dir)
+		}
+	}
+	if err := makeCrashdWorkdir(workdir); err != nil {
+		return starlark.None, fmt.Errorf("%s: %s", identifiers.crashdCfg, err)
+	}
+
 	structVal := starlarkstruct.FromStringDict(starlarkstruct.Default, dictionary)
 
 	// save values to be used as default
@@ -45,4 +60,16 @@ func crashdConfigFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.
 
 	// return values as a struct (i.e. config.arg0, ... , config.argN)
 	return starlark.None, nil
+}
+
+func makeCrashdWorkdir(path string) error {
+	if _, err := os.Stat(path); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	logrus.Debugf("creating working directory %s", path)
+	if err := os.MkdirAll(path, 0744); err != nil && !os.IsExist(err) {
+		return err
+	}
+
+	return nil
 }

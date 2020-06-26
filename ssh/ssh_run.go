@@ -4,7 +4,10 @@
 package ssh
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -26,16 +29,34 @@ type SSHArgs struct {
 	JumpProxy      *JumpProxyArg
 }
 
+// Run runs a command over SSH and returns the result as a string
 func Run(args SSHArgs, cmd string) (string, error) {
-	e := echo.New()
-	sshCmd, err := makeSSHCmdStr(args)
+	reader, err := sshRunProc(args, cmd)
 	if err != nil {
 		return "", err
 	}
-	effectiveCmd := fmt.Sprintf(`%s "%s"`, sshCmd, cmd)
-	logrus.Debug("ssh.Run: ", effectiveCmd)
+	var result bytes.Buffer
+	if _, err := result.ReadFrom(reader); err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(result.String()), nil
+}
 
-	var result string
+// RunRead runs a command over SSH and returns an io.Reader for stdout/stderr
+func RunRead(args SSHArgs, cmd string) (io.Reader, error) {
+	return sshRunProc(args, cmd)
+}
+
+func sshRunProc(args SSHArgs, cmd string) (io.Reader, error) {
+	e := echo.New()
+	sshCmd, err := makeSSHCmdStr(args)
+	if err != nil {
+		return nil, err
+	}
+	effectiveCmd := fmt.Sprintf(`%s "%s"`, sshCmd, cmd)
+	logrus.Debug("ssh.run: ", effectiveCmd)
+
+	var proc *echo.Proc
 	maxRetries := args.MaxRetries
 	if maxRetries == 0 {
 		maxRetries = 10
@@ -44,21 +65,21 @@ func Run(args SSHArgs, cmd string) (string, error) {
 	if err := wait.ExponentialBackoff(retries, func() (bool, error) {
 		p := e.RunProc(effectiveCmd)
 		if p.Err() != nil {
-			logrus.Warn(fmt.Sprintf("unable to connect: %s", p.Err()))
+			logrus.Warn(fmt.Sprintf("ssh: failed to connect to %s: error '%s': retrying connection", args.Host, p.Err()))
 			return false, nil
 		}
-		result = p.Result()
+		proc = p
 		return true, nil // worked
 	}); err != nil {
-		logrus.Debugf("ssh.Run failed after %d tries", maxRetries)
-		return "", err
+		logrus.Debugf("ssh.run failed after %d tries", maxRetries)
+		return nil, err
 	}
 
-	return result, nil
-}
+	if proc == nil {
+		return nil, fmt.Errorf("ssh.run: did get process result")
+	}
 
-func SSHCapture(args SSHArgs, cmd string, path string) error {
-	return nil
+	return proc.Out(), nil
 }
 
 func makeSSHCmdStr(args SSHArgs) (string, error) {

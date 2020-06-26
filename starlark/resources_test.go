@@ -59,7 +59,7 @@ func TestResourcesFunc(t *testing.T) {
 				}
 			},
 			eval: func(t *testing.T, kwargs []starlark.Tuple) {
-				res, err := resourcesFunc(newThreadLocal(), nil, nil, kwargs)
+				res, err := resourcesFunc(newTestThreadLocal(t), nil, nil, kwargs)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -114,7 +114,7 @@ func TestResourcesFunc(t *testing.T) {
 			name: "provider only",
 			kwargs: func(t *testing.T) []starlark.Tuple {
 				provider, err := newHostListProvider(
-					newThreadLocal(),
+					newTestThreadLocal(t),
 					starlark.StringDict{"hosts": starlark.NewList(
 						[]starlark.Value{
 							starlark.String("local.host"),
@@ -130,7 +130,7 @@ func TestResourcesFunc(t *testing.T) {
 			},
 
 			eval: func(t *testing.T, kwargs []starlark.Tuple) {
-				res, err := resourcesFunc(newThreadLocal(), nil, nil, kwargs)
+				res, err := resourcesFunc(newTestThreadLocal(t), nil, nil, kwargs)
 				if err != nil {
 					t.Fatal(err)
 				}

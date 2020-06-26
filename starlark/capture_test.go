@@ -4,8 +4,11 @@
 package starlark
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -16,7 +19,7 @@ import (
 	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
 
-func testRunFuncHostResources(t *testing.T, port string) {
+func testCaptureFuncForHostResources(t *testing.T, port string) {
 	tests := []struct {
 		name   string
 		args   func(t *testing.T) starlark.Tuple
@@ -24,7 +27,7 @@ func testRunFuncHostResources(t *testing.T, port string) {
 		eval   func(t *testing.T, args starlark.Tuple, kwargs []starlark.Tuple)
 	}{
 		{
-			name: "default arg single machine",
+			name: "default args single machine",
 			args: func(t *testing.T) starlark.Tuple { return starlark.Tuple{starlark.String("echo 'Hello World!'")} },
 			kwargs: func(t *testing.T) []starlark.Tuple {
 				sshCfg := makeTestSSHConfig(defaults.pkPath, port)
@@ -32,11 +35,10 @@ func testRunFuncHostResources(t *testing.T, port string) {
 				return []starlark.Tuple{[]starlark.Value{starlark.String("resources"), resources}}
 			},
 			eval: func(t *testing.T, args starlark.Tuple, kwargs []starlark.Tuple) {
-				val, err := runFunc(newTestThreadLocal(t), nil, args, kwargs)
+				val, err := captureFunc(newTestThreadLocal(t), nil, args, kwargs)
 				if err != nil {
 					t.Fatal(err)
 				}
-				expected := "Hello World!"
 				result := ""
 				if strct, ok := val.(*starlarkstruct.Struct); ok {
 					if val, err := strct.Attr("result"); err == nil {
@@ -45,9 +47,28 @@ func testRunFuncHostResources(t *testing.T, port string) {
 						}
 					}
 				}
-				if expected != result {
-					t.Fatalf("runFunc returned unexpected value: %s", string(val.(starlark.String)))
+
+				expected := filepath.Join(defaults.workdir, sanitizeStr("127.0.0.1"), fmt.Sprintf("%s.txt", sanitizeStr("echo 'Hello World!'")))
+				if result != expected {
+					t.Errorf("unexpected file name captured: %s", result)
 				}
+
+				file, err := os.Open(result)
+				if err != nil {
+					t.Fatal(err)
+				}
+				buf := new(bytes.Buffer)
+				if _, err := io.Copy(buf, file); err != nil {
+					t.Fatal(err)
+				}
+				expected = strings.TrimSpace(buf.String())
+				if expected != "Hello World!" {
+					t.Errorf("unexpected content captured: %s", expected)
+				}
+				if err := file.Close(); err != nil {
+					t.Error(err)
+				}
+				defer os.RemoveAll(result)
 			},
 		},
 
@@ -60,14 +81,16 @@ func testRunFuncHostResources(t *testing.T, port string) {
 				return []starlark.Tuple{
 					[]starlark.Value{starlark.String("cmd"), starlark.String("echo 'Hello World!'")},
 					[]starlark.Value{starlark.String("resources"), resources},
+					[]starlark.Value{starlark.String("file_name"), starlark.String("echo_out.txt")},
+					[]starlark.Value{starlark.String("desc"), starlark.String("echo command")},
 				}
 			},
 			eval: func(t *testing.T, args starlark.Tuple, kwargs []starlark.Tuple) {
-				val, err := runFunc(newTestThreadLocal(t), nil, args, kwargs)
+				val, err := captureFunc(newTestThreadLocal(t), nil, args, kwargs)
 				if err != nil {
 					t.Fatal(err)
 				}
-				expected := "Hello World!"
+
 				result := ""
 				if strct, ok := val.(*starlarkstruct.Struct); ok {
 					if val, err := strct.Attr("result"); err == nil {
@@ -76,9 +99,27 @@ func testRunFuncHostResources(t *testing.T, port string) {
 						}
 					}
 				}
-				if expected != result {
-					t.Fatalf("runFunc returned unexpected value: %s", string(val.(starlark.String)))
+				expected := filepath.Join(defaults.workdir, sanitizeStr("127.0.0.1"), "echo_out.txt")
+				if result != expected {
+					t.Errorf("unexpected file name captured: %s", result)
 				}
+
+				file, err := os.Open(result)
+				if err != nil {
+					t.Fatal(err)
+				}
+				buf := new(bytes.Buffer)
+				if _, err := io.Copy(buf, file); err != nil {
+					t.Fatal(err)
+				}
+				expected = strings.TrimSpace(buf.String())
+				if expected != "echo command\nHello World!" {
+					t.Errorf("unexpected content captured: %s", expected)
+				}
+				if err := file.Close(); err != nil {
+					t.Error(err)
+				}
+				defer os.RemoveAll(result)
 			},
 		},
 
@@ -97,7 +138,7 @@ func testRunFuncHostResources(t *testing.T, port string) {
 				}
 			},
 			eval: func(t *testing.T, args starlark.Tuple, kwargs []starlark.Tuple) {
-				val, err := runFunc(newTestThreadLocal(t), nil, args, kwargs)
+				val, err := captureFunc(newTestThreadLocal(t), nil, args, kwargs)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -108,7 +149,6 @@ func testRunFuncHostResources(t *testing.T, port string) {
 				}
 
 				for i := 0; i < resultList.Len(); i++ {
-					expected := "Hello World!"
 					result := ""
 					if strct, ok := resultList.Index(i).(*starlarkstruct.Struct); ok {
 						if val, err := strct.Attr("result"); err == nil {
@@ -117,9 +157,10 @@ func testRunFuncHostResources(t *testing.T, port string) {
 							}
 						}
 					}
-					if expected != result {
-						t.Fatalf("runFunc returned unexpected value: %s", string(val.(starlark.String)))
+					if _, err := os.Stat(result); err != nil {
+						t.Fatalf("captured command file not found: %s", err)
 					}
+					os.RemoveAll(result)
 				}
 			},
 		},
@@ -132,7 +173,7 @@ func testRunFuncHostResources(t *testing.T, port string) {
 	}
 }
 
-func testRunFuncScriptHostResources(t *testing.T, port string) {
+func testCaptureFuncScriptForHostResources(t *testing.T, port string) {
 	tests := []struct {
 		name   string
 		script string
@@ -143,7 +184,7 @@ func testRunFuncScriptHostResources(t *testing.T, port string) {
 			script: fmt.Sprintf(`
 ssh_config(username=os.username, port="%s")
 resources(hosts=["127.0.0.1","localhost"])
-result = run("echo 'Hello World!'")`, port),
+result = capture("echo 'Hello World!'")`, port),
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
@@ -152,26 +193,27 @@ result = run("echo 'Hello World!'")`, port),
 
 				resultVal := exe.result["result"]
 				if resultVal == nil {
-					t.Fatal("run() should be assigned to a variable")
+					t.Fatal("capture() should be assigned to a variable")
 				}
 				resultList, ok := resultVal.(*starlark.List)
 				if !ok {
-					t.Fatal("run() with multiple resources should return a list")
+					t.Fatal("capture() with multiple resources should return a list")
 				}
-				expected := "Hello World!"
+
 				for i := 0; i < resultList.Len(); i++ {
 					resultStruct, ok := resultList.Index(i).(*starlarkstruct.Struct)
 					if !ok {
-						t.Fatalf("run(): expecting a starlark struct, got %T", resultList.Index(i))
+						t.Fatalf("capture(): expecting a starlark struct, got %T", resultList.Index(i))
 					}
 					val, err := resultStruct.Attr("result")
 					if err != nil {
 						t.Fatal(err)
 					}
 					result := string(val.(starlark.String))
-					if expected != result {
-						t.Errorf("run(): expecting %s, got %s", expected, result)
+					if _, err := os.Stat(result); err != nil {
+						t.Fatalf("captured command file not found: %s", err)
 					}
+					os.RemoveAll(result)
 				}
 			},
 		},
@@ -183,9 +225,9 @@ result = run("echo 'Hello World!'")`, port),
 def exec(hosts):
 	result = []
 	for host in hosts:
-		result.append(run(cmd="echo 'Hello World!'", resources=[host]))
+		result.append(capture(cmd="echo 'Hello World!'", resources=[host], file_name="echo.txt", desc="echo command:"))
 	return result
-
+		
 # configuration
 ssh_config(username=os.username, port="%s")
 hosts = resources(provider=host_list_provider(hosts=["127.0.0.1","localhost"]))
@@ -198,13 +240,13 @@ result = exec(hosts)`, port),
 
 				resultVal := exe.result["result"]
 				if resultVal == nil {
-					t.Fatal("run() should be assigned to a variable")
+					t.Fatal("capture() should be assigned to a variable")
 				}
 				resultList, ok := resultVal.(*starlark.List)
 				if !ok {
-					t.Fatal("run() with multiple resources should return a list")
+					t.Fatal("capture() with multiple resources should return a list")
 				}
-				expected := "Hello World!"
+
 				for i := 0; i < resultList.Len(); i++ {
 					resultStruct, ok := resultList.Index(i).(*starlarkstruct.Struct)
 					if !ok {
@@ -215,9 +257,10 @@ result = exec(hosts)`, port),
 						t.Fatal(err)
 					}
 					result := string(val.(starlark.String))
-					if expected != result {
-						t.Errorf("run(): expecting %s, got %s", expected, result)
+					if _, err := os.Stat(result); err != nil {
+						t.Fatalf("captured command file not found: %s", err)
 					}
+					//os.RemoveAll(result)
 				}
 			},
 		},
@@ -230,7 +273,7 @@ result = exec(hosts)`, port),
 	}
 }
 
-func TestRunFuncSSHAll(t *testing.T) {
+func TestCaptureFuncSSHAll(t *testing.T) {
 	port := testcrashd.NextSSHPort()
 	sshSvr := testcrashd.NewSSHServer(testcrashd.NextSSHContainerName(), port)
 
@@ -244,12 +287,15 @@ func TestRunFuncSSHAll(t *testing.T) {
 		name string
 		test func(t *testing.T, port string)
 	}{
-		{name: "testRunFuncWithHostResources", test: testRunFuncHostResources},
-		{name: "testRunFuncScriptWithHostResources", test: testRunFuncHostResources},
+		{name: "testCaptureFuncForHostResources", test: testCaptureFuncForHostResources},
+		{name: "testCaptureFuncScriptForHostResources", test: testCaptureFuncScriptForHostResources},
 	}
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) { test.test(t, port) })
+		t.Run(test.name, func(t *testing.T) {
+			test.test(t, port)
+			defer os.RemoveAll(defaults.workdir)
+		})
 	}
 
 	logrus.Debug("Stopping SSH server...")
@@ -257,4 +303,5 @@ func TestRunFuncSSHAll(t *testing.T) {
 		logrus.Error(err)
 		os.Exit(1)
 	}
+
 }

@@ -1,14 +1,22 @@
 package starlark
 
 import (
+	"fmt"
+	"io"
 	"os"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"strconv"
-	"strings"
+
+	"github.com/sirupsen/logrus"
+	"go.starlark.net/starlark"
+	"go.starlark.net/starlarkstruct"
 )
 
 var (
+	strSanitization = regexp.MustCompile(`[^a-zA-Z0-9]`)
+
 	identifiers = struct {
 		crashdCfg string
 		kubeCfg   string
@@ -25,6 +33,7 @@ var (
 		hostResource     string
 		resources        string
 		run              string
+		capture          string
 
 		// Directives
 		kubeCaptureDirective string
@@ -45,6 +54,7 @@ var (
 		hostResource:     "host_resource",
 		resources:        "resources",
 		run:              "run",
+		capture:          "capture",
 
 		kubeGetDirective:     "kube_get",
 		kubeCaptureDirective: "kube_capture",
@@ -79,16 +89,24 @@ var (
 	}
 )
 
-func isQuoted(val string) bool {
-	single := `'`
-	dbl := `"`
-	if strings.HasPrefix(val, single) && strings.HasSuffix(val, single) {
-		return true
+func getWorkdirFromThread(thread *starlark.Thread) (string, error) {
+	val := thread.Local(identifiers.crashdCfg)
+	if val == nil {
+		return "", fmt.Errorf("%s not found in threard", identifiers.crashdCfg)
 	}
-	if strings.HasPrefix(val, dbl) && strings.HasSuffix(val, dbl) {
-		return true
+	var result string
+	if valStruct, ok := val.(*starlarkstruct.Struct); ok {
+		if valStr, err := valStruct.Attr("workdir"); err == nil {
+			if str, ok := valStr.(starlark.String); ok {
+				result = string(str)
+			}
+		}
 	}
-	return false
+
+	if len(result) == 0 {
+		result = defaults.workdir
+	}
+	return result, nil
 }
 
 func trimQuotes(val string) string {
@@ -121,4 +139,34 @@ func getGid() string {
 		return ""
 	}
 	return usr.Gid
+}
+
+func captureOutput(source io.Reader, filePath, desc string) error {
+	if source == nil {
+		return fmt.Errorf("source reader is nill")
+	}
+
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	if len(desc) > 0 {
+		if _, err := file.WriteString(fmt.Sprintf("%s\n", desc)); err != nil {
+			return err
+		}
+	}
+
+	if _, err := io.Copy(file, source); err != nil {
+		return err
+	}
+
+	logrus.Debugf("captured output in %s", filePath)
+
+	return nil
+}
+
+func sanitizeStr(str string) string {
+	return strSanitization.ReplaceAllString(str, "_")
 }

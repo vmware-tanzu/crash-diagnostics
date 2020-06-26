@@ -4,6 +4,7 @@
 package starlark
 
 import (
+	"errors"
 	"fmt"
 	"io"
 
@@ -20,12 +21,16 @@ type Executor struct {
 
 func New() *Executor {
 	return &Executor{
-		thread:  newThreadLocal(),
+		thread:  &starlark.Thread{Name: "crashd"},
 		predecs: newPredeclareds(),
 	}
 }
 
 func (e *Executor) Exec(name string, source io.Reader) error {
+	if err := setupLocalDefaults(e.thread); err != nil {
+		return fmt.Errorf("crashd failed: %s", err)
+	}
+
 	result, err := starlark.ExecFile(e.thread, name, source, e.predecs)
 	if err != nil {
 		if evalErr, ok := err.(*starlark.EvalError); ok {
@@ -34,17 +39,29 @@ func (e *Executor) Exec(name string, source io.Reader) error {
 		return err
 	}
 	e.result = result
+
 	return nil
 }
 
-// newThreadLocal creates the execution thread
-// and populates default values in the thread.
-func newThreadLocal() *starlark.Thread {
-	thread := &starlark.Thread{Name: "crashd"}
-	addDefaultCrashdConf(thread)
-	addDefaultSSHConf(thread)
-	addDefaultKubeConf(thread)
-	return thread
+// setupLocalDefaults populates the provided execution thread
+// with default configuration values.
+func setupLocalDefaults(thread *starlark.Thread) error {
+	if thread == nil {
+		return errors.New("thread local is nil")
+	}
+	if err := addDefaultCrashdConf(thread); err != nil {
+		return err
+	}
+
+	if err := addDefaultSSHConf(thread); err != nil {
+		return err
+	}
+
+	if err := addDefaultKubeConf(thread); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // newPredeclareds creates string dictionary containing the
@@ -58,6 +75,7 @@ func newPredeclareds() starlark.StringDict {
 		identifiers.hostListProvider:     starlark.NewBuiltin(identifiers.hostListProvider, hostListProvider),
 		identifiers.resources:            starlark.NewBuiltin(identifiers.resources, resourcesFunc),
 		identifiers.run:                  starlark.NewBuiltin(identifiers.run, runFunc),
+		identifiers.capture:              starlark.NewBuiltin(identifiers.capture, captureFunc),
 		identifiers.kubeCfg:              starlark.NewBuiltin(identifiers.kubeCfg, kubeConfigFn),
 		identifiers.kubeCaptureDirective: starlark.NewBuiltin(identifiers.kubeGetDirective, KubeCaptureFn),
 	}
