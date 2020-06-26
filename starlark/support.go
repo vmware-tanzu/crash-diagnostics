@@ -5,14 +5,12 @@ package starlark
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"os/user"
 	"path/filepath"
 	"regexp"
 	"strconv"
 
-	"github.com/sirupsen/logrus"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
@@ -37,6 +35,7 @@ var (
 		resources        string
 		run              string
 		capture          string
+		copyFrom         string
 
 		kubeCapture string
 		kubeGet     string
@@ -57,6 +56,7 @@ var (
 		resources:        "resources",
 		run:              "run",
 		capture:          "capture",
+		copyFrom:         "copy_from",
 
 		kubeCapture: "kube_capture",
 		kubeGet:     "kube_get",
@@ -86,7 +86,7 @@ var (
 			return filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa")
 		}(),
 		outPath:     "./crashd.tar.gz",
-		connRetries: 20,
+		connRetries: 30,
 		connTimeout: 30,
 	}
 )
@@ -109,6 +109,21 @@ func getWorkdirFromThread(thread *starlark.Thread) (string, error) {
 		result = defaults.workdir
 	}
 	return result, nil
+}
+
+func getResourcesFromThread(thread *starlark.Thread) (*starlark.List, error) {
+	var resources *starlark.List
+	res := thread.Local(identifiers.resources)
+	if res == nil {
+		return nil, fmt.Errorf("%s not found in thread", identifiers.resources)
+	}
+	if resList, ok := res.(*starlark.List); ok {
+		resources = resList
+	}
+	if resources == nil {
+		return nil, fmt.Errorf("%s missing or invalid", identifiers.resources)
+	}
+	return resources, nil
 }
 
 func trimQuotes(val string) string {
@@ -141,32 +156,6 @@ func getGid() string {
 		return ""
 	}
 	return usr.Gid
-}
-
-func captureOutput(source io.Reader, filePath, desc string) error {
-	if source == nil {
-		return fmt.Errorf("source reader is nill")
-	}
-
-	file, err := os.Create(filePath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	if len(desc) > 0 {
-		if _, err := file.WriteString(fmt.Sprintf("%s\n", desc)); err != nil {
-			return err
-		}
-	}
-
-	if _, err := io.Copy(file, source); err != nil {
-		return err
-	}
-
-	logrus.Debugf("captured output in %s", filePath)
-
-	return nil
 }
 
 func sanitizeStr(str string) string {

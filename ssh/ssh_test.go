@@ -32,7 +32,7 @@ func TestRun(t *testing.T) {
 	}{
 		{
 			name:   "simple cmd",
-			args:   SSHArgs{User: usr.Username, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: 10},
+			args:   SSHArgs{User: usr.Username, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: testMaxRetries},
 			cmd:    "echo 'Hello World!'",
 			result: "Hello World!",
 		},
@@ -71,7 +71,7 @@ func TestRunRead(t *testing.T) {
 	}{
 		{
 			name:   "simple cmd",
-			args:   SSHArgs{User: usr.Username, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: 10},
+			args:   SSHArgs{User: usr.Username, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: testMaxRetries},
 			cmd:    "echo 'Hello World!'",
 			result: "Hello World!",
 		},
@@ -114,7 +114,7 @@ func TestSSHRunMakeCmdStr(t *testing.T) {
 		},
 		{
 			name:   "user host pkpath and proxy",
-			args:   SSHArgs{User: "sshuser", Host: "local.host", PrivateKeyPath: "/pk/path", JumpProxy: &JumpProxyArg{User: "juser", Host: "jhost"}},
+			args:   SSHArgs{User: "sshuser", Host: "local.host", PrivateKeyPath: "/pk/path", ProxyJump: &ProxyJumpArgs{User: "juser", Host: "jhost"}},
 			cmdStr: "ssh -q -o StrictHostKeyChecking=no -i /pk/path -p 22 -J juser@jhost sshuser@local.host",
 		},
 		{
@@ -126,7 +126,7 @@ func TestSSHRunMakeCmdStr(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result, err := makeSSHCmdStr(test.args)
+			result, err := makeSSHCmdStr("ssh", test.args)
 			if err != nil && !test.shouldFail {
 				t.Fatal(err)
 			}

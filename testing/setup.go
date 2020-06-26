@@ -17,7 +17,7 @@ var (
 
 	rnd              = rand.New(rand.NewSource(time.Now().Unix()))
 	sshContainerName = "test-sshd"
-	sshPort          = "2222"
+	sshPort          = NextSSHPort()
 )
 
 // Init initializes testing
@@ -35,7 +35,7 @@ func Init() {
 
 //NextSSHPort returns a pseudo-rando test [2200 .. 2230]
 func NextSSHPort() string {
-	port := 2200 + rnd.Intn(30)
+	port := 2200 + rnd.Intn(90)
 	return fmt.Sprintf("%d", port)
 }
 

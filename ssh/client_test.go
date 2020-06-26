@@ -12,36 +12,10 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/sirupsen/logrus"
-	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
 
-const (
-	testSSHPort = "2424"
-)
-
-func TestMain(m *testing.M) {
-	testcrashd.Init()
-
-	sshSvr := testcrashd.NewSSHServer("test-sshd-sshclient", testSSHPort)
-	logrus.Debug("Attempting to start SSH server")
-	if err := sshSvr.Start(); err != nil {
-		logrus.Error(err)
-		os.Exit(1)
-	}
-
-	testResult := m.Run()
-
-	logrus.Debug("Stopping SSH server...")
-	if err := sshSvr.Stop(); err != nil {
-		logrus.Error(err)
-		os.Exit(1)
-	}
-
-	os.Exit(testResult)
-}
 func TestSSHClient(t *testing.T) {
+	t.Skip("Skipping ssh client tests")
 	sshHost := fmt.Sprintf("127.0.0.1:%s", testSSHPort)
 	homeDir, err := os.UserHomeDir()
 	if err != nil {

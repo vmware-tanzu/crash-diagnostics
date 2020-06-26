@@ -23,6 +23,7 @@ func makeTestSSHConfig(pkPath, port string) *starlarkstruct.Struct {
 		identifiers.username:       starlark.String(getUsername()),
 		identifiers.port:           starlark.String(port),
 		identifiers.privateKeyPath: starlark.String(pkPath),
+		identifiers.maxRetries:     starlark.String(defaults.connRetries),
 	})
 }
 

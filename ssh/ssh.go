@@ -15,7 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-type JumpProxyArg struct {
+type ProxyJumpArgs struct {
 	User string
 	Host string
 }
@@ -26,7 +26,7 @@ type SSHArgs struct {
 	PrivateKeyPath string
 	Port           string
 	MaxRetries     int
-	JumpProxy      *JumpProxyArg
+	ProxyJump      *ProxyJumpArgs
 }
 
 // Run runs a command over SSH and returns the result as a string
@@ -49,7 +49,12 @@ func RunRead(args SSHArgs, cmd string) (io.Reader, error) {
 
 func sshRunProc(args SSHArgs, cmd string) (io.Reader, error) {
 	e := echo.New()
-	sshCmd, err := makeSSHCmdStr(args)
+	prog := e.Prog.Avail("ssh")
+	if len(prog) == 0 {
+		return nil, fmt.Errorf("ssh program not found")
+	}
+
+	sshCmd, err := makeSSHCmdStr(prog, args)
 	if err != nil {
 		return nil, err
 	}
@@ -65,14 +70,14 @@ func sshRunProc(args SSHArgs, cmd string) (io.Reader, error) {
 	if err := wait.ExponentialBackoff(retries, func() (bool, error) {
 		p := e.RunProc(effectiveCmd)
 		if p.Err() != nil {
-			logrus.Warn(fmt.Sprintf("ssh: failed to connect to %s: error '%s': retrying connection", args.Host, p.Err()))
+			logrus.Warn(fmt.Sprintf("ssh: failed to connect to %s: error '%s %s': retrying connection", args.Host, p.Err(), p.Result()))
 			return false, nil
 		}
 		proc = p
 		return true, nil // worked
 	}); err != nil {
 		logrus.Debugf("ssh.run failed after %d tries", maxRetries)
-		return nil, err
+		return nil, fmt.Errorf("ssh: failed after %d attempt(s): %s", maxRetries, err)
 	}
 
 	if proc == nil {
@@ -82,7 +87,7 @@ func sshRunProc(args SSHArgs, cmd string) (io.Reader, error) {
 	return proc.Out(), nil
 }
 
-func makeSSHCmdStr(args SSHArgs) (string, error) {
+func makeSSHCmdStr(progName string, args SSHArgs) (string, error) {
 	if args.User == "" {
 		return "", fmt.Errorf("SSH: user is required")
 	}
@@ -90,17 +95,14 @@ func makeSSHCmdStr(args SSHArgs) (string, error) {
 		return "", fmt.Errorf("SSH: host is required")
 	}
 
-	if args.JumpProxy != nil {
-		if args.JumpProxy.User == "" || args.JumpProxy.Host == "" {
+	if args.ProxyJump != nil {
+		if args.ProxyJump.User == "" || args.ProxyJump.Host == "" {
 			return "", fmt.Errorf("SSH: jump user and host are required")
 		}
 	}
 
 	sshCmdPrefix := func() string {
-		if logrus.GetLevel() == logrus.DebugLevel {
-			return "ssh -q -o StrictHostKeyChecking=no -v"
-		}
-		return "ssh -q -o StrictHostKeyChecking=no"
+		return fmt.Sprintf("%s -q -o StrictHostKeyChecking=no", progName)
 	}
 
 	pkPath := func() string {
@@ -117,17 +119,17 @@ func makeSSHCmdStr(args SSHArgs) (string, error) {
 		return fmt.Sprintf("-p %s", args.Port)
 	}
 
-	jumpProxy := func() string {
-		if args.JumpProxy != nil {
-			return fmt.Sprintf("-J %s@%s", args.JumpProxy.User, args.JumpProxy.Host)
+	proxyJump := func() string {
+		if args.ProxyJump != nil {
+			return fmt.Sprintf("-J %s@%s", args.ProxyJump.User, args.ProxyJump.Host)
 		}
 		return ""
 	}
 	// build command as
-	// ssh -i <pkpath> -P <port> -J <jumpproxy> user@host
+	// ssh -i <pkpath> -P <port> -J <proxyjump> user@host
 	cmd := fmt.Sprintf(
 		`%s %s %s %s %s@%s`,
-		sshCmdPrefix(), pkPath(), port(), jumpProxy(), args.User, args.Host,
+		sshCmdPrefix(), pkPath(), port(), proxyJump(), args.User, args.Host,
 	)
 	return cmd, nil
 }
