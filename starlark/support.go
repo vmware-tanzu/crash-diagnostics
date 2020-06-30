@@ -1,3 +1,6 @@
+// Copyright (c) 2020 VMware, Inc. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 package starlark
 
 import (
@@ -35,14 +38,13 @@ var (
 		run              string
 		capture          string
 
-		// Directives
-		kubeCaptureDirective string
-		kubeGetDirective     string
+		kubeCapture string
+		kubeGet     string
 	}{
 		crashdCfg: "crashd_config",
 		kubeCfg:   "kube_config",
+		sshCfg:    "ssh_config",
 
-		sshCfg:         "ssh_config",
 		port:           "port",
 		username:       "username",
 		privateKeyPath: "private_key_path",
@@ -56,8 +58,8 @@ var (
 		run:              "run",
 		capture:          "capture",
 
-		kubeGetDirective:     "kube_get",
-		kubeCaptureDirective: "kube_capture",
+		kubeCapture: "kube_capture",
+		kubeGet:     "kube_get",
 	}
 
 	defaults = struct {
