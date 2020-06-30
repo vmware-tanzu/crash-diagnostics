@@ -13,13 +13,13 @@ import (
 	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 )
 
-type runResult struct {
+type commandResult struct {
 	resource string
 	result   string
 	err      error
 }
 
-func (r runResult) toStarlarkStruct() *starlarkstruct.Struct {
+func (r commandResult) toStarlarkStruct() *starlarkstruct.Struct {
 	return starlarkstruct.FromStringDict(
 		starlarkstruct.Default,
 		starlark.StringDict{
@@ -104,13 +104,13 @@ func runFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, 
 	return starlark.NewList(resultList), nil
 }
 
-func execRun(cmdStr string, resources *starlark.List) ([]runResult, error) {
+func execRun(cmdStr string, resources *starlark.List) ([]commandResult, error) {
 	if resources == nil {
 		return nil, fmt.Errorf("%s: missing resources", identifiers.run)
 	}
 
 	logrus.Debugf("%s: executing command on %d resources", identifiers.run, resources.Len())
-	var results []runResult
+	var results []commandResult
 	for i := 0; i < resources.Len(); i++ {
 		val := resources.Index(i)
 		res, ok := val.(*starlarkstruct.Struct)
@@ -148,7 +148,7 @@ func execRun(cmdStr string, resources *starlark.List) ([]runResult, error) {
 }
 
 // execRunSSH executes `run` command for a Host Resource using SSH
-func execRunSSH(cmdStr string, res *starlarkstruct.Struct) (runResult, error) {
+func execRunSSH(cmdStr string, res *starlarkstruct.Struct) (commandResult, error) {
 	sshCfg := starlarkstruct.FromKeywords(starlarkstruct.Default, makeDefaultSSHConfig())
 	if val, err := res.Attr(identifiers.sshCfg); err == nil {
 		if cfg, ok := val.(*starlarkstruct.Struct); ok {
@@ -158,23 +158,23 @@ func execRunSSH(cmdStr string, res *starlarkstruct.Struct) (runResult, error) {
 
 	args, err := getSSHArgsFromCfg(sshCfg)
 	if err != nil {
-		return runResult{}, err
+		return commandResult{}, err
 	}
 
 	// add host
 	hVal, err := res.Attr("host")
 	if err != nil {
-		return runResult{}, fmt.Errorf("%s: resource.host: %s", identifiers.run, err)
+		return commandResult{}, fmt.Errorf("%s: resource.host: %s", identifiers.run, err)
 	}
 	host, ok := hVal.(starlark.String)
 	if !ok {
-		return runResult{}, fmt.Errorf("%s: resource.host has unexpected type", identifiers.run)
+		return commandResult{}, fmt.Errorf("%s: resource.host has unexpected type", identifiers.run)
 	}
 	args.Host = string(host)
 
 	logrus.Debugf("%s: executing command on %s using ssh: [%s]", identifiers.run, args.Host, cmdStr)
 	cmdResult, err := ssh.Run(args, cmdStr)
-	return runResult{resource: args.Host, result: cmdResult, err: err}, nil
+	return commandResult{resource: args.Host, result: cmdResult, err: err}, nil
 
 }
 
@@ -203,13 +203,13 @@ func getSSHArgsFromCfg(sshCfg *starlarkstruct.Struct) (ssh.SSHArgs, error) {
 	}
 
 	// both jump user/host must be provided, else ignore
-	var jumpProxy *ssh.JumpProxyArg
+	var jumpProxy *ssh.ProxyJumpArgs
 	uval, uerr := sshCfg.Attr(identifiers.jumpUser)
 	hval, herr := sshCfg.Attr(identifiers.jumpHost)
 	if uerr == nil && herr == nil {
 		juser := uval.(starlark.String)
 		jhost := hval.(starlark.String)
-		jumpProxy = &ssh.JumpProxyArg{
+		jumpProxy = &ssh.ProxyJumpArgs{
 			User: string(juser),
 			Host: string(jhost),
 		}
@@ -219,7 +219,7 @@ func getSSHArgsFromCfg(sshCfg *starlarkstruct.Struct) (ssh.SSHArgs, error) {
 		User:       string(user),
 		Port:       port,
 		MaxRetries: maxRetries,
-		JumpProxy:  jumpProxy,
+		ProxyJump:  jumpProxy,
 	}
 	return args, nil
 }

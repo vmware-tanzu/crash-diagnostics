@@ -287,8 +287,8 @@ func TestCaptureFuncSSHAll(t *testing.T) {
 		name string
 		test func(t *testing.T, port string)
 	}{
-		{name: "testCaptureFuncForHostResources", test: testCaptureFuncForHostResources},
-		{name: "testCaptureFuncScriptForHostResources", test: testCaptureFuncScriptForHostResources},
+		{name: "capture func for host resources", test: testCaptureFuncForHostResources},
+		{name: "capture script for host resources", test: testCaptureFuncScriptForHostResources},
 	}
 
 	for _, test := range tests {

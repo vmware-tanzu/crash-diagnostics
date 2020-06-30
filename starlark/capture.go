@@ -5,6 +5,7 @@ package starlark
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,7 +21,7 @@ import (
 // captures the result of the command in a specified file stored in workdir.
 // If resources and workdir are not provided, captureFunc uses defaults from starlark thread generated
 // by previous calls to resources() and crashd_config().
-// Starlark format: capture(cmd="command" [,resources=resources][,workdir=path][,file_name=name][,desc=description])
+// Starlark format: capture(command-string, cmd="command" [,resources=resources][,workdir=path][,file_name=name][,desc=description])
 func captureFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var cmdStr string
 	if args != nil && args.Len() == 1 {
@@ -36,7 +37,7 @@ func captureFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tup
 	if kwargs != nil {
 		dict, err := kwargsToStringDict(kwargs)
 		if err != nil {
-			return starlark.None, err
+			return starlark.None, fmt.Errorf("%s: %s", identifiers.capture, err)
 		}
 		dictionary = dict
 	}
@@ -104,7 +105,7 @@ func captureFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tup
 
 	results, err := execCapture(cmdStr, workdir, fileName, desc, resources)
 	if err != nil {
-		return starlark.None, err
+		return starlark.None, fmt.Errorf("%s: %s", identifiers.capture, err)
 	}
 
 	// build list of struct as result
@@ -119,18 +120,18 @@ func captureFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tup
 	return starlark.NewList(resultList), nil
 }
 
-func execCapture(cmdStr, rootPath, fileName, desc string, resources *starlark.List) ([]runResult, error) {
+func execCapture(cmdStr, rootPath, fileName, desc string, resources *starlark.List) ([]commandResult, error) {
 	if resources == nil {
 		return nil, fmt.Errorf("%s: missing resources", identifiers.capture)
 	}
 
 	logrus.Debugf("%s: executing command on %d resources", identifiers.capture, resources.Len())
-	var results []runResult
+	var results []commandResult
 	for i := 0; i < resources.Len(); i++ {
 		val := resources.Index(i)
 		res, ok := val.(*starlarkstruct.Struct)
 		if !ok {
-			return nil, fmt.Errorf("%s: unexpected resource type", identifiers.run)
+			return nil, fmt.Errorf("%s: unexpected resource type", identifiers.capture)
 		}
 
 		val, err := res.Attr("kind")
@@ -156,8 +157,7 @@ func execCapture(cmdStr, rootPath, fileName, desc string, resources *starlark.Li
 		case string(kind) == identifiers.hostResource && string(transport) == "ssh":
 			result, err := execCaptureSSH(host, cmdStr, rootDir, fileName, desc, res)
 			if err != nil {
-				logrus.Error(err)
-				continue
+				logrus.Errorf("%s failed: cmd=[%s]: %s", identifiers.capture, cmdStr, err)
 			}
 			results = append(results, result)
 		default:
@@ -169,7 +169,7 @@ func execCapture(cmdStr, rootPath, fileName, desc string, resources *starlark.Li
 	return results, nil
 }
 
-func execCaptureSSH(host, cmdStr, rootDir, fileName, desc string, res *starlarkstruct.Struct) (runResult, error) {
+func execCaptureSSH(host, cmdStr, rootDir, fileName, desc string, res *starlarkstruct.Struct) (commandResult, error) {
 	sshCfg := starlarkstruct.FromKeywords(starlarkstruct.Default, makeDefaultSSHConfig())
 	if val, err := res.Attr(identifiers.sshCfg); err == nil {
 		if cfg, ok := val.(*starlarkstruct.Struct); ok {
@@ -179,33 +179,65 @@ func execCaptureSSH(host, cmdStr, rootDir, fileName, desc string, res *starlarks
 
 	args, err := getSSHArgsFromCfg(sshCfg)
 	if err != nil {
-		return runResult{}, err
+		return commandResult{}, err
 	}
 	args.Host = host
 
 	// create dir for the host
 	if err := os.MkdirAll(rootDir, 0744); err != nil && !os.IsExist(err) {
-		return runResult{}, err
+		return commandResult{}, err
 	}
+	logrus.Debugf("%s: created capture dir: %s", identifiers.capture, rootDir)
 
 	if len(fileName) == 0 {
 		fileName = fmt.Sprintf("%s.txt", sanitizeStr(cmdStr))
 	}
 	filePath := filepath.Join(rootDir, fileName)
 
-	logrus.Debugf("%s: capturing command on %s using ssh: [%s]", identifiers.capture, args.Host, cmdStr)
+	logrus.Debugf("%s: capturing output of [cmd=%s] => [%s] from %s using ssh", identifiers.capture, cmdStr, filePath, args.Host)
 
 	reader, err := ssh.RunRead(args, cmdStr)
 	if err != nil {
+		logrus.Errorf("%s failed: %s", identifiers.capture, err)
 		if err := captureOutput(strings.NewReader(err.Error()), filePath, fmt.Sprintf("%s: failed", cmdStr)); err != nil {
-			return runResult{}, err
+			logrus.Errorf("%s output failed: %s", identifiers.capture, err)
+			return commandResult{resource: args.Host, result: filePath, err: err}, err
 		}
 	}
 
 	if err := captureOutput(reader, filePath, desc); err != nil {
-		return runResult{}, err
+		logrus.Errorf("%s output failed: %s", identifiers.capture, err)
+		return commandResult{resource: args.Host, result: filePath, err: err}, err
 	}
 
-	return runResult{resource: args.Host, result: filePath, err: err}, nil
+	return commandResult{resource: args.Host, result: filePath, err: err}, nil
+}
 
+func captureOutput(source io.Reader, filePath, desc string) error {
+	if source == nil {
+		return fmt.Errorf("source reader is nill")
+	}
+
+	logrus.Debugf("%s: capturing command output: %s", identifiers.capture, filePath)
+	file, err := os.Create(filePath)
+	if err != nil {
+		logrus.Errorf("%s output failed to create file: %s", identifiers.capture, err)
+		return err
+	}
+	defer file.Close()
+
+	if len(desc) > 0 {
+		if _, err := file.WriteString(fmt.Sprintf("%s\n", desc)); err != nil {
+			return err
+		}
+	}
+
+	if _, err := io.Copy(file, source); err != nil {
+		logrus.Errorf("%s output failed to write file: %s", identifiers.capture, err)
+		return err
+	}
+
+	logrus.Debugf("%s output saved in %s", identifiers.capture, filePath)
+
+	return nil
 }
