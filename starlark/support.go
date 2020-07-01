@@ -39,8 +39,9 @@ var (
 		captureLocal     string
 		copyFrom         string
 
-		kubeCapture string
-		kubeGet     string
+		kubeCapture       string
+		kubeGet           string
+		kubeNodesProvider string
 	}{
 		crashdCfg: "crashd_config",
 		kubeCfg:   "kube_config",
@@ -62,8 +63,9 @@ var (
 		captureLocal:     "capture_local",
 		copyFrom:         "copy_from",
 
-		kubeCapture: "kube_capture",
-		kubeGet:     "kube_get",
+		kubeCapture:       "kube_capture",
+		kubeGet:           "kube_get",
+		kubeNodesProvider: "kube_nodes_provider",
 	}
 
 	defaults = struct {

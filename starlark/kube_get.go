@@ -21,11 +21,11 @@ func KubeGetFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple
 
 	kubeconfig, err := getKubeConfigPath(thread, structVal)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to kubeconfig")
+		return starlark.None, errors.Wrap(err, "failed to kubeconfig")
 	}
 	client, err := k8s.New(kubeconfig)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not initialize search client")
+		return starlark.None, errors.Wrap(err, "could not initialize search client")
 	}
 
 	searchParams := k8s.NewSearchParams(structVal)
