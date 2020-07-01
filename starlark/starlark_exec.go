@@ -75,6 +75,7 @@ func newPredeclareds() starlark.StringDict {
 		identifiers.hostListProvider: starlark.NewBuiltin(identifiers.hostListProvider, hostListProvider),
 		identifiers.resources:        starlark.NewBuiltin(identifiers.resources, resourcesFunc),
 		identifiers.run:              starlark.NewBuiltin(identifiers.run, runFunc),
+		identifiers.runLocal:         starlark.NewBuiltin(identifiers.runLocal, runLocalFunc),
 		identifiers.capture:          starlark.NewBuiltin(identifiers.capture, captureFunc),
 		identifiers.copyFrom:         starlark.NewBuiltin(identifiers.copyFrom, copyFromFunc),
 		identifiers.kubeCfg:          starlark.NewBuiltin(identifiers.kubeCfg, kubeConfigFn),

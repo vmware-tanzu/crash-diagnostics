@@ -34,6 +34,7 @@ var (
 		hostResource     string
 		resources        string
 		run              string
+		runLocal         string
 		capture          string
 		copyFrom         string
 
@@ -55,6 +56,7 @@ var (
 		hostResource:     "host_resource",
 		resources:        "resources",
 		run:              "run",
+		runLocal:         "run_local",
 		capture:          "capture",
 		copyFrom:         "copy_from",
 
