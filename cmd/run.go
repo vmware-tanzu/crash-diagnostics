@@ -8,21 +8,17 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/vmware-tanzu/crash-diagnostics/exec"
-	"github.com/vmware-tanzu/crash-diagnostics/parser"
-	"github.com/vmware-tanzu/crash-diagnostics/script"
+	"github.com/vmware-tanzu/crash-diagnostics/starlark"
 )
 
 type runFlags struct {
-	file   string
-	output string
+	file string
 }
 
-// newRunCommand creates a command to run the Diaganostics script a file
+// newRunCommand creates a command to run the Diagnostics script a file
 func newRunCommand() *cobra.Command {
 	flags := &runFlags{
-		file:   "Diagnostics.file",
-		output: "out.tar.gz",
+		file: "Diagnostics.file",
 	}
 
 	cmd := &cobra.Command{
@@ -34,37 +30,18 @@ func newRunCommand() *cobra.Command {
 			return run(flags, args)
 		},
 	}
-	cmd.Flags().StringVar(&flags.file, "file", flags.file, "the path to the dianostics script file to run")
-	cmd.Flags().StringVar(&flags.output, "output", "", "the path of the generated archive file")
+	cmd.Flags().StringVar(&flags.file, "file", flags.file, "the path to the diagnostics script file to run")
 	return cmd
 }
 
-func run(flag *runFlags, args []string) error {
-	file, err := os.Open(flag.file)
-	if err != nil {
-		return fmt.Errorf("Unable to find script file %s", flag.file)
+func run(flag *runFlags, _ []string) error {
+	if _, err := os.Stat(flag.file); err != nil {
+		return fmt.Errorf("unable to find script file %s", flag.file)
 	}
 
-	defer file.Close()
-
-	src, err := parser.Parse(file)
-	if err != nil {
+	executor := starlark.New()
+	if err := executor.Exec(flag.file, nil); err != nil {
 		return err
 	}
-
-	// override output if needed
-	if flag.output != "" {
-		cmd, err := script.NewOutputCommand(0, fmt.Sprintf("path:%s", flag.output))
-		if err != nil {
-			return err
-		}
-		src.Preambles[script.CmdOutput] = []script.Command{cmd}
-	}
-
-	exe := exec.New(src)
-	if err := exe.Execute(); err != nil {
-		return err
-	}
-
 	return nil
 }
