@@ -218,10 +218,8 @@ func captureOutput(source io.Reader, filePath, desc string) error {
 		return fmt.Errorf("source reader is nill")
 	}
 
-	logrus.Debugf("%s: capturing command output: %s", identifiers.capture, filePath)
 	file, err := os.Create(filePath)
 	if err != nil {
-		logrus.Errorf("%s output failed to create file: %s", identifiers.capture, err)
 		return err
 	}
 	defer file.Close()
@@ -233,11 +231,8 @@ func captureOutput(source io.Reader, filePath, desc string) error {
 	}
 
 	if _, err := io.Copy(file, source); err != nil {
-		logrus.Errorf("%s output failed to write file: %s", identifiers.capture, err)
 		return err
 	}
-
-	logrus.Debugf("%s output saved in %s", identifiers.capture, filePath)
 
 	return nil
 }
