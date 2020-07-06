@@ -75,6 +75,7 @@ func (sp SearchParams) Containers() string {
 	return strings.Join(sp.containers, " ")
 }
 
+// TODO: Change this to accept a string dictionary instead
 func NewSearchParams(p *starlarkstruct.Struct) SearchParams {
 	var (
 		kinds      []string
