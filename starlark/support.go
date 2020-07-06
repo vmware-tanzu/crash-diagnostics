@@ -36,6 +36,7 @@ var (
 		run              string
 		runLocal         string
 		capture          string
+		captureLocal     string
 		copyFrom         string
 
 		kubeCapture string
@@ -58,6 +59,7 @@ var (
 		run:              "run",
 		runLocal:         "run_local",
 		capture:          "capture",
+		captureLocal:     "capture_local",
 		copyFrom:         "copy_from",
 
 		kubeCapture: "kube_capture",
