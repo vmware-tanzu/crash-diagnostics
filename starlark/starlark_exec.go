@@ -26,6 +26,13 @@ func New() *Executor {
 	}
 }
 
+// AddPredeclared predeclared
+func (e *Executor) AddPredeclared(name string, value starlark.Value) {
+	if e.predecs != nil {
+		e.predecs[name] = value
+	}
+}
+
 func (e *Executor) Exec(name string, source io.Reader) error {
 	if err := setupLocalDefaults(e.thread); err != nil {
 		return fmt.Errorf("crashd failed: %s", err)
