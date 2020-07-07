@@ -26,6 +26,14 @@ func New() *Executor {
 	}
 }
 
+func (e *Executor) WithArgs(args map[string]string) {
+	dict := starlark.StringDict{}
+	for k, v := range args {
+		dict[k] = starlark.String(v)
+	}
+	e.predecs[identifiers.args] = starlarkstruct.FromStringDict(starlarkstruct.Default, dict)
+}
+
 func (e *Executor) Exec(name string, source io.Reader) error {
 	if err := setupLocalDefaults(e.thread); err != nil {
 		return fmt.Errorf("crashd failed: %s", err)

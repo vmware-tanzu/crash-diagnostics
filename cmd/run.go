@@ -13,12 +13,14 @@ import (
 
 type runFlags struct {
 	file string
+	args map[string]string
 }
 
 // newRunCommand creates a command to run the Diagnostics script a file
 func newRunCommand() *cobra.Command {
 	flags := &runFlags{
 		file: "Diagnostics.file",
+		args: nil,
 	}
 
 	cmd := &cobra.Command{
@@ -31,6 +33,7 @@ func newRunCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&flags.file, "file", flags.file, "the path to the diagnostics script file to run")
+	cmd.Flags().StringToStringVar(&flags.args, "args", flags.args, "key-value pair of script arguments which can be used in the diagnostics file")
 	return cmd
 }
 
@@ -40,6 +43,9 @@ func run(flag *runFlags, _ []string) error {
 	}
 
 	executor := starlark.New()
+	if flag.args != nil {
+		executor.WithArgs(flag.args)
+	}
 	if err := executor.Exec(flag.file, nil); err != nil {
 		return err
 	}
