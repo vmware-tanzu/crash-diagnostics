@@ -24,7 +24,7 @@ func captureLocalFunc(thread *starlark.Thread, b *starlark.Builtin, args starlar
 		"file_name?", &fileName,
 		"desc?", &desc,
 	); err != nil {
-		return starlark.None, err
+		return starlark.None, fmt.Errorf("%s: %s", identifiers.captureLocal, err)
 	}
 
 	if len(workdir) == 0 {

@@ -13,42 +13,36 @@ import (
 // hostListProvider is a built-in starlark function that collects compute resources as a list of host IPs
 // Starlark format: host_list_provider(hosts=<host-list> [, ssh_config=ssh_config()])
 func hostListProvider(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	var dictionary starlark.StringDict
-	if kwargs != nil {
-		dict, err := kwargsToStringDict(kwargs)
-		if err != nil {
-			return starlark.None, err
-		}
-		dictionary = dict
+	var hosts *starlark.List
+	var sshCfg *starlarkstruct.Struct
+
+	if err := starlark.UnpackArgs(
+		identifiers.crashdCfg, args, kwargs,
+		"hosts", &hosts,
+		"ssh_config?", &sshCfg,
+	); err != nil {
+		return starlark.None, fmt.Errorf("%s: %s", identifiers.hostListProvider, err)
 	}
 
-	return newHostListProvider(thread, dictionary)
-}
-
-// newHostListProvider returns a struct with host list provider info
-func newHostListProvider(thread *starlark.Thread, dictionary starlark.StringDict) (*starlarkstruct.Struct, error) {
-	// validate args
-	hostsValue, ok := dictionary["hosts"]
-	if !ok {
-		return nil, fmt.Errorf("%s: missing hosts argument", identifiers.hostListProvider)
+	if hosts == nil || hosts.Len() == 0 {
+		return starlark.None, fmt.Errorf("%s: missing argument: hosts", identifiers.hostListProvider)
 	}
 
-	// if hosts was passed as a string, normalize it in a list
-	if hostsValue.Type() == "string" {
-		dictionary["hosts"] = starlark.NewList([]starlark.Value{hostsValue})
-	}
-
-	// augment args
-	dictionary["kind"] = starlark.String(identifiers.hostListProvider)
-	dictionary["transport"] = starlark.String("ssh")
-	if _, ok := dictionary[identifiers.sshCfg]; !ok {
+	if sshCfg == nil {
 		data := thread.Local(identifiers.sshCfg)
-		sshcfg, ok := data.(*starlarkstruct.Struct)
+		cfg, ok := data.(*starlarkstruct.Struct)
 		if !ok {
 			return nil, fmt.Errorf("%s: default ssh_config not found", identifiers.hostListProvider)
 		}
-		dictionary[identifiers.sshCfg] = sshcfg
+		sshCfg = cfg
 	}
 
-	return starlarkstruct.FromStringDict(starlarkstruct.Default, dictionary), nil
+	cfgStruct := starlark.StringDict{
+		"kind":             starlark.String(identifiers.hostListProvider),
+		"transport":        starlark.String("ssh"),
+		"hosts":            hosts,
+		identifiers.sshCfg: sshCfg,
+	}
+
+	return starlarkstruct.FromStringDict(starlarkstruct.Default, cfgStruct), nil
 }

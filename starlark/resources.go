@@ -13,35 +13,30 @@ import (
 // resourcesFunc is a built-in starlark function that prepares returns compute list of resources.
 // Starlark format: resources(provider=<provider-function>)
 func resourcesFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	if kwargs == nil {
-		return starlark.None, fmt.Errorf("%s: missing arguments", identifiers.resources)
-	}
-	var dictionary starlark.StringDict
-	if kwargs != nil {
-		dict, err := kwargsToStringDict(kwargs)
-		if err != nil {
-			return starlark.None, err
-		}
-		dictionary = dict
-	}
-
+	var hosts *starlark.List
 	var provider *starlarkstruct.Struct
-	if hosts, ok := dictionary["hosts"]; ok {
-		prov, err := newHostListProvider(thread, starlark.StringDict{"hosts": hosts})
+	if err := starlark.UnpackArgs(
+		identifiers.crashdCfg, args, kwargs,
+		"hosts?", &hosts,
+		"provider?", &provider,
+	); err != nil {
+		return starlark.None, fmt.Errorf("%s: %s", identifiers.hostListProvider, err)
+	}
+
+	if hosts == nil && provider == nil {
+		return starlark.None, fmt.Errorf("%s: hosts or provider argument required", identifiers.resources)
+	}
+
+	if hosts != nil && provider != nil {
+		return starlark.None, fmt.Errorf("%s: specify hosts or provider argument", identifiers.resources)
+	}
+
+	if hosts != nil {
+		prov, err := hostListProvider(thread, nil, nil, []starlark.Tuple{{starlark.String("hosts"), hosts}})
 		if err != nil {
 			return starlark.None, err
 		}
-		provider = prov
-	} else if prov, ok := dictionary["provider"]; ok {
-		prov, ok := prov.(*starlarkstruct.Struct)
-		if !ok {
-			return starlark.None, fmt.Errorf("%s: provider not a struct", identifiers.resources)
-		}
-		provider = prov
-	}
-
-	if provider == nil {
-		return starlark.None, fmt.Errorf("%s: hosts or provider argument required", identifiers.resources)
+		provider = prov.(*starlarkstruct.Struct)
 	}
 
 	// enumerate resources from provider

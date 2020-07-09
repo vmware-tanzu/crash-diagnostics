@@ -42,39 +42,15 @@ func (r commandResult) toStarlarkStruct() *starlarkstruct.Struct {
 // Starlark format: run(cmd="command" [,resources=resources])
 func runFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var cmdStr string
-	if args != nil && args.Len() == 1 {
-		cmd, ok := args.Index(0).(starlark.String)
-		if !ok {
-			return starlark.None, fmt.Errorf("%s: default argument must be a string", identifiers.run)
-		}
-		cmdStr = string(cmd)
-	}
-
-	// grab named arguments
-	var dictionary starlark.StringDict
-	if kwargs != nil {
-		dict, err := kwargsToStringDict(kwargs)
-		if err != nil {
-			return starlark.None, err
-		}
-		dictionary = dict
-	}
-
-	if dictionary["cmd"] != nil {
-		if cmd, ok := dictionary["cmd"].(starlark.String); ok {
-			cmdStr = string(cmd)
-		}
-	}
-
-	// extract resources
 	var resources *starlark.List
-	if dictionary[identifiers.resources] != nil {
-		res, ok := dictionary[identifiers.resources].(*starlark.List)
-		if !ok {
-			return starlark.None, fmt.Errorf("%s: unexpected resources type", identifiers.run)
-		}
-		resources = res
+	if err := starlark.UnpackArgs(
+		identifiers.crashdCfg, args, kwargs,
+		"cmd", &cmdStr,
+		"resources?", &resources,
+	); err != nil {
+		return starlark.None, fmt.Errorf("%s: %s", identifiers.run, err)
 	}
+
 	if resources == nil {
 		res := thread.Local(identifiers.resources)
 		if res == nil {
@@ -207,11 +183,14 @@ func getSSHArgsFromCfg(sshCfg *starlarkstruct.Struct) (ssh.SSHArgs, error) {
 	uval, uerr := sshCfg.Attr(identifiers.jumpUser)
 	hval, herr := sshCfg.Attr(identifiers.jumpHost)
 	if uerr == nil && herr == nil {
-		juser := uval.(starlark.String)
-		jhost := hval.(starlark.String)
-		jumpProxy = &ssh.ProxyJumpArgs{
-			User: string(juser),
-			Host: string(jhost),
+		juser := string(uval.(starlark.String))
+		jhost := string(hval.(starlark.String))
+
+		if len(juser) > 0 && len(jhost) > 0 {
+			jumpProxy = &ssh.ProxyJumpArgs{
+				User: juser,
+				Host: jhost,
+			}
 		}
 	}
 

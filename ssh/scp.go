@@ -38,7 +38,7 @@ func CopyFrom(args SSHArgs, rootDir string, sourcePath string) error {
 
 	sshCmd, err := makeSCPCmdStr(prog, args, sourcePath)
 	if err != nil {
-		logrus.Debug()
+		return fmt.Errorf("scp: failed to build command string: %s", err)
 	}
 
 	effectiveCmd := fmt.Sprintf(`%s "%s"`, sshCmd, targetPath)

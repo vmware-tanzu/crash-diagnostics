@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
 
@@ -27,7 +26,7 @@ func testCrashdConfigFunc(t *testing.T) {
 	}{
 		{
 			name:   "crash_config saved in thread",
-			script: `crashd_config(foo="fooval", bar="barval")`,
+			script: `crashd_config(workdir="fooval", default_shell="barval")`,
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
@@ -41,22 +40,16 @@ func testCrashdConfigFunc(t *testing.T) {
 				if !ok {
 					t.Fatalf("unexpected type for thread local key configs.crashd: %T", data)
 				}
-				if len(cfg.AttrNames()) != 2 {
+				if len(cfg.AttrNames()) != 5 {
 					t.Fatalf("unexpected item count in configs.crashd: %d", len(cfg.AttrNames()))
 				}
-				val, err := cfg.Attr("foo")
-				if err != nil {
-					t.Fatalf("key 'foo' not found in crashd_config: %s", err)
-				}
-				if trimQuotes(val.String()) != "fooval" {
-					t.Fatalf("unexpected value for key 'foo': %s", val.String())
-				}
+
 			},
 		},
 
 		{
 			name:   "crash_config returned value",
-			script: `cfg = crashd_config(foo="fooval", bar="barval")`,
+			script: `cfg = crashd_config(uid="fooval", gid="barval")`,
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
@@ -65,10 +58,6 @@ func testCrashdConfigFunc(t *testing.T) {
 				data := exe.result["cfg"]
 				if data == nil {
 					t.Fatal("crashd_config function not returning value")
-				}
-				_, ok := data.(starlark.NoneType)
-				if !ok {
-					t.Fatalf("crashd_config should not return a value, but returned a %T", data)
 				}
 			},
 		},
@@ -90,7 +79,7 @@ func testCrashdConfigFunc(t *testing.T) {
 				if !ok {
 					t.Fatalf("unexpected type for thread local key crashd_config: %T", data)
 				}
-				if len(cfg.AttrNames()) != 4 {
+				if len(cfg.AttrNames()) != 5 {
 					t.Fatalf("unexpected item count in configs.crashd: %d", len(cfg.AttrNames()))
 				}
 				val, err := cfg.Attr("uid")

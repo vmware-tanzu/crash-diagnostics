@@ -39,9 +39,6 @@ func TestSSHConfigFunc(t *testing.T) {
 				if !ok {
 					t.Fatalf("unexpected type for thread local key ssh_config: %T", data)
 				}
-				if len(cfg.AttrNames()) != 4 {
-					t.Fatalf("unexpected item count in ssh_config: %d", len(cfg.AttrNames()))
-				}
 				val, err := cfg.Attr("username")
 				if err != nil {
 					t.Fatal(err)
@@ -67,9 +64,6 @@ func TestSSHConfigFunc(t *testing.T) {
 				cfg, ok := data.(*starlarkstruct.Struct)
 				if !ok {
 					t.Fatalf("unexpected type for thread local key ssh_config: %T", data)
-				}
-				if len(cfg.AttrNames()) != 4 {
-					t.Fatalf("unexpected item count in ssh_config: %d", len(cfg.AttrNames()))
 				}
 				val, err := cfg.Attr("private_key_path")
 				if err != nil {
@@ -98,7 +92,7 @@ func TestSSHConfigFunc(t *testing.T) {
 				if !ok {
 					t.Fatalf("unexpected type for thread local key ssh_config: %T", data)
 				}
-				if len(cfg.AttrNames()) != 5 {
+				if len(cfg.AttrNames()) != 7 {
 					t.Fatalf("unexpected item count in ssh_config: %d", len(cfg.AttrNames()))
 				}
 			},

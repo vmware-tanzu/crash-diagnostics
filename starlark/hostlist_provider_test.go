@@ -19,7 +19,7 @@ func TestHostListProvider(t *testing.T) {
 	}{
 		{
 			name:   "single host",
-			script: `provider = host_list_provider(hosts="foo.host")`,
+			script: `provider = host_list_provider(hosts=["foo.host"])`,
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
