@@ -22,32 +22,50 @@ func addDefaultSSHConf(thread *starlark.Thread) error {
 }
 
 // sshConfigFn is the backing built-in fn that saves and returns its argument as struct value.
-// Starlark format: ssh_config(conf0=val0, ..., confN=valN)
+// Starlark format: ssh_config(username=name[, port][, private_key_path][,max_retries][,conn_timeout][,jump_user][,jump_host])
 func sshConfigFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	var dictionary starlark.StringDict
-	if kwargs != nil {
-		dict, err := kwargsToStringDict(kwargs)
-		if err != nil {
-			return starlark.None, err
-		}
-		dictionary = dict
+	var uname, port, pkPath, jUser, jHost string
+	var maxRetries, connTimeout int
+
+	if err := starlark.UnpackArgs(
+		identifiers.crashdCfg, args, kwargs,
+		"username", &uname,
+		"port?", &port,
+		"private_key_path?", &pkPath,
+		"jump_user?", &jUser,
+		"jump_host?", &jHost,
+		"max_retries?", &maxRetries,
+		"conn_timeout?", &connTimeout,
+	); err != nil {
+		return starlark.None, fmt.Errorf("%s: %s", identifiers.hostListProvider, err)
 	}
 
 	// validation
-	if _, ok := dictionary[identifiers.username]; !ok {
+	if len(uname) == 0 {
 		return starlark.None, fmt.Errorf("%s: username required", identifiers.sshCfg)
 	}
-	if _, ok := dictionary[identifiers.port]; !ok {
-		dictionary[identifiers.port] = starlark.String(defaults.sshPort)
+	if len(port) == 0 {
+		port = defaults.sshPort
 	}
-	if _, ok := dictionary[identifiers.maxRetries]; !ok {
-		dictionary[identifiers.maxRetries] = starlark.MakeInt(defaults.connRetries)
+	if maxRetries == 0 {
+		maxRetries = defaults.connRetries
 	}
-	if _, ok := dictionary[identifiers.privateKeyPath]; !ok {
-		dictionary[identifiers.privateKeyPath] = starlark.String(defaults.pkPath)
+	if connTimeout == 0 {
+		connTimeout = defaults.connTimeout
+	}
+	if len(pkPath) == 0 {
+		pkPath = defaults.pkPath
 	}
 
-	structVal := starlarkstruct.FromStringDict(starlarkstruct.Default, dictionary)
+	structVal := starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
+		"username":         starlark.String(uname),
+		"port":             starlark.String(port),
+		"private_key_path": starlark.String(pkPath),
+		"max_retries":      starlark.MakeInt(maxRetries),
+		"conn_timeout":     starlark.MakeInt(connTimeout),
+		"jump_user":        starlark.String(jUser),
+		"jump_host":        starlark.String(jHost),
+	})
 
 	// save to be used as default when needed
 	thread.SetLocal(identifiers.sshCfg, structVal)

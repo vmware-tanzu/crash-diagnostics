@@ -19,7 +19,6 @@ func addDefaultCrashdConf(thread *starlark.Thread) error {
 		{starlark.String("gid"), starlark.String(getGid())},
 		{starlark.String("uid"), starlark.String(getUid())},
 		{starlark.String("workdir"), starlark.String(defaults.workdir)},
-		{starlark.String("output_path"), starlark.String(defaults.outPath)},
 	}
 
 	_, err := crashdConfigFn(thread, nil, nil, args)
@@ -31,35 +30,51 @@ func addDefaultCrashdConf(thread *starlark.Thread) error {
 }
 
 // crashConfig is built-in starlark function that saves and returns the kwargs as a struct value.
-// Starlark format: crashd_config(conf0=val0, ..., confN=ValN)
+// Starlark format: crashd_config(workdir=path, default_shell=shellpath, requires=["command0",...,"commandN"])
 func crashdConfigFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	var dictionary starlark.StringDict
-	if kwargs != nil {
-		dict, err := kwargsToStringDict(kwargs)
-		if err != nil {
-			return starlark.None, err
-		}
-		dictionary = dict
+	var workdir, gid, uid, defaultShell string
+	requires := starlark.NewList([]starlark.Value{})
+
+	if err := starlark.UnpackArgs(
+		identifiers.crashdCfg, args, kwargs,
+		"workdir?", &workdir,
+		"gid?", &gid,
+		"uid?", &uid,
+		"default_shell?", &defaultShell,
+		"requires?", &requires,
+	); err != nil {
+		return starlark.None, fmt.Errorf("%s: %s", identifiers.crashdCfg, err)
 	}
 
 	// validate
-	workdir := defaults.workdir
-	if dictionary["workdir"] != nil {
-		if dir, ok := dictionary["workdir"].(starlark.String); ok {
-			workdir = string(dir)
-		}
+	if len(workdir) == 0 {
+		workdir = defaults.workdir
 	}
+
+	if len(gid) == 0 {
+		gid = getGid()
+	}
+
+	if len(uid) == 0 {
+		uid = getUid()
+	}
+
 	if err := makeCrashdWorkdir(workdir); err != nil {
 		return starlark.None, fmt.Errorf("%s: %s", identifiers.crashdCfg, err)
 	}
 
-	structVal := starlarkstruct.FromStringDict(starlarkstruct.Default, dictionary)
+	cfgStruct := starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
+		"workdir":       starlark.String(workdir),
+		"gid":           starlark.String(gid),
+		"uid":           starlark.String(uid),
+		"default_shell": starlark.String(defaultShell),
+		"requires":      requires,
+	})
 
 	// save values to be used as default
-	thread.SetLocal(identifiers.crashdCfg, structVal)
+	thread.SetLocal(identifiers.crashdCfg, cfgStruct)
 
-	// return values as a struct (i.e. config.arg0, ... , config.argN)
-	return starlark.None, nil
+	return cfgStruct, nil
 }
 
 func makeCrashdWorkdir(path string) error {

@@ -24,55 +24,31 @@ import (
 //
 // Starlark format: copy_from([<path>] [,path=<list>, resources=resources, workdir=path])
 func copyFromFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	var sourcePath string
-	if args != nil && args.Len() == 1 {
-		if path, ok := args.Index(0).(starlark.String); ok {
-			sourcePath = string(path)
-		}
+	var sourcePath, workdir string
+	var resources *starlark.List
+
+	if err := starlark.UnpackArgs(
+		identifiers.capture, args, kwargs,
+		"path", &sourcePath,
+		"resources?", &resources,
+		"workdir?", &workdir,
+	); err != nil {
+		return starlark.None, fmt.Errorf("%s: %s", identifiers.capture, err)
 	}
 
-	// grab named arguments
-	var dictionary starlark.StringDict
-	if kwargs != nil {
-		dict, err := kwargsToStringDict(kwargs)
-		if err != nil {
-			return starlark.None, err
-		}
-		dictionary = dict
-	}
-
-	if dictionary["path"] != nil {
-		if path, ok := dictionary["path"].(starlark.String); ok {
-			sourcePath = string(path)
-		}
-	}
-
-	if sourcePath == "" {
+	if len(sourcePath) == 0 {
 		return starlark.None, fmt.Errorf("%s: path arg not set", identifiers.copyFrom)
 	}
 
-	var workdir string
-	if dictionary["workdir"] != nil {
-		if dir, ok := dictionary["workdir"].(starlark.String); ok {
-			workdir = string(dir)
-		}
-	}
 	if len(workdir) == 0 {
 		if dir, err := getWorkdirFromThread(thread); err == nil {
 			workdir = dir
 		}
 	}
 	if len(workdir) == 0 {
-		return starlark.None, fmt.Errorf("%s: workdir arg not set", identifiers.copyFrom)
+		workdir = defaults.workdir
 	}
 
-	// extract resources
-	var resources *starlark.List
-	if dictionary[identifiers.resources] != nil {
-		if res, ok := dictionary[identifiers.resources].(*starlark.List); ok {
-			resources = res
-		}
-	}
 	if resources == nil {
 		res, err := getResourcesFromThread(thread)
 		if err != nil {

@@ -23,56 +23,24 @@ import (
 // by previous calls to resources() and crashd_config().
 // Starlark format: capture(command-string, cmd="command" [,resources=resources][,workdir=path][,file_name=name][,desc=description])
 func captureFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	var cmdStr string
-	if args != nil && args.Len() == 1 {
-		cmd, ok := args.Index(0).(starlark.String)
-		if !ok {
-			return starlark.None, fmt.Errorf("%s: default argument must be a string", identifiers.capture)
-		}
-		cmdStr = string(cmd)
-	}
+	var cmdStr, workdir, fileName, desc string
+	var resources *starlark.List
 
-	// grab named arguments
-	var dictionary starlark.StringDict
-	if kwargs != nil {
-		dict, err := kwargsToStringDict(kwargs)
-		if err != nil {
-			return starlark.None, fmt.Errorf("%s: %s", identifiers.capture, err)
-		}
-		dictionary = dict
-	}
-
-	if dictionary["cmd"] != nil {
-		if cmd, ok := dictionary["cmd"].(starlark.String); ok {
-			cmdStr = string(cmd)
-		}
+	if err := starlark.UnpackArgs(
+		identifiers.capture, args, kwargs,
+		"cmd", &cmdStr,
+		"resources?", &resources,
+		"workdir?", &workdir,
+		"file_name?", &fileName,
+		"desc?", &desc,
+	); err != nil {
+		return starlark.None, fmt.Errorf("%s: %s", identifiers.capture, err)
 	}
 
 	if len(cmdStr) == 0 {
 		return starlark.None, fmt.Errorf("%s: missing command string", identifiers.capture)
 	}
 
-	var fileName string
-	if dictionary["file_name"] != nil {
-		if cmd, ok := dictionary["file_name"].(starlark.String); ok {
-			fileName = string(cmd)
-		}
-	}
-
-	var desc string
-	if dictionary["desc"] != nil {
-		if cmd, ok := dictionary["desc"].(starlark.String); ok {
-			desc = string(cmd)
-		}
-	}
-
-	// extract workdir
-	var workdir string
-	if dictionary["workdir"] != nil {
-		if dir, ok := dictionary["workdir"].(starlark.String); ok {
-			workdir = string(dir)
-		}
-	}
 	if len(workdir) == 0 {
 		if dir, err := getWorkdirFromThread(thread); err == nil {
 			workdir = dir
@@ -82,25 +50,12 @@ func captureFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tup
 		workdir = defaults.workdir
 	}
 
-	// extract resources
-	var resources *starlark.List
-	if dictionary[identifiers.resources] != nil {
-		res, ok := dictionary[identifiers.resources].(*starlark.List)
-		if !ok {
-			return starlark.None, fmt.Errorf("%s: unexpected resources type", identifiers.capture)
+	if resources == nil {
+		res, err := getResourcesFromThread(thread)
+		if err != nil {
+			return starlark.None, fmt.Errorf("%s: %s", identifiers.copyFrom, err)
 		}
 		resources = res
-	}
-	if resources == nil {
-		res := thread.Local(identifiers.resources)
-		if res == nil {
-			return starlark.None, fmt.Errorf("%s: default resources not found", identifiers.capture)
-		}
-		resList, ok := res.(*starlark.List)
-		if !ok {
-			return starlark.None, fmt.Errorf("%s: unexpected resources type", identifiers.capture)
-		}
-		resources = resList
 	}
 
 	results, err := execCapture(cmdStr, workdir, fileName, desc, resources)

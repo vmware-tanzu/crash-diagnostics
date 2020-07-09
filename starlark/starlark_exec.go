@@ -35,7 +35,7 @@ func (e *Executor) AddPredeclared(name string, value starlark.Value) {
 
 func (e *Executor) Exec(name string, source io.Reader) error {
 	if err := setupLocalDefaults(e.thread); err != nil {
-		return fmt.Errorf("crashd failed: %s", err)
+		return fmt.Errorf("failed to setup defaults: %s", err)
 	}
 
 	result, err := starlark.ExecFile(e.thread, name, source, e.predecs)

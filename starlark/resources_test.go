@@ -55,7 +55,7 @@ func TestResourcesFunc(t *testing.T) {
 			name: "host only",
 			kwargs: func(t *testing.T) []starlark.Tuple {
 				return []starlark.Tuple{
-					[]starlark.Value{starlark.String("hosts"), starlark.String("foo.host.1")},
+					[]starlark.Value{starlark.String("hosts"), starlark.NewList([]starlark.Value{starlark.String("foo.host.1")})},
 				}
 			},
 			eval: func(t *testing.T, kwargs []starlark.Tuple) {
@@ -113,15 +113,18 @@ func TestResourcesFunc(t *testing.T) {
 		{
 			name: "provider only",
 			kwargs: func(t *testing.T) []starlark.Tuple {
-				provider, err := newHostListProvider(
+				provider, err := hostListProvider(
 					newTestThreadLocal(t),
-					starlark.StringDict{"hosts": starlark.NewList(
-						[]starlark.Value{
+					nil, nil,
+					[]starlark.Tuple{{
+						starlark.String("hosts"),
+						starlark.NewList([]starlark.Value{
 							starlark.String("local.host"),
 							starlark.String("192.168.10.10"),
-						},
-					)},
+						}),
+					}},
 				)
+
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -197,7 +200,7 @@ func TestResourceScript(t *testing.T) {
 	}{
 		{
 			name:   "default resource with host",
-			script: `resources(hosts="foo.host.1")`,
+			script: `resources(hosts=["foo.host.1"])`,
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
