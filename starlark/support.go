@@ -38,6 +38,7 @@ var (
 		capture          string
 		captureLocal     string
 		copyFrom         string
+		archive          string
 
 		kubeCapture       string
 		kubeGet           string
@@ -62,6 +63,7 @@ var (
 		capture:          "capture",
 		captureLocal:     "capture_local",
 		copyFrom:         "copy_from",
+		archive:          "archive",
 
 		kubeCapture:       "kube_capture",
 		kubeGet:           "kube_get",
@@ -91,7 +93,6 @@ var (
 		pkPath: func() string {
 			return filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa")
 		}(),
-		outPath:     "./crashd.tar.gz",
 		connRetries: 30,
 		connTimeout: 30,
 	}
