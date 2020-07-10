@@ -81,6 +81,7 @@ func newPredeclareds() starlark.StringDict {
 		identifiers.sshCfg:            starlark.NewBuiltin(identifiers.sshCfg, sshConfigFn),
 		identifiers.hostListProvider:  starlark.NewBuiltin(identifiers.hostListProvider, hostListProvider),
 		identifiers.resources:         starlark.NewBuiltin(identifiers.resources, resourcesFunc),
+		identifiers.archive:           starlark.NewBuiltin(identifiers.archive, archiveFunc),
 		identifiers.run:               starlark.NewBuiltin(identifiers.run, runFunc),
 		identifiers.runLocal:          starlark.NewBuiltin(identifiers.runLocal, runLocalFunc),
 		identifiers.capture:           starlark.NewBuiltin(identifiers.capture, captureFunc),

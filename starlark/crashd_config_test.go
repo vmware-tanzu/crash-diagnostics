@@ -28,6 +28,7 @@ func testCrashdConfigFunc(t *testing.T) {
 			name:   "crash_config saved in thread",
 			script: `crashd_config(workdir="fooval", default_shell="barval")`,
 			eval: func(t *testing.T, script string) {
+				defer os.RemoveAll("fooval")
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
 					t.Fatal(err)
