@@ -13,14 +13,14 @@ import (
 )
 
 var (
-	testSSHPort    = testcrashd.NextSSHPort()
+	testSSHPort    = testcrashd.NextPortValue()
 	testMaxRetries = 30
 )
 
 func TestMain(m *testing.M) {
 	testcrashd.Init()
 
-	sshSvr := testcrashd.NewSSHServer(testcrashd.NextSSHContainerName(), testSSHPort)
+	sshSvr := testcrashd.NewSSHServer(testcrashd.NextResourceName(), testSSHPort)
 	logrus.Debug("Attempting to start SSH server")
 	if err := sshSvr.Start(); err != nil {
 		logrus.Error(err)

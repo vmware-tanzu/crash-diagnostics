@@ -15,17 +15,16 @@ import (
 // Starlark format: run_local(<command string>)
 func runLocalFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var cmdStr string
-	if args != nil && args.Len() == 1 {
-		cmd, ok := args.Index(0).(starlark.String)
-		if !ok {
-			return starlark.None, fmt.Errorf("%s: command must be a string", identifiers.runLocal)
-		}
-		cmdStr = string(cmd)
+	if err := starlark.UnpackArgs(
+		identifiers.runLocal, args, kwargs,
+		"cmd", &cmdStr,
+	); err != nil {
+		return starlark.None, fmt.Errorf("%s: %s", identifiers.run, err)
 	}
 
 	p := echo.New().RunProc(cmdStr)
 	if p.Err() != nil {
-		return starlark.None, fmt.Errorf("%s: %s", identifiers.runLocal, p.Err())
+		return starlark.None, fmt.Errorf("%s: %s: %s", identifiers.runLocal, p.Err(), p.Result())
 	}
 
 	return starlark.String(p.Result()), nil

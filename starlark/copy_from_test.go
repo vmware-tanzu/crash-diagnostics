@@ -375,8 +375,8 @@ result = cp(hosts)`, port),
 }
 
 func TestCopyFuncSSHAll(t *testing.T) {
-	port := testcrashd.NextSSHPort()
-	sshSvr := testcrashd.NewSSHServer(testcrashd.NextSSHContainerName(), port)
+	port := testcrashd.NextPortValue()
+	sshSvr := testcrashd.NewSSHServer(testcrashd.NextResourceName(), port)
 
 	logrus.Debug("Attempting to start SSH server")
 	if err := sshSvr.Start(); err != nil {
