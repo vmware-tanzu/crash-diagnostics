@@ -32,7 +32,7 @@ func newRunCommand() *cobra.Command {
 			return run(flags)
 		},
 	}
-	cmd.Flags().StringToStringVar(&flags.args, "args", flags.args, "space-separated key=value arguments to passed to diagnostics file")
+	cmd.Flags().StringToStringVar(&flags.args, "args", flags.args, "comma-separated key=value arguments to pass to the diagnostics file")
 	cmd.Flags().StringVar(&flags.file, "file", flags.file, "the path to the diagnostics script file to run")
 	return cmd
 }

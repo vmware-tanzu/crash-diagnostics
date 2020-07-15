@@ -29,7 +29,7 @@ func KubeGetFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple
 	}
 
 	searchParams := k8s.NewSearchParams(structVal)
-	searchResults, err := client.Search(searchParams.Groups(), searchParams.Kinds(), searchParams.Namespaces(), searchParams.Versions(), searchParams.Names(), searchParams.Labels(), searchParams.Containers())
+	searchResults, err := client.Search(searchParams)
 	if err == nil {
 		objects = starlark.NewList([]starlark.Value{})
 		for _, searchResult := range searchResults {

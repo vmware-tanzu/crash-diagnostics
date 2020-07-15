@@ -68,15 +68,15 @@ func write(workdir string, client *k8s.Client, structVal *starlarkstruct.Struct)
 	logrus.Debugf("kube_capture(what=%s)", what)
 	switch what {
 	case "logs":
-		searchParams.SetGroups([]string{"core"})
-		searchParams.SetKinds([]string{"pods"})
-		searchParams.SetVersions([]string{})
+		searchParams.Groups = []string{"core"}
+		searchParams.Kinds = []string{"pods"}
+		searchParams.Versions = []string{}
 	case "objects", "all", "*":
 	default:
 		return "", errors.Errorf("don't know how to get: %s", what)
 	}
 
-	searchResults, err = client.Search(searchParams.Groups(), searchParams.Kinds(), searchParams.Namespaces(), searchParams.Versions(), searchParams.Names(), searchParams.Labels(), searchParams.Containers())
+	searchResults, err = client.Search(searchParams)
 	if err != nil {
 		return "", err
 	}
@@ -90,31 +90,4 @@ func write(workdir string, client *k8s.Client, structVal *starlarkstruct.Struct)
 		return "", errors.Wrap(err, "failed to write search results")
 	}
 	return resultWriter.GetResultDir(), nil
-}
-
-// getKubeConfigPath is responsible to obtain the path to the kubeconfig
-// It checks for the `path` key in the input args for the directive otherwise
-// falls back to the default kube_config from the thread context
-func getKubeConfigPath(thread *starlark.Thread, structVal *starlarkstruct.Struct) (string, error) {
-	var (
-		kubeConfigPath string
-		err            error
-		kcVal          starlark.Value
-	)
-
-	if kcVal, err = structVal.Attr("kube_config"); err != nil {
-		kubeConfigData := thread.Local(identifiers.kubeCfg)
-		kcVal = kubeConfigData.(starlark.Value)
-	}
-
-	if kubeConfigVal, ok := kcVal.(*starlarkstruct.Struct); ok {
-		kvPathVal, err := kubeConfigVal.Attr("path")
-		if err != nil {
-			return kubeConfigPath, errors.Wrap(err, "unable to extract kubeconfig path")
-		}
-		if kvPathStrVal, ok := kvPathVal.(starlark.String); ok {
-			kubeConfigPath = kvPathStrVal.GoString()
-		}
-	}
-	return trimQuotes(kubeConfigPath), nil
 }

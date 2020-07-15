@@ -43,6 +43,7 @@ var (
 		kubeCapture       string
 		kubeGet           string
 		kubeNodesProvider string
+		capvProvider      string
 	}{
 		crashdCfg: "crashd_config",
 		kubeCfg:   "kube_config",
@@ -68,6 +69,7 @@ var (
 		kubeCapture:       "kube_capture",
 		kubeGet:           "kube_get",
 		kubeNodesProvider: "kube_nodes_provider",
+		capvProvider:      "capv_provider",
 	}
 
 	defaults = struct {
