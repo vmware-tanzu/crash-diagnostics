@@ -44,7 +44,7 @@ var _ = Describe("kube_capture", func() {
 		crashdScript := fmt.Sprintf(`
 crashd_config(workdir="%s")
 kube_config(path="%s")
-kube_data = kube_capture(what="objects", groups="core", kinds="services", namespaces=["default", "kube-system"])
+kube_data = kube_capture(what="objects", groups=["core"], kinds=["services"], namespaces=["default", "kube-system"])
 		`, workdir, k8sconfig)
 		execSetup(crashdScript)
 		Expect(err).NotTo(HaveOccurred())
@@ -74,7 +74,7 @@ kube_data = kube_capture(what="objects", groups="core", kinds="services", namesp
 		crashdScript := fmt.Sprintf(`
 crashd_config(workdir="%s")
 kube_config(path="%s")
-kube_data = kube_capture(what="objects", groups="core", kinds="nodes")
+kube_data = kube_capture(what="objects", groups=["core"], kinds=["nodes"])
 		`, workdir, k8sconfig)
 		execSetup(crashdScript)
 		Expect(err).NotTo(HaveOccurred())
@@ -101,7 +101,7 @@ kube_data = kube_capture(what="objects", groups="core", kinds="nodes")
 		crashdScript := fmt.Sprintf(`
 crashd_config(workdir="%s")
 kube_config(path="%s")
-kube_data = kube_capture(what="logs", namespaces="kube-system")
+kube_data = kube_capture(what="logs", namespaces=["kube-system"])
 		`, workdir, k8sconfig)
 		execSetup(crashdScript)
 		Expect(err).NotTo(HaveOccurred())
@@ -132,7 +132,7 @@ kube_data = kube_capture(what="logs", namespaces="kube-system")
 		crashdScript := fmt.Sprintf(`
 crashd_config(workdir="%s")
 kube_config(path="%s")
-kube_data = kube_capture(what="logs", namespaces="kube-system", containers=["etcd"])
+kube_data = kube_capture(what="logs", namespaces=["kube-system"], containers=["etcd"])
 		`, workdir, k8sconfig)
 		execSetup(crashdScript)
 		Expect(err).NotTo(HaveOccurred())
@@ -165,9 +165,9 @@ kube_data = kube_capture(what="logs", namespaces="kube-system", containers=["etc
 	},
 		Entry("in global thread", fmt.Sprintf(`
 kube_config(path="%s")
-kube_capture(what="logs", namespaces="kube-system", containers=["etcd"])`, "/foo/bar")),
+kube_capture(what="logs", namespaces=["kube-system"], containers=["etcd"])`, "/foo/bar")),
 		Entry("in function call", fmt.Sprintf(`
 cfg = kube_config(path="%s")
-kube_capture(what="logs", namespaces="kube-system", containers=["etcd"], kube_config=cfg)`, "/foo/bar")),
+kube_capture(what="logs", namespaces=["kube-system"], containers=["etcd"], kube_config=cfg)`, "/foo/bar")),
 	)
 })

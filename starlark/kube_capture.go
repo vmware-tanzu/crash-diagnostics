@@ -14,23 +14,35 @@ import (
 // KubeCaptureFn is the Starlark built-in for the fetching kubernetes objects
 // and returns the result as a Starlark value containing the file path and error message, if any
 // Starlark format: kube_capture(what="logs" [, groups="core", namespaces=["default"], kube_config=kube_config()])
-func KubeCaptureFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	var argDict starlark.StringDict
+func KubeCaptureFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 
-	if kwargs != nil {
-		dict, err := kwargsToStringDict(kwargs)
-		if err != nil {
-			return starlark.None, err
-		}
-		argDict = dict
+	var groups, kinds, namespaces, versions, names, labels, containers *starlark.List
+	var kubeConfig *starlarkstruct.Struct
+	var what string
+
+	if err := starlark.UnpackArgs(
+		identifiers.crashdCfg, args, kwargs,
+		"what", &what,
+		"groups?", &groups,
+		"kinds?", &kinds,
+		"namespaces?", &namespaces,
+		"versions?", &versions,
+		"names?", &names,
+		"labels?", &labels,
+		"containers?", &containers,
+		"kube_config?", &kubeConfig,
+	); err != nil {
+		return starlark.None, errors.Wrap(err, "failed to read args")
 	}
-	structVal := starlarkstruct.FromStringDict(starlarkstruct.Default, argDict)
 
-	kubeconfig, err := getKubeConfigPath(thread, structVal)
+	if kubeConfig == nil {
+		kubeConfig = thread.Local(identifiers.kubeCfg).(*starlarkstruct.Struct)
+	}
+	path, err := getKubeConfigFromStruct(kubeConfig)
 	if err != nil {
 		return starlark.None, errors.Wrap(err, "failed to kubeconfig")
 	}
-	client, err := k8s.New(kubeconfig)
+	client, err := k8s.New(path)
 	if err != nil {
 		return starlark.None, errors.Wrap(err, "could not initialize search client")
 	}
@@ -38,7 +50,15 @@ func KubeCaptureFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.T
 	data := thread.Local(identifiers.crashdCfg)
 	cfg, _ := data.(*starlarkstruct.Struct)
 	workDirVal, _ := cfg.Attr("workdir")
-	resultDir, err := write(trimQuotes(workDirVal.String()), client, structVal)
+	resultDir, err := write(trimQuotes(workDirVal.String()), what, client, k8s.SearchParams{
+		Groups:     toSlice(groups),
+		Kinds:      toSlice(kinds),
+		Namespaces: toSlice(namespaces),
+		Versions:   toSlice(versions),
+		Names:      toSlice(names),
+		Labels:     toSlice(labels),
+		Containers: toSlice(containers),
+	})
 
 	return starlarkstruct.FromStringDict(
 		starlarkstruct.Default,
@@ -53,30 +73,20 @@ func KubeCaptureFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.T
 		}), nil
 }
 
-func write(workdir string, client *k8s.Client, structVal *starlarkstruct.Struct) (string, error) {
-	var searchResults []k8s.SearchResult
-	whatVal, err := structVal.Attr("what")
-	// TODO: check if we need default value
-	if err != nil {
-		return "", errors.Wrap(err, "what input parameter not specified")
-	}
-	whatStrVal, _ := whatVal.(starlark.String)
-	what := whatStrVal.GoString()
-
-	searchParams := k8s.NewSearchParams(structVal)
+func write(workdir, what string, client *k8s.Client, params k8s.SearchParams) (string, error) {
 
 	logrus.Debugf("kube_capture(what=%s)", what)
 	switch what {
 	case "logs":
-		searchParams.Groups = []string{"core"}
-		searchParams.Kinds = []string{"pods"}
-		searchParams.Versions = []string{}
+		params.Groups = []string{"core"}
+		params.Kinds = []string{"pods"}
+		params.Versions = []string{}
 	case "objects", "all", "*":
 	default:
 		return "", errors.Errorf("don't know how to get: %s", what)
 	}
 
-	searchResults, err = client.Search(searchParams)
+	searchResults, err := client.Search(params)
 	if err != nil {
 		return "", err
 	}
