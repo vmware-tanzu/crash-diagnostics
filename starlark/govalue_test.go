@@ -195,7 +195,7 @@ func TestGoValue_ToStruct(t *testing.T) {
 			goVal: NewGoValue(map[string]string{"key0": "val0", "key1": "val1"}),
 			eval: func(t *testing.T, goval *GoValue) {
 				actual := goval.Value().(map[string]string)
-				starStruct, err := goval.ToStarlarkStruct()
+				starStruct, err := goval.ToStarlarkStruct("blah")
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -224,7 +224,7 @@ func TestGoValue_ToStruct(t *testing.T) {
 					Num   int
 					Avail bool
 				})
-				starStruct, err := goval.ToStarlarkStruct()
+				starStruct, err := goval.ToStarlarkStruct("blah")
 				if err != nil {
 					t.Fatal(err)
 				}

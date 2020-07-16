@@ -44,5 +44,5 @@ func hostListProvider(thread *starlark.Thread, b *starlark.Builtin, args starlar
 		identifiers.sshCfg: sshCfg,
 	}
 
-	return starlarkstruct.FromStringDict(starlarkstruct.Default, cfgStruct), nil
+	return starlarkstruct.FromStringDict(starlark.String(identifiers.hostListProvider), cfgStruct), nil
 }

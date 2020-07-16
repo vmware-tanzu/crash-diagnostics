@@ -69,5 +69,5 @@ func newKubeNodesProvider(kubeconfig string, sshConfig *starlarkstruct.Struct, n
 	}
 	kubeNodesProviderDict["hosts"] = starlark.NewList(nodeIps)
 
-	return starlarkstruct.FromStringDict(starlarkstruct.Default, kubeNodesProviderDict), nil
+	return starlarkstruct.FromStringDict(starlark.String(identifiers.kubeNodesProvider), kubeNodesProviderDict), nil
 }

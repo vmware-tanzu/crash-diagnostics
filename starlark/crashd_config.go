@@ -63,7 +63,7 @@ func crashdConfigFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.
 		return starlark.None, fmt.Errorf("%s: %s", identifiers.crashdCfg, err)
 	}
 
-	cfgStruct := starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
+	cfgStruct := starlarkstruct.FromStringDict(starlark.String(identifiers.crashdCfg), starlark.StringDict{
 		"workdir":       starlark.String(workdir),
 		"gid":           starlark.String(gid),
 		"uid":           starlark.String(uid),

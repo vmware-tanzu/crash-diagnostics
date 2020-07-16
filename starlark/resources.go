@@ -97,7 +97,7 @@ func enum(provider *starlarkstruct.Struct) (*starlark.List, error) {
 				"transport":  transport,
 				"ssh_config": sshCfg,
 			}
-			resources = append(resources, starlarkstruct.FromStringDict(starlarkstruct.Default, dict))
+			resources = append(resources, starlarkstruct.FromStringDict(starlark.String(identifiers.hostResource), dict))
 		}
 	}
 
