@@ -17,7 +17,7 @@ var (
 
 	rnd              = rand.New(rand.NewSource(time.Now().Unix()))
 	sshContainerName = "test-sshd"
-	sshPort          = NextSSHPort()
+	sshPort          = NextPortValue()
 )
 
 // Init initializes testing
@@ -33,12 +33,12 @@ func Init() {
 	logrus.SetLevel(logLevel)
 }
 
-//NextSSHPort returns a pseudo-rando test [2200 .. 2230]
-func NextSSHPort() string {
+//NextPortValue returns a pseudo-rando test [2200 .. 2230]
+func NextPortValue() string {
 	port := 2200 + rnd.Intn(90)
 	return fmt.Sprintf("%d", port)
 }
 
-func NextSSHContainerName() string {
+func NextResourceName() string {
 	return fmt.Sprintf("crashd-test-%x", rnd.Uint64())
 }

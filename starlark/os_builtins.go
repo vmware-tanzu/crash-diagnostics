@@ -17,7 +17,7 @@ func setupOSStruct() *starlarkstruct.Struct {
 		starlark.StringDict{
 			"name":     starlark.String(runtime.GOOS),
 			"username": starlark.String(getUsername()),
-			"homedir":  starlark.String(os.Getenv("HOME")),
+			"home":     starlark.String(os.Getenv("HOME")),
 			"getenv":   starlark.NewBuiltin("getenv", getEnvFunc),
 		},
 	)
