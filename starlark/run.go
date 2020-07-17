@@ -21,7 +21,7 @@ type commandResult struct {
 
 func (r commandResult) toStarlarkStruct() *starlarkstruct.Struct {
 	return starlarkstruct.FromStringDict(
-		starlarkstruct.Default,
+		starlark.String("command_result"),
 		starlark.StringDict{
 			"resource": starlark.String(r.resource),
 			"result":   starlark.String(r.result),

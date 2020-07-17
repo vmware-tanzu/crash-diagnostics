@@ -50,7 +50,7 @@ func KubeConfigFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tu
 		path = pathStr.GoString()
 	}
 
-	structVal := starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
+	structVal := starlarkstruct.FromStringDict(starlark.String(identifiers.kubeCfg), starlark.StringDict{
 		"path": starlark.String(path),
 	})
 

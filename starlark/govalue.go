@@ -127,9 +127,10 @@ func (v *GoValue) ToTuple() (starlark.Tuple, error) {
 }
 
 // ToStarlarkStruct converts a v of type struct or map to a *starlarkstruct.Struct value
-func (v *GoValue) ToStarlarkStruct() (*starlarkstruct.Struct, error) {
+func (v *GoValue) ToStarlarkStruct(constructorName string) (*starlarkstruct.Struct, error) {
 	valType := reflect.TypeOf(v.val)
 	valValue := reflect.ValueOf(v.val)
+	constructor := starlark.String(constructorName)
 
 	switch valType.Kind() {
 	case reflect.Struct:
@@ -142,13 +143,13 @@ func (v *GoValue) ToStarlarkStruct() (*starlarkstruct.Struct, error) {
 			}
 			stringDict[fname] = fval
 		}
-		return starlarkstruct.FromStringDict(starlarkstruct.Default, stringDict), nil
+		return starlarkstruct.FromStringDict(constructor, stringDict), nil
 	case reflect.Map:
 		stringDict, err := v.ToStringDict()
 		if err != nil {
 			return nil, fmt.Errorf("ToStarlarkStruct failed: %s", err)
 		}
-		return starlarkstruct.FromStringDict(starlarkstruct.Default, stringDict), nil
+		return starlarkstruct.FromStringDict(constructor, stringDict), nil
 	default:
 		return nil, fmt.Errorf("ToDict does not support %T", v.val)
 	}

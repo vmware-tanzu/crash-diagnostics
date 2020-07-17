@@ -13,7 +13,7 @@ import (
 )
 
 func setupOSStruct() *starlarkstruct.Struct {
-	return starlarkstruct.FromStringDict(starlarkstruct.Default,
+	return starlarkstruct.FromStringDict(starlark.String(identifiers.os),
 		starlark.StringDict{
 			"name":     starlark.String(runtime.GOOS),
 			"username": starlark.String(getUsername()),

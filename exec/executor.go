@@ -17,7 +17,7 @@ func Execute(name string, source io.Reader, args ArgMap) error {
 	star := starlark.New()
 
 	if args != nil {
-		starStruct, err := starlark.NewGoValue(args).ToStarlarkStruct()
+		starStruct, err := starlark.NewGoValue(args).ToStarlarkStruct("args")
 		if err != nil {
 			return err
 		}

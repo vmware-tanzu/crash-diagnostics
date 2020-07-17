@@ -39,6 +39,7 @@ var (
 		captureLocal     string
 		copyFrom         string
 		archive          string
+		os               string
 
 		kubeCapture       string
 		kubeGet           string
@@ -65,6 +66,7 @@ var (
 		captureLocal:     "capture_local",
 		copyFrom:         "copy_from",
 		archive:          "archive",
+		os:               "os",
 
 		kubeCapture:       "kube_capture",
 		kubeGet:           "kube_get",

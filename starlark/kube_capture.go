@@ -61,7 +61,7 @@ func KubeCaptureFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.T
 	})
 
 	return starlarkstruct.FromStringDict(
-		starlarkstruct.Default,
+		starlark.String(identifiers.kubeCapture),
 		starlark.StringDict{
 			"file": starlark.String(resultDir),
 			"error": func() starlark.String {

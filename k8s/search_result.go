@@ -54,7 +54,7 @@ func (sr SearchResult) ToStarlarkValue() *starlarkstruct.Struct {
 		"List":                 listStruct,
 	}
 
-	return starlarkstruct.FromStringDict(starlarkstruct.Default, dict)
+	return starlarkstruct.FromStringDict(starlark.String("search_result"), dict)
 }
 
 // convertToStruct returns a starlark struct constructed from the contents of the input.

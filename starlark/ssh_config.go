@@ -57,7 +57,7 @@ func sshConfigFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tup
 		pkPath = defaults.pkPath
 	}
 
-	structVal := starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
+	structVal := starlarkstruct.FromStringDict(starlark.String(identifiers.sshCfg), starlark.StringDict{
 		"username":         starlark.String(uname),
 		"port":             starlark.String(port),
 		"private_key_path": starlark.String(pkPath),

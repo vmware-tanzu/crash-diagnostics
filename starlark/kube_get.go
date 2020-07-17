@@ -66,7 +66,7 @@ func KubeGetFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple
 	}
 
 	return starlarkstruct.FromStringDict(
-		starlarkstruct.Default,
+		starlark.String(identifiers.kubeGet),
 		starlark.StringDict{
 			"objs": objects,
 			"error": func() starlark.String {

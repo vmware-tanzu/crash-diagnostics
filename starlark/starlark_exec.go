@@ -8,9 +8,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/vladimirvivien/echo"
 	"go.starlark.net/starlark"
-	"go.starlark.net/starlarkstruct"
 )
 
 type Executor struct {
@@ -76,7 +74,7 @@ func setupLocalDefaults(thread *starlark.Thread) error {
 // runing script.
 func newPredeclareds() starlark.StringDict {
 	return starlark.StringDict{
-		"os":                          setupOSStruct(),
+		identifiers.os:                setupOSStruct(),
 		identifiers.crashdCfg:         starlark.NewBuiltin(identifiers.crashdCfg, crashdConfigFn),
 		identifiers.sshCfg:            starlark.NewBuiltin(identifiers.sshCfg, sshConfigFn),
 		identifiers.hostListProvider:  starlark.NewBuiltin(identifiers.hostListProvider, hostListProvider),
@@ -93,32 +91,4 @@ func newPredeclareds() starlark.StringDict {
 		identifiers.kubeNodesProvider: starlark.NewBuiltin(identifiers.kubeNodesProvider, KubeNodesProviderFn),
 		identifiers.capvProvider:      starlark.NewBuiltin(identifiers.capvProvider, CapvProviderFn),
 	}
-}
-
-func kwargsToStringDict(kwargs []starlark.Tuple) (starlark.StringDict, error) {
-	if len(kwargs) == 0 {
-		return starlark.StringDict{}, nil
-	}
-
-	e := echo.New()
-	dictionary := make(starlark.StringDict)
-
-	for _, tup := range kwargs {
-		key, value := tup[0], tup[1]
-		if value.Type() == "string" {
-			unquoted := trimQuotes(value.String())
-			value = starlark.String(e.Eval(unquoted))
-		}
-		dictionary[trimQuotes(key.String())] = value
-	}
-
-	return dictionary, nil
-}
-
-func kwargsToStruct(kwargs []starlark.Tuple) (*starlarkstruct.Struct, error) {
-	dict, err := kwargsToStringDict(kwargs)
-	if err != nil {
-		return &starlarkstruct.Struct{}, err
-	}
-	return starlarkstruct.FromStringDict(starlarkstruct.Default, dict), nil
 }
