@@ -25,7 +25,7 @@ func TestSSHConfigFunc(t *testing.T) {
 	}{
 		{
 			name:   "ssh_config saved in thread",
-			script: `ssh_config(username="uname", private_key_path="path")`,
+			script: `set_as_default(ssh_config = ssh_config(username="uname", private_key_path="path"))`,
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
@@ -84,16 +84,8 @@ func TestSSHConfigFunc(t *testing.T) {
 					t.Fatal(err)
 				}
 				data := exe.thread.Local(identifiers.sshCfg)
-				if data == nil {
-					t.Fatal("default ssh_config not saved in thread local")
-				}
-
-				cfg, ok := data.(*starlarkstruct.Struct)
-				if !ok {
-					t.Fatalf("unexpected type for thread local key ssh_config: %T", data)
-				}
-				if len(cfg.AttrNames()) != 7 {
-					t.Fatalf("unexpected item count in ssh_config: %d", len(cfg.AttrNames()))
+				if data != nil {
+					t.Fatal("default ssh_config present in thread local")
 				}
 			},
 		},

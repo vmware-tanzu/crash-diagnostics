@@ -14,7 +14,7 @@ import (
 // KubeConfigFn is built-in starlark function that wraps the kwargs into a dictionary value.
 // The result is also added to the thread for other built-in to access.
 // Starlark: kube_config(path=kubecf/path)
-func KubeConfigFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+func KubeConfigFn(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var path string
 	var provider *starlarkstruct.Struct
 
@@ -53,9 +53,6 @@ func KubeConfigFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tu
 	structVal := starlarkstruct.FromStringDict(starlark.String(identifiers.kubeCfg), starlark.StringDict{
 		"path": starlark.String(path),
 	})
-
-	// save dict to be used as default
-	thread.SetLocal(identifiers.kubeCfg, structVal)
 
 	return structVal, nil
 }

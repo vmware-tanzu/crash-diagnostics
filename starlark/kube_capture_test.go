@@ -43,7 +43,7 @@ var _ = Describe("kube_capture", func() {
 	It("creates a directory and files for namespaced objects", func() {
 		crashdScript := fmt.Sprintf(`
 crashd_config(workdir="%s")
-kube_config(path="%s")
+set_as_default(kube_config = kube_config(path="%s"))
 kube_data = kube_capture(what="objects", groups=["core"], kinds=["services"], namespaces=["default", "kube-system"])
 		`, workdir, k8sconfig)
 		execSetup(crashdScript)
@@ -73,8 +73,8 @@ kube_data = kube_capture(what="objects", groups=["core"], kinds=["services"], na
 	It("creates a directory and files for non-namespaced objects", func() {
 		crashdScript := fmt.Sprintf(`
 crashd_config(workdir="%s")
-kube_config(path="%s")
-kube_data = kube_capture(what="objects", groups=["core"], kinds=["nodes"])
+cfg = kube_config(path="%s")
+kube_data = kube_capture(what="objects", groups=["core"], kinds=["nodes"], kube_config = cfg)
 		`, workdir, k8sconfig)
 		execSetup(crashdScript)
 		Expect(err).NotTo(HaveOccurred())
@@ -100,8 +100,7 @@ kube_data = kube_capture(what="objects", groups=["core"], kinds=["nodes"])
 	It("creates a directory and log files for all objects in a namespace", func() {
 		crashdScript := fmt.Sprintf(`
 crashd_config(workdir="%s")
-kube_config(path="%s")
-kube_data = kube_capture(what="logs", namespaces=["kube-system"])
+kube_data = kube_capture(what="logs", namespaces=["kube-system"], kube_config = kube_config(path="%s"))
 		`, workdir, k8sconfig)
 		execSetup(crashdScript)
 		Expect(err).NotTo(HaveOccurred())
@@ -131,8 +130,8 @@ kube_data = kube_capture(what="logs", namespaces=["kube-system"])
 	It("creates a log file for specific container in a namespace", func() {
 		crashdScript := fmt.Sprintf(`
 crashd_config(workdir="%s")
-kube_config(path="%s")
-kube_data = kube_capture(what="logs", namespaces=["kube-system"], containers=["etcd"])
+cfg = kube_config(path="%s")
+kube_data = kube_capture(what="logs", namespaces=["kube-system"], containers=["etcd"], kube_config = cfg)
 		`, workdir, k8sconfig)
 		execSetup(crashdScript)
 		Expect(err).NotTo(HaveOccurred())
@@ -164,8 +163,8 @@ kube_data = kube_capture(what="logs", namespaces=["kube-system"], containers=["e
 		Expect(err).To(HaveOccurred())
 	},
 		Entry("in global thread", fmt.Sprintf(`
-kube_config(path="%s")
-kube_capture(what="logs", namespaces=["kube-system"], containers=["etcd"])`, "/foo/bar")),
+cfg = kube_config(path="%s")
+kube_capture(what="logs", namespaces=["kube-system"], containers=["etcd"], kube_config = cfg)`, "/foo/bar")),
 		Entry("in function call", fmt.Sprintf(`
 cfg = kube_config(path="%s")
 kube_capture(what="logs", namespaces=["kube-system"], containers=["etcd"], kube_config=cfg)`, "/foo/bar")),
