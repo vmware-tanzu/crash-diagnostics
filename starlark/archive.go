@@ -13,7 +13,7 @@ import (
 
 // archiveFunc is a built-in starlark function that bundles specified directories into
 // an arhive format (i.e. tar.gz)
-// Starlark format: archive(file_name=<file name> ,source_paths=list)
+// Starlark format: archive(output_file=<file name> ,source_paths=list)
 func archiveFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var outputFile string
 	var paths *starlark.List

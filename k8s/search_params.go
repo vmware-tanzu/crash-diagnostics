@@ -10,69 +10,46 @@ import (
 )
 
 type SearchParams struct {
-	groups     []string
-	kinds      []string
-	namespaces []string
-	versions   []string
-	names      []string
-	labels     []string
-	containers []string
+	Groups     []string
+	Kinds      []string
+	Namespaces []string
+	Versions   []string
+	Names      []string
+	Labels     []string
+	Containers []string
 }
 
-func (sp SearchParams) SetGroups(input []string) {
-	sp.groups = input
+func (sp SearchParams) ContainsGroup(group string) bool {
+	return contains(sp.Groups, group)
 }
 
-func (sp SearchParams) SetKinds(input []string) {
-	sp.kinds = input
+func (sp SearchParams) ContainsVersion(version string) bool {
+	return contains(sp.Versions, version)
 }
 
-func (sp SearchParams) SetNames(input []string) {
-	sp.names = input
+func (sp SearchParams) ContainsKind(kind string) bool {
+	return contains(sp.Kinds, kind)
 }
 
-func (sp SearchParams) SetNamespaces(input []string) {
-	sp.namespaces = input
+func (sp SearchParams) ContainsContainer(container string) bool {
+	return contains(sp.Containers, container)
 }
 
-func (sp SearchParams) SetVersions(input []string) {
-	sp.versions = input
+func (sp SearchParams) ContainsName(name string) bool {
+	return contains(sp.Names, name)
 }
 
-func (sp SearchParams) SetLabels(input []string) {
-	sp.labels = input
-}
-
-func (sp SearchParams) SetContainers(input []string) {
-	sp.containers = input
-}
-
-func (sp SearchParams) Groups() string {
-	return strings.Join(sp.groups, " ")
-}
-
-func (sp SearchParams) Kinds() string {
-	return strings.Join(sp.kinds, " ")
-}
-
-func (sp SearchParams) Names() string {
-	return strings.Join(sp.names, " ")
-}
-
-func (sp SearchParams) Namespaces() string {
-	return strings.Join(sp.namespaces, " ")
-}
-
-func (sp SearchParams) Versions() string {
-	return strings.Join(sp.versions, " ")
-}
-
-func (sp SearchParams) Labels() string {
-	return strings.Join(sp.labels, " ")
-}
-
-func (sp SearchParams) Containers() string {
-	return strings.Join(sp.containers, " ")
+// contains performs a case-insensitive search for the item in the input array
+func contains(arr []string, item string) bool {
+	if len(arr) == 0 {
+		return false
+	}
+	for _, str := range arr {
+		if strings.ToLower(str) == strings.ToLower(item) {
+			return true
+		}
+	}
+	return false
 }
 
 // TODO: Change this to accept a string dictionary instead
@@ -99,13 +76,13 @@ func NewSearchParams(p *starlarkstruct.Struct) SearchParams {
 	containers = parseStructAttr(p, "containers")
 
 	return SearchParams{
-		kinds:      kinds,
-		groups:     groups,
-		names:      names,
-		namespaces: namespaces,
-		versions:   versions,
-		labels:     labels,
-		containers: containers,
+		Kinds:      kinds,
+		Groups:     groups,
+		Names:      names,
+		Namespaces: namespaces,
+		Versions:   versions,
+		Labels:     labels,
+		Containers: containers,
 	}
 }
 

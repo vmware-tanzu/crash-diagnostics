@@ -194,11 +194,18 @@ func getSSHArgsFromCfg(sshCfg *starlarkstruct.Struct) (ssh.SSHArgs, error) {
 		}
 	}
 
+	var privateKeyPath string
+	if pkPathVal, err := sshCfg.Attr("private_key_path"); err == nil {
+		pkPath := pkPathVal.(starlark.String)
+		privateKeyPath = pkPath.GoString()
+	}
+
 	args := ssh.SSHArgs{
-		User:       string(user),
-		Port:       port,
-		MaxRetries: maxRetries,
-		ProxyJump:  jumpProxy,
+		User:           string(user),
+		Port:           port,
+		MaxRetries:     maxRetries,
+		ProxyJump:      jumpProxy,
+		PrivateKeyPath: privateKeyPath,
 	}
 	return args, nil
 }
