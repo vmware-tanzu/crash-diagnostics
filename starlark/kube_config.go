@@ -75,27 +75,6 @@ func addDefaultKubeConf(thread *starlark.Thread) error {
 	return nil
 }
 
-// getKubeConfigPath is responsible to obtain the path to the kubeconfig
-// It checks for the `path` key in the input args for the directive otherwise
-// falls back to the default kube_config from the thread context
-func getKubeConfigPath(thread *starlark.Thread, structVal *starlarkstruct.Struct) (string, error) {
-	var (
-		err   error
-		kcVal starlark.Value
-	)
-
-	if kcVal, err = structVal.Attr("kube_config"); err != nil {
-		kubeConfigData := thread.Local(identifiers.kubeCfg)
-		kcVal = kubeConfigData.(starlark.Value)
-	}
-
-	kubeConfigVal, ok := kcVal.(*starlarkstruct.Struct)
-	if !ok {
-		return "", err
-	}
-	return getKubeConfigFromStruct(kubeConfigVal)
-}
-
 func getKubeConfigFromStruct(kubeConfigStructVal *starlarkstruct.Struct) (string, error) {
 	kvPathVal, err := kubeConfigStructVal.Attr("path")
 	if err != nil {

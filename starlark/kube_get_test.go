@@ -30,7 +30,7 @@ var _ = Describe("kube_get", func() {
 	It("returns a list of k8s services as starlark objects", func() {
 		crashdScript := fmt.Sprintf(`
 kube_config(path="%s")
-kube_get_data = kube_get(groups="core", kinds="services", namespaces=["default", "kube-system"])
+kube_get_data = kube_get(groups=["core"], kinds=["services"], namespaces=["default", "kube-system"])
 		`, k8sconfig)
 		execSetup(crashdScript)
 		Expect(err).NotTo(HaveOccurred())
@@ -52,7 +52,7 @@ kube_get_data = kube_get(groups="core", kinds="services", namespaces=["default",
 	It("returns a list of k8s nodes as starlark objects", func() {
 		crashdScript := fmt.Sprintf(`
 kube_config(path="%s")
-kube_get_data = kube_get(groups="core", kinds="nodes")
+kube_get_data = kube_get(groups=["core"], kinds=["nodes"])
 			`, k8sconfig)
 		execSetup(crashdScript)
 		Expect(err).NotTo(HaveOccurred())
@@ -74,7 +74,7 @@ kube_get_data = kube_get(groups="core", kinds="nodes")
 	It("returns a list of etcd containers as starlark objects", func() {
 		crashdScript := fmt.Sprintf(`
 kube_config(path="%s")
-kube_get_data = kube_get(namespaces="kube-system", containers=["etcd"])
+kube_get_data = kube_get(namespaces=["kube-system"], containers=["etcd"])
 			`, k8sconfig)
 		execSetup(crashdScript)
 		Expect(err).NotTo(HaveOccurred())
@@ -99,9 +99,9 @@ kube_get_data = kube_get(namespaces="kube-system", containers=["etcd"])
 	},
 		Entry("in global thread", fmt.Sprintf(`
 kube_config(path="%s")
-kube_get(namespaces="kube-system", containers=["etcd"])`, "/foo/bar")),
+kube_get(namespaces=["kube-system"], containers=["etcd"])`, "/foo/bar")),
 		Entry("in function call", fmt.Sprintf(`
 cfg = kube_config(path="%s")
-kube_get(namespaces="kube-system", containers=["etcd"], kube_config=cfg)`, "/foo/bar")),
+kube_get(namespaces=["kube-system"], containers=["etcd"], kube_config=cfg)`, "/foo/bar")),
 	)
 })
