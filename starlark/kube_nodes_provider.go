@@ -19,7 +19,7 @@ func KubeNodesProviderFn(thread *starlark.Thread, _ *starlark.Builtin, args star
 	var kubeConfig, sshConfig *starlarkstruct.Struct
 
 	if err := starlark.UnpackArgs(
-		identifiers.crashdCfg, args, kwargs,
+		identifiers.kubeNodesProvider, args, kwargs,
 		"names?", &names,
 		"labels?", &labels,
 		"kube_config?", &kubeConfig,
