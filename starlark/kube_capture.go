@@ -21,7 +21,7 @@ func KubeCaptureFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.T
 	var what string
 
 	if err := starlark.UnpackArgs(
-		identifiers.crashdCfg, args, kwargs,
+		identifiers.kubeCapture, args, kwargs,
 		"what", &what,
 		"groups?", &groups,
 		"kinds?", &kinds,

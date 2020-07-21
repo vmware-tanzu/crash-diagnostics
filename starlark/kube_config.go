@@ -19,7 +19,7 @@ func KubeConfigFn(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, 
 	var provider *starlarkstruct.Struct
 
 	if err := starlark.UnpackArgs(
-		identifiers.crashdCfg, args, kwargs,
+		identifiers.kubeCfg, args, kwargs,
 		"path?", &path,
 		"capi_provider?", &provider,
 	); err != nil {

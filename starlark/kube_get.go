@@ -17,7 +17,7 @@ func KubeGetFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple
 	var kubeConfig *starlarkstruct.Struct
 
 	if err := starlark.UnpackArgs(
-		identifiers.crashdCfg, args, kwargs,
+		identifiers.kubeGet, args, kwargs,
 		"groups?", &groups,
 		"kinds?", &kinds,
 		"namespaces?", &namespaces,
