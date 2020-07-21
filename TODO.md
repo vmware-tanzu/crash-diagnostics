@@ -75,8 +75,5 @@ This tag/version reflects migration to github
 * [ ] Cloud API recipes (i.e. recipes to debug CAPV)
 
 # v0.3.0
-* Refactor internal executor into a pluggable interface-driven model
-  - i.e. possible suppor for different runtime ()
-  - default runtime may use ssh and scp while other runtime may choose to use something else
-  - default runtime may use ssh/scp all the time regardless of local or remote 
-  
+* Redesign the script/configuration language for Crash Diagnostics
+* Refactor internal and implement support for [Starlark](https://github.com/bazelbuild/starlark) language

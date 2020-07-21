@@ -1,5 +1,5 @@
-# Roadmap
-This project has just started and is going through a steady set of iterative changes to create a tool that will be useful for Kubernetes human operators.  The release cadance is designed to allow the implemented features to mature overtime and lessen technical debts. Each release series will consist of alpha and beta releases before each major release to allow time for the code to be properly exercized by the community.
+# Crash Diagnostics Roadmap
+This project has been in development through several releases. The release cadance is designed to allow the implemented features to mature overtime and lessen technical debts. Each release series will consist of alpha and beta releases (when necessary) before each major release to allow time for the code to be properly exercized by the community.
 
 This roadmap has a short and medium term views of the type of design and functionalities that the tool should support prior to a `1.0` release.
 
@@ -25,22 +25,20 @@ The following additional features are also planned for this series.
 
 
 ## v0.3.x-Releases
-This series of release will see the redsign of the internals of Crash Diagnostics:
-* Refactor the programmatic API surface into distinct infrastructural components
-* A programmatic extension/plugin to create backend implementations for different infrastructures
-* Tigher Kubernetes integration including the ability to extract troubleshooting data Cluster-API managed clusters
+This series of release will see the redsign of the internals of Crash Diagnostics to move away from a custom configuration and adopt the [Starlark](https://github.com/bazelbuild/starlark) language (a dialect of Python):
+* Refactor the internal implementation to use Starlark
+* Introduce/implement several Starlark functions to replace the directives from previous file format.
+* Develop ability to extract data/logs from Cluster-API managed clusters
 
 See the Google Doc design document [here](https://docs.google.com/document/d/1pqYOdTf6ZIT_GSis-AVzlOTm3kyyg-32-seIfULaYEs/edit?usp=sharing).
 
 
-## v0.5.x-Releases
+## v0.4.x-Releases
 This series of releases will explore optimization features:
 * Parsing and execution optimization (i.e. parallel execution)
 * A Uniform retry strategies (smart enough to requeue actions when failed)
 
-## v0.4.x-Releases
+## v0.5.x-Releases
 Exploring other interesting ideas: 
 * Automated diagnostics (would be nice)
 * And more...
-
-TBD
