@@ -19,7 +19,7 @@ func TestHostListProvider(t *testing.T) {
 	}{
 		{
 			name:   "single host",
-			script: `provider = host_list_provider(hosts=["foo.host"])`,
+			script: `provider = host_list_provider(hosts=["foo.host"], ssh_config = ssh_config(username="uname", private_key_path="path"))`,
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
@@ -53,7 +53,7 @@ func TestHostListProvider(t *testing.T) {
 		},
 		{
 			name:   "multiple hosts",
-			script: `provider = host_list_provider(hosts=["foo.host.1", "foo.host.2"])`,
+			script: `provider = host_list_provider(hosts=["foo.host.1", "foo.host.2"], ssh_config = ssh_config(username="uname", private_key_path="path"))`,
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {

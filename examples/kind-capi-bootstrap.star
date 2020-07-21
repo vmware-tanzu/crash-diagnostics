@@ -28,12 +28,12 @@ nspaces=[
     "cert-manager tkg-system",
 ]
 
-kconf=kube_config(path=kind_cfg)
+kconf = kube_config(path=kind_cfg)
 
 # capture Kubernetes API object and store in files (under working dir)
-kube_capture(what="objects", kinds=["services", "pods"], namespaces=nspaces, kube_conf=kconf)
-kube_capture(what="objects", kinds=["deployments", "replicasets"], namespaces=nspaces, kube_conf=kconf)
-kube_capture(what="objects", kinds=["clusters", "machines", "machinesets", "machinedeployments"], namespaces="tkg-system", kube_conf=kconf)
+kube_capture(what="objects", kinds=["services", "pods"], namespaces=nspaces, kube_config = kconf)
+kube_capture(what="objects", kinds=["deployments", "replicasets"], namespaces=nspaces, kube_config = kconf)
+kube_capture(what="objects", kinds=["clusters", "machines", "machinesets", "machinedeployments"], namespaces="tkg-system", kube_config = kconf)
 
 # bundle files stored in working dir
 archive(output_file="/tmp/crashout.tar.gz", source_paths=[conf.workdir])

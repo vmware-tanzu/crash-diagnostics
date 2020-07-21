@@ -27,9 +27,8 @@ var _ = Describe("kube_nodes_provider", func() {
 
 	It("returns a struct with the list of k8s nodes", func() {
 		crashdScript := fmt.Sprintf(`
-kube_config(path="%s")
-ssh_config(username="uname", private_key_path="path")
-provider = kube_nodes_provider()`, k8sconfig)
+cfg = kube_config(path="%s")
+provider = kube_nodes_provider(kube_config = cfg, ssh_config = ssh_config(username="uname", private_key_path="path"))`, k8sconfig)
 		err = execSetup(crashdScript)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -49,9 +48,8 @@ provider = kube_nodes_provider()`, k8sconfig)
 	It("returns a struct with ssh config", func() {
 		crashdScript := fmt.Sprintf(`
 cfg = kube_config(path="%s")
-kube_config(path="/foo/bar")
-ssh_config(username="uname", private_key_path="path")
-provider = kube_nodes_provider(kube_config=cfg)`, k8sconfig)
+ssh_cfg = ssh_config(username="uname", private_key_path="path")
+provider = kube_nodes_provider(kube_config=cfg, ssh_config = ssh_cfg)`, k8sconfig)
 		err = execSetup(crashdScript)
 		Expect(err).NotTo(HaveOccurred())
 

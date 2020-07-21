@@ -45,9 +45,6 @@ func resourcesFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.T
 		return starlark.None, err
 	}
 
-	// save resources for future use
-	thread.SetLocal(identifiers.resources, resources)
-
 	return resources, nil
 }
 

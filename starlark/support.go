@@ -40,6 +40,7 @@ var (
 		copyFrom         string
 		archive          string
 		os               string
+		setAsDefault     string
 
 		kubeCapture       string
 		kubeGet           string
@@ -67,6 +68,7 @@ var (
 		copyFrom:         "copy_from",
 		archive:          "archive",
 		os:               "os",
+		setAsDefault:     "set_as_default",
 
 		kubeCapture:       "kube_capture",
 		kubeGet:           "kube_get",

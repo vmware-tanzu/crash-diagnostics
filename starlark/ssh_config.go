@@ -23,7 +23,7 @@ func addDefaultSSHConf(thread *starlark.Thread) error {
 
 // sshConfigFn is the backing built-in fn that saves and returns its argument as struct value.
 // Starlark format: ssh_config(username=name[, port][, private_key_path][,max_retries][,conn_timeout][,jump_user][,jump_host])
-func sshConfigFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+func sshConfigFn(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var uname, port, pkPath, jUser, jHost string
 	var maxRetries, connTimeout int
 
@@ -66,9 +66,6 @@ func sshConfigFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tup
 		"jump_user":        starlark.String(jUser),
 		"jump_host":        starlark.String(jHost),
 	})
-
-	// save to be used as default when needed
-	thread.SetLocal(identifiers.sshCfg, structVal)
 
 	return structVal, nil
 }

@@ -10,47 +10,57 @@ import (
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("resources with kube_nodes_provider()", func() {
+var _ = DescribeTable("resources with kube_nodes_provider()", func(scriptFunc func() string) {
 
-	It("populates the resources with the cluster nodes as hosts", func() {
-		crashdScript := fmt.Sprintf(`
-cfg = kube_config(path="%s")
-ssh_config(username="uname", private_key_path="path")
-res = resources(provider=kube_nodes_provider(kube_config=cfg))`, k8sconfig)
+	executor := New()
+	crashdScript := scriptFunc()
+	err := executor.Exec("test.resources.kube.nodes.provider", strings.NewReader(crashdScript))
+	Expect(err).NotTo(HaveOccurred())
 
-		executor := New()
-		err := executor.Exec("test.resources.kube.nodes.provider", strings.NewReader(crashdScript))
-		Expect(err).NotTo(HaveOccurred())
+	data := executor.result["res"]
+	Expect(data).NotTo(BeNil())
 
-		data := executor.result["res"]
-		Expect(data).NotTo(BeNil())
+	resources, ok := data.(*starlark.List)
+	Expect(ok).To(BeTrue())
+	Expect(resources.Len()).To(Equal(1))
 
-		resources, ok := data.(*starlark.List)
-		Expect(ok).To(BeTrue())
-		Expect(resources.Len()).To(Equal(1))
+	resStruct, ok := resources.Index(0).(*starlarkstruct.Struct)
+	Expect(ok).To(BeTrue())
 
-		resStruct, ok := resources.Index(0).(*starlarkstruct.Struct)
-		Expect(ok).To(BeTrue())
+	val, err := resStruct.Attr("kind")
+	Expect(err).NotTo(HaveOccurred())
+	Expect(trimQuotes(val.String())).To(Equal(identifiers.hostResource))
 
-		val, err := resStruct.Attr("kind")
-		Expect(err).NotTo(HaveOccurred())
-		Expect(trimQuotes(val.String())).To(Equal(identifiers.hostResource))
+	transport, err := resStruct.Attr("transport")
+	Expect(err).NotTo(HaveOccurred())
+	Expect(trimQuotes(transport.String())).To(Equal("ssh"))
 
-		transport, err := resStruct.Attr("transport")
-		Expect(err).NotTo(HaveOccurred())
-		Expect(trimQuotes(transport.String())).To(Equal("ssh"))
+	sshCfg, err := resStruct.Attr(identifiers.sshCfg)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(sshCfg).NotTo(BeNil())
 
-		sshCfg, err := resStruct.Attr(identifiers.sshCfg)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(sshCfg).NotTo(BeNil())
-
-		host, err := resStruct.Attr("host")
-		Expect(err).NotTo(HaveOccurred())
-		// Regex to match IP address of the host
-		Expect(trimQuotes(host.String())).To(MatchRegexp("^([1-9]?[0-9]{2}\\.)([0-9]{1,3}\\.){2}[0-9]{1,3}$"))
-	})
-})
+	host, err := resStruct.Attr("host")
+	Expect(err).NotTo(HaveOccurred())
+	// Regex to match IP address of the host
+	Expect(trimQuotes(host.String())).To(MatchRegexp("^([1-9]?[0-9]{2}\\.)([0-9]{1,3}\\.){2}[0-9]{1,3}$"))
+},
+	Entry("default ssh config and passed kube_config", func() string {
+		return fmt.Sprintf(`
+set_as_default(ssh_config = ssh_config(username="uname", private_key_path="path"))
+res = resources(provider = kube_nodes_provider(kube_config = kube_config(path="%s")))`, k8sconfig)
+	}),
+	Entry("default kube config and passed ssh_config", func() string {
+		return fmt.Sprintf(`
+set_as_default(kube_config = kube_config(path="%s"))
+res = resources(provider=kube_nodes_provider(ssh_config = ssh_config(username="uname", private_key_path="path")))`, k8sconfig)
+	}),
+	Entry("default kube_config and ssh_config", func() string {
+		return fmt.Sprintf(`
+set_as_default(kube_config = kube_config(path="%s"), ssh_config = ssh_config(username="uname", private_key_path="path"))
+res = resources(provider=kube_nodes_provider())`, k8sconfig)
+	}),
+)
