@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 
 func makeTestSSHConfig(pkPath, port string) *starlarkstruct.Struct {
 	return starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
-		identifiers.username:       starlark.String(getUsername()),
+		identifiers.username:       starlark.String(testcrashd.GetSSHUsername()),
 		identifiers.port:           starlark.String(port),
 		identifiers.privateKeyPath: starlark.String(pkPath),
 		identifiers.maxRetries:     starlark.String(defaults.connRetries),

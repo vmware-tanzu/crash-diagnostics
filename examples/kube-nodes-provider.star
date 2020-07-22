@@ -10,8 +10,8 @@
 
 # setup and configuration
 ssh=ssh_config(
-    username=os.username,
-    private_key_path="{0}/.ssh/id_rsa".format(os.home),
+    username=args.username,
+    private_key_path=args.key_path,
     port=args.ssh_port,
     max_retries=5,
 )

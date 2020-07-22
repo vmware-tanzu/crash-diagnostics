@@ -30,7 +30,7 @@ func testCaptureFuncForHostResources(t *testing.T, port string) {
 			name: "default args single machine",
 			args: func(t *testing.T) starlark.Tuple { return starlark.Tuple{starlark.String("echo 'Hello World!'")} },
 			kwargs: func(t *testing.T) []starlark.Tuple {
-				sshCfg := makeTestSSHConfig(defaults.pkPath, port)
+				sshCfg := makeTestSSHConfig(testcrashd.GetSSHPrivateKey(), port)
 				resources := starlark.NewList([]starlark.Value{makeTestSSHHostResource("127.0.0.1", sshCfg)})
 				return []starlark.Tuple{[]starlark.Value{starlark.String("resources"), resources}}
 			},
@@ -76,7 +76,7 @@ func testCaptureFuncForHostResources(t *testing.T, port string) {
 			name: "kwargs single machine",
 			args: func(t *testing.T) starlark.Tuple { return nil },
 			kwargs: func(t *testing.T) []starlark.Tuple {
-				sshCfg := makeTestSSHConfig(defaults.pkPath, port)
+				sshCfg := makeTestSSHConfig(testcrashd.GetSSHPrivateKey(), port)
 				resources := starlark.NewList([]starlark.Value{makeTestSSHHostResource("127.0.0.1", sshCfg)})
 				return []starlark.Tuple{
 					[]starlark.Value{starlark.String("cmd"), starlark.String("echo 'Hello World!'")},
@@ -127,7 +127,7 @@ func testCaptureFuncForHostResources(t *testing.T, port string) {
 			name: "multiple machines",
 			args: func(t *testing.T) starlark.Tuple { return nil },
 			kwargs: func(t *testing.T) []starlark.Tuple {
-				sshCfg := makeTestSSHConfig(defaults.pkPath, port)
+				sshCfg := makeTestSSHConfig(testcrashd.GetSSHPrivateKey(), port)
 				resources := starlark.NewList([]starlark.Value{
 					makeTestSSHHostResource("localhost", sshCfg),
 					makeTestSSHHostResource("127.0.0.1", sshCfg),
@@ -182,8 +182,8 @@ func testCaptureFuncScriptForHostResources(t *testing.T, port string) {
 		{
 			name: "default cmd multiple machines",
 			script: fmt.Sprintf(`
-set_as_default(resources = resources(provider = host_list_provider(hosts=["127.0.0.1","localhost"], ssh_config = ssh_config(username=os.username, port="%s"))))
-result = capture("echo 'Hello World!'")`, port),
+set_as_default(resources = resources(provider = host_list_provider(hosts=["127.0.0.1","localhost"], ssh_config = ssh_config(username="%s", port="%s", private_key_path="%s"))))
+result = capture("echo 'Hello World!'")`, testcrashd.GetSSHUsername(), port, testcrashd.GetSSHPrivateKey()),
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
@@ -228,9 +228,9 @@ def exec(hosts):
 	return result
 		
 # configuration
-set_as_default(ssh_config = ssh_config(username=os.username, port="%s"))
+set_as_default(ssh_config = ssh_config(username="%s", port="%s", private_key_path="%s"))
 hosts = resources(provider=host_list_provider(hosts=["127.0.0.1","localhost"]))
-result = exec(hosts)`, port),
+result = exec(hosts)`, testcrashd.GetSSHUsername(), port, testcrashd.GetSSHPrivateKey()),
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
