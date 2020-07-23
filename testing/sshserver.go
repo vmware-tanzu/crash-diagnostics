@@ -31,7 +31,7 @@ docker create \
   -e USER_NAME=$USER \
   -e SUDO_ACCESS=true \
   -p 2222:2222 \
-  -v $HOME/.ssh:/config
+  -v ./crash-diagnostics/testing/keys:/config
   linuxserver/openssh-server
 
 */
@@ -48,7 +48,10 @@ func (s *SSHServer) Start() error {
 	s.e.SetVar("CONTAINER_NAME", s.name)
 	s.e.SetVar("SSH_PORT", fmt.Sprintf("%s:2222", s.port))
 	s.e.SetVar("SSH_DOCKER_IMAGE", "vladimirvivien/openssh-server")
-	cmd := s.e.Eval("docker run --rm --detach --name=$CONTAINER_NAME -p $SSH_PORT -e PUBLIC_KEY_FILE=/config/id_rsa.pub -e USER_NAME=$USER -e SUDO_ACCESS=true -v $HOME/.ssh:/config $SSH_DOCKER_IMAGE")
+	s.e.SetVar("USERNAME", GetSSHUsername())
+	s.e.SetVar("KEY_VOLUME_MOUNT", GetSSHKeyDirectory())
+
+	cmd := s.e.Eval("docker run --rm --detach --name=$CONTAINER_NAME -p $SSH_PORT -e PUBLIC_KEY_FILE=/config/id_rsa.pub -e USER_NAME=$USERNAME -e SUDO_ACCESS=true -v $KEY_VOLUME_MOUNT:/config $SSH_DOCKER_IMAGE")
 	logrus.Debugf("Starting SSH server: %s", cmd)
 	proc := s.e.RunProc(cmd)
 	result := proc.Result()

@@ -32,7 +32,7 @@ func testCopyFuncForHostResources(t *testing.T, port string) {
 			remoteFiles: map[string]string{"foo.txt": "FooBar"},
 			args:        func(t *testing.T) starlark.Tuple { return starlark.Tuple{starlark.String("foo.txt")} },
 			kwargs: func(t *testing.T) []starlark.Tuple {
-				sshCfg := makeTestSSHConfig(defaults.pkPath, port)
+				sshCfg := makeTestSSHConfig(testcrashd.GetSSHPrivateKey(), port)
 				resources := starlark.NewList([]starlark.Value{makeTestSSHHostResource("127.0.0.1", sshCfg)})
 				return []starlark.Tuple{[]starlark.Value{starlark.String("resources"), resources}}
 			},
@@ -82,7 +82,7 @@ func testCopyFuncForHostResources(t *testing.T, port string) {
 			remoteFiles: map[string]string{"bar/bar.txt": "BarBar", "bar/foo.txt": "FooBar", "baz.txt": "BazBuz"},
 			args:        func(t *testing.T) starlark.Tuple { return nil },
 			kwargs: func(t *testing.T) []starlark.Tuple {
-				sshCfg := makeTestSSHConfig(defaults.pkPath, port)
+				sshCfg := makeTestSSHConfig(testcrashd.GetSSHPrivateKey(), port)
 				resources := starlark.NewList([]starlark.Value{
 					makeTestSSHHostResource("localhost", sshCfg),
 					makeTestSSHHostResource("127.0.0.1", sshCfg),
@@ -143,7 +143,7 @@ func testCopyFuncForHostResources(t *testing.T, port string) {
 			remoteFiles: map[string]string{"bar/bar.txt": "BarBar", "bar/foo.txt": "FooBar", "bar/baz.csv": "BizzBuzz"},
 			args:        func(t *testing.T) starlark.Tuple { return nil },
 			kwargs: func(t *testing.T) []starlark.Tuple {
-				sshCfg := makeTestSSHConfig(defaults.pkPath, port)
+				sshCfg := makeTestSSHConfig(testcrashd.GetSSHPrivateKey(), port)
 				resources := starlark.NewList([]starlark.Value{
 					makeTestSSHHostResource("localhost", sshCfg),
 					makeTestSSHHostResource("127.0.0.1", sshCfg),
@@ -205,7 +205,7 @@ func testCopyFuncForHostResources(t *testing.T, port string) {
 		},
 	}
 
-	sshArgs := ssh.SSHArgs{User: getUsername(), Host: "127.0.0.1", Port: port}
+	sshArgs := ssh.SSHArgs{User: testcrashd.GetSSHUsername(), Host: "127.0.0.1", Port: port, PrivateKeyPath: testcrashd.GetSSHPrivateKey()}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			for file, content := range test.remoteFiles {
@@ -233,8 +233,8 @@ func testCopyFuncScriptForHostResources(t *testing.T, port string) {
 			name:        "multiple machines single copyFrom",
 			remoteFiles: map[string]string{"foobar.c": "footext", "bar/bar.txt": "BarBar", "bar/foo.txt": "FooBar", "bar/baz.csv": "BizzBuzz"},
 			script: fmt.Sprintf(`
-set_as_default(resources = resources(provider = host_list_provider(hosts=["127.0.0.1","localhost"], ssh_config = ssh_config(username=os.username, port="%s"))))
-result = copy_from("bar/foo.txt")`, port),
+set_as_default(resources = resources(provider = host_list_provider(hosts=["127.0.0.1","localhost"], ssh_config = ssh_config(username="%s", port="%s", private_key_path="%s"))))
+result = copy_from("bar/foo.txt")`, testcrashd.GetSSHUsername(), port, testcrashd.GetSSHPrivateKey()),
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
@@ -297,9 +297,9 @@ def cp(hosts):
 		return result
 		
 # configuration
-set_as_default(ssh_config = ssh_config(username=os.username, port="%s"))
+set_as_default(ssh_config = ssh_config(username="%s", port="%s", private_key_path="%s"))
 hosts = resources(provider=host_list_provider(hosts=["127.0.0.1","localhost"]))
-result = cp(hosts)`, port),
+result = cp(hosts)`, testcrashd.GetSSHUsername(), port, testcrashd.GetSSHPrivateKey()),
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
@@ -356,7 +356,7 @@ result = cp(hosts)`, port),
 		},
 	}
 
-	sshArgs := ssh.SSHArgs{User: getUsername(), Host: "127.0.0.1", Port: port}
+	sshArgs := ssh.SSHArgs{User: testcrashd.GetSSHUsername(), Host: "127.0.0.1", Port: port, PrivateKeyPath: testcrashd.GetSSHPrivateKey()}
 	for _, test := range tests {
 		for file, content := range test.remoteFiles {
 			ssh.MakeTestSSHFile(t, sshArgs, file, content)

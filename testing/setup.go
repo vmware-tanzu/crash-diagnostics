@@ -7,6 +7,9 @@ import (
 	"flag"
 	"fmt"
 	"math/rand"
+	"path"
+	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -41,4 +44,18 @@ func NextPortValue() string {
 
 func NextResourceName() string {
 	return fmt.Sprintf("crashd-test-%x", rnd.Uint64())
+}
+
+func GetSSHKeyDirectory() string {
+	_, b, _, _ := runtime.Caller(0)
+	d := path.Join(path.Dir(b))
+	return path.Join(filepath.Dir(d), "testing", "keys")
+}
+
+func GetSSHPrivateKey() string {
+	return filepath.Join(GetSSHKeyDirectory(), "id_rsa")
+}
+
+func GetSSHUsername() string {
+	return "vivienv"
 }

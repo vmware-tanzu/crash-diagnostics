@@ -6,24 +6,17 @@ package ssh
 import (
 	"io/ioutil"
 	"os"
-	"os/user"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
 
 func TestCopy(t *testing.T) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	usr, err := user.Current()
-	if err != nil {
-		t.Fatal(err)
-	}
-	pkPath := filepath.Join(homeDir, ".ssh/id_rsa")
-	sshArgs := SSHArgs{User: usr.Username, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: testMaxRetries}
+	usr := testcrashd.GetSSHUsername()
+	pkPath := testcrashd.GetSSHPrivateKey()
+	sshArgs := SSHArgs{User: usr, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: testMaxRetries}
 	tests := []struct {
 		name        string
 		sshArgs     SSHArgs

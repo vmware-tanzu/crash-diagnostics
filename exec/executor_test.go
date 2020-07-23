@@ -105,7 +105,12 @@ func TestKindScript(t *testing.T) {
 		{
 			name:       "kube-nodes provider",
 			scriptPath: "../examples/kube-nodes-provider.star",
-			args:       ArgMap{"kubecfg": getTestKubeConf(), "ssh_port": testSSHPort},
+			args: ArgMap{
+				"kubecfg":  getTestKubeConf(),
+				"ssh_port": testSSHPort,
+				"username": testcrashd.GetSSHUsername(),
+				"key_path": testcrashd.GetSSHPrivateKey(),
+			},
 		},
 		//{
 		//	name:       "kind-capi-bootstrap",
