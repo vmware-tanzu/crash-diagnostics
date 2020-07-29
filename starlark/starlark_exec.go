@@ -90,6 +90,6 @@ func newPredeclareds() starlark.StringDict {
 		identifiers.kubeGet:           starlark.NewBuiltin(identifiers.kubeGet, KubeGetFn),
 		identifiers.kubeNodesProvider: starlark.NewBuiltin(identifiers.kubeNodesProvider, KubeNodesProviderFn),
 		identifiers.capvProvider:      starlark.NewBuiltin(identifiers.capvProvider, CapvProviderFn),
-		identifiers.setAsDefault:      starlark.NewBuiltin(identifiers.setAsDefault, SetAsDefaultFunc),
+		identifiers.setDefaults:       starlark.NewBuiltin(identifiers.setDefaults, SetDefaultsFunc),
 	}
 }

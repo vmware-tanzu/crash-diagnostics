@@ -50,17 +50,17 @@ var _ = DescribeTable("resources with kube_nodes_provider()", func(scriptFunc fu
 },
 	Entry("default ssh config and passed kube_config", func() string {
 		return fmt.Sprintf(`
-set_as_default(ssh_config = ssh_config(username="uname", private_key_path="path"))
+set_defaults(ssh_config(username="uname", private_key_path="path"))
 res = resources(provider = kube_nodes_provider(kube_config = kube_config(path="%s")))`, k8sconfig)
 	}),
 	Entry("default kube config and passed ssh_config", func() string {
 		return fmt.Sprintf(`
-set_as_default(kube_config = kube_config(path="%s"))
+set_defaults(kube_config(path="%s"))
 res = resources(provider=kube_nodes_provider(ssh_config = ssh_config(username="uname", private_key_path="path")))`, k8sconfig)
 	}),
 	Entry("default kube_config and ssh_config", func() string {
 		return fmt.Sprintf(`
-set_as_default(kube_config = kube_config(path="%s"), ssh_config = ssh_config(username="uname", private_key_path="path"))
+set_defaults(kube_config(path="%s"), ssh_config(username="uname", private_key_path="path"))
 res = resources(provider=kube_nodes_provider())`, k8sconfig)
 	}),
 )

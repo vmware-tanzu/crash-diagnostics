@@ -43,7 +43,7 @@ var _ = Describe("kube_capture", func() {
 	It("creates a directory and files for namespaced objects", func() {
 		crashdScript := fmt.Sprintf(`
 crashd_config(workdir="%s")
-set_as_default(kube_config = kube_config(path="%s"))
+set_defaults(kube_config(path="%s"))
 kube_data = kube_capture(what="objects", groups=["core"], kinds=["services"], namespaces=["default", "kube-system"])
 		`, workdir, k8sconfig)
 		execSetup(crashdScript)

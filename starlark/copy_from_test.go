@@ -233,7 +233,7 @@ func testCopyFuncScriptForHostResources(t *testing.T, port string) {
 			name:        "multiple machines single copyFrom",
 			remoteFiles: map[string]string{"foobar.c": "footext", "bar/bar.txt": "BarBar", "bar/foo.txt": "FooBar", "bar/baz.csv": "BizzBuzz"},
 			script: fmt.Sprintf(`
-set_as_default(resources = resources(provider = host_list_provider(hosts=["127.0.0.1","localhost"], ssh_config = ssh_config(username="%s", port="%s", private_key_path="%s"))))
+set_defaults(resources(provider = host_list_provider(hosts=["127.0.0.1","localhost"], ssh_config = ssh_config(username="%s", port="%s", private_key_path="%s"))))
 result = copy_from("bar/foo.txt")`, testcrashd.GetSSHUsername(), port, testcrashd.GetSSHPrivateKey()),
 			eval: func(t *testing.T, script string) {
 				exe := New()
@@ -297,7 +297,7 @@ def cp(hosts):
 		return result
 		
 # configuration
-set_as_default(ssh_config = ssh_config(username="%s", port="%s", private_key_path="%s"))
+set_defaults(ssh_config(username="%s", port="%s", private_key_path="%s"))
 hosts = resources(provider=host_list_provider(hosts=["127.0.0.1","localhost"]))
 result = cp(hosts)`, testcrashd.GetSSHUsername(), port, testcrashd.GetSSHPrivateKey()),
 			eval: func(t *testing.T, script string) {

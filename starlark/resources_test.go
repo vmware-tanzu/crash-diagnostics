@@ -209,7 +209,7 @@ func TestResourceScript(t *testing.T) {
 		{
 			name: "resources assigned",
 			script: `
-set_as_default(ssh_config = ssh_config(username = "uname"))
+set_defaults(ssh_config(username = "uname"))
 res = resources(hosts=["foo.host.1", "local.host", "10.10.10.1"])`,
 			eval: func(t *testing.T, script string) {
 				exe := New()

@@ -29,7 +29,7 @@ var _ = Describe("kube_get", func() {
 
 	It("returns a list of k8s services as starlark objects", func() {
 		crashdScript := fmt.Sprintf(`
-set_as_default(kube_config = kube_config(path="%s"))
+set_defaults(kube_config(path="%s"))
 kube_get_data = kube_get(groups=["core"], kinds=["services"], namespaces=["default", "kube-system"])
 		`, k8sconfig)
 		execSetup(crashdScript)
@@ -97,7 +97,7 @@ kube_get_data = kube_get(namespaces=["kube-system"], containers=["etcd"], kube_c
 		Expect(err).To(HaveOccurred())
 	},
 		Entry("in global thread", fmt.Sprintf(`
-set_as_default(kube_config = kube_config(path="%s"))
+set_defaults(kube_config(path="%s"))
 kube_get(namespaces=["kube-system"], containers=["etcd"])`, "/foo/bar")),
 		Entry("in function call", fmt.Sprintf(`
 cfg = kube_config(path="%s")

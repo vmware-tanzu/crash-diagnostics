@@ -182,7 +182,7 @@ func testCaptureFuncScriptForHostResources(t *testing.T, port string) {
 		{
 			name: "default cmd multiple machines",
 			script: fmt.Sprintf(`
-set_as_default(resources = resources(provider = host_list_provider(hosts=["127.0.0.1","localhost"], ssh_config = ssh_config(username="%s", port="%s", private_key_path="%s"))))
+set_defaults(resources(provider = host_list_provider(hosts=["127.0.0.1","localhost"], ssh_config = ssh_config(username="%s", port="%s", private_key_path="%s"))))
 result = capture("echo 'Hello World!'")`, testcrashd.GetSSHUsername(), port, testcrashd.GetSSHPrivateKey()),
 			eval: func(t *testing.T, script string) {
 				exe := New()
@@ -228,7 +228,7 @@ def exec(hosts):
 	return result
 		
 # configuration
-set_as_default(ssh_config = ssh_config(username="%s", port="%s", private_key_path="%s"))
+set_defaults(ssh_config(username="%s", port="%s", private_key_path="%s"))
 hosts = resources(provider=host_list_provider(hosts=["127.0.0.1","localhost"]))
 result = exec(hosts)`, testcrashd.GetSSHUsername(), port, testcrashd.GetSSHPrivateKey()),
 			eval: func(t *testing.T, script string) {
