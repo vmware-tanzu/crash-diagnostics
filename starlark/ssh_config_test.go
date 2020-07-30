@@ -25,7 +25,7 @@ func TestSSHConfigFunc(t *testing.T) {
 	}{
 		{
 			name:   "ssh_config saved in thread",
-			script: `set_as_default(ssh_config = ssh_config(username="uname", private_key_path="path"))`,
+			script: `set_defaults(ssh_config(username="uname", private_key_path="path"))`,
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {

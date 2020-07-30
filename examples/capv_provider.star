@@ -21,8 +21,7 @@ capture(cmd="sudo cat /var/log/cloud-init-output.log", resources=nodes)
 capture(cmd="sudo cat /var/log/cloud-init.log", resources=nodes)
 
 #add code to collect pod info from cluster
-wc_kube_conf = kube_config(capi_provider = wc_provider)
-set_as_default(kube_config = wc_kube_conf)
+set_defaults(kube_config(capi_provider = wc_provider))
 
 pod_ns=["default", "kube-system"]
 

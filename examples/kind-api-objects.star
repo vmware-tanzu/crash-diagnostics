@@ -10,7 +10,7 @@ nspaces=[
     "cert-manager tkg-system",
 ]
 
-set_as_default(kube_config = kube_config(path=args.kubecfg))
+set_defaults(kube_config(path=args.kubecfg))
 
 # capture Kubernetes API object and store in files (under working dir)
 kube_capture(what="objects", kinds=["services", "pods"], namespaces=nspaces)

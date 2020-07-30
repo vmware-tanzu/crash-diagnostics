@@ -141,8 +141,8 @@ func testRunFuncScriptHostResources(t *testing.T, port string) {
 		{
 			name: "default cmd multiple machines",
 			script: fmt.Sprintf(`
-set_as_default(ssh_config = ssh_config(username="%s", port="%s", private_key_path="%s"))
-set_as_default(resources = resources(hosts=["127.0.0.1","localhost"]))
+set_defaults(ssh_config(username="%s", port="%s", private_key_path="%s"))
+set_defaults(resources(hosts=["127.0.0.1","localhost"]))
 result = run("echo 'Hello World!'")`, testcrashd.GetSSHUsername(), port, testcrashd.GetSSHPrivateKey()),
 			eval: func(t *testing.T, script string) {
 				exe := New()
