@@ -1,10 +1,11 @@
 conf = crashd_config(workdir=args.workdir)
-ssh_conf = ssh_config(username="capv", private_key_path=args.private_key)
+ssh_conf = ssh_config(username="ec2-user", private_key_path=args.private_key)
 kube_conf = kube_config(path=args.mc_config)
 
 #list out management and workload cluster nodes
-wc_provider=capv_provider(
+wc_provider=capa_provider(
     workload_cluster=args.cluster_name,
+    namespace=args.cluster_ns,
     ssh_config=ssh_conf,
     mgmt_kube_config=kube_conf
 )
