@@ -7,46 +7,38 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/vmware-tanzu/crash-diagnostics/exec"
 )
 
-type runFlags struct {
-	args map[string]string
-	file string
-}
-
-// newRunCommand creates a command to run the Diaganostics script a file
+// newRunCommand creates a command to run the Diagnostics script a file
 func newRunCommand() *cobra.Command {
-	flags := &runFlags{
-		file: "Diagnostics.file",
-		args: make(map[string]string),
-	}
+	scriptArgs := make(map[string]string)
 
 	cmd := &cobra.Command{
-		Args:  cobra.NoArgs,
-		Use:   "run",
+		Args:  cobra.ExactArgs(1),
+		Use:   "run [flags] <file-name>",
 		Short: "Executes a diagnostics script file",
 		Long:  "Executes a diagnostics script and collects its output as an archive bundle",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return run(flags)
+			return run(scriptArgs, args[0])
 		},
 	}
-	cmd.Flags().StringToStringVar(&flags.args, "args", flags.args, "comma-separated key=value arguments to pass to the diagnostics file")
-	cmd.Flags().StringVar(&flags.file, "file", flags.file, "the path to the diagnostics script file to run")
+	cmd.Flags().StringToStringVar(&scriptArgs, "args", scriptArgs, "comma-separated key=value arguments to pass to the diagnostics file")
 	return cmd
 }
 
-func run(flag *runFlags) error {
-	file, err := os.Open(flag.file)
+func run(scriptArgs map[string]string, path string) error {
+	file, err := os.Open(path)
 	if err != nil {
-		return fmt.Errorf("script file not found: %s", flag.file)
+		return errors.Wrap(err, fmt.Sprintf("script file not found: %s", path))
 	}
 
 	defer file.Close()
 
-	if err := exec.ExecuteFile(file, flag.args); err != nil {
-		return fmt.Errorf("execution failed: %s: %s", file.Name(), err)
+	if err := exec.ExecuteFile(file, scriptArgs); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("execution failed for %s", file.Name()))
 	}
 
 	return nil
