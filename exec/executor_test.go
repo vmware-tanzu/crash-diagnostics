@@ -80,17 +80,17 @@ func TestKindScript(t *testing.T) {
 	}{
 		//{
 		//	name:       "api objects",
-		//	scriptPath: "../examples/kind-api-objects.star",
+		//	scriptPath: "../examples/kind-api-objects.crsh",
 		//	args:       ArgMap{"kubecfg": getTestKubeConf()},
 		//},
 		//{
 		//	name:       "pod logs",
-		//	scriptPath: "../examples/pod-logs.star",
+		//	scriptPath: "../examples/pod-logs.crsh",
 		//	args:       ArgMap{"kubecfg": getTestKubeConf()},
 		//},
 		//{
 		//	name:       "script with args",
-		//	scriptPath: "../examples/script-args.star",
+		//	scriptPath: "../examples/script-args.crsh",
 		//	args: ArgMap{
 		//		"workdir": "/tmp/crashargs",
 		//		"kubecfg": getTestKubeConf(),
@@ -99,12 +99,12 @@ func TestKindScript(t *testing.T) {
 		//},
 		//{
 		//	name:       "host-list provider",
-		//	scriptPath: "../examples/host-list-provider.star",
+		//	scriptPath: "../examples/host-list-provider.crsh",
 		//	args:       ArgMap{"kubecfg": getTestKubeConf(), "ssh_port": testSSHPort},
 		//},
 		{
 			name:       "kube-nodes provider",
-			scriptPath: "../examples/kube-nodes-provider.star",
+			scriptPath: "../examples/kube-nodes-provider.crsh",
 			args: ArgMap{
 				"kubecfg":  getTestKubeConf(),
 				"ssh_port": testSSHPort,
@@ -114,7 +114,7 @@ func TestKindScript(t *testing.T) {
 		},
 		//{
 		//	name:       "kind-capi-bootstrap",
-		//	scriptPath: "../examples/kind-capi-bootstrap.star",
+		//	scriptPath: "../examples/kind-capi-bootstrap.crsh",
 		//	args:       ArgMap{"cluster_name": testClusterName},
 		//},
 	}
