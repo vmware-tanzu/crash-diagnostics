@@ -190,7 +190,44 @@ This function configures the Cluster-API provider for AWS (CAPA).  This provider
 #### Parameters
 | Param | Description | Required |
 | -------- | -------- | -------- |
-| | | |
+| `ssh_config`|SSH configuration returned by `ssh_config()`|Yes |
+| `mgmt_kube_config` |Kubernetes configuration returned by `kube_config`|Yes|
+| `workload_cluster`|The name of a workload cluster. When specified the provider will retrieve a cluster's compute nodes for the workload cluster.|No|
+| `namespace`|The namespace in which the workload cluster was created, if `workload_cluster` is specified. If no `workload_cluster` is specified, then this should be the namespace of the management cluster.|No|
+| `labels`|A list of labels used to filter cluster's compute nodes|No|
+| `nodes` |A list of node names that can filter selected cluster nodes|No|
+
+#### Output
+`capa_provider()` returns a struct with the following fields.
+
+| Field | Description |
+| --------| --------- |
+| `kind`| The name of the provider (`capv_provider`)|
+|`transport`|The name of the transport to use (i.e. `ssh, http, etc`)|
+| `ssh_config` | A struct with SSH configuration |
+| `kube_config` | A struct with Kubernetes configuration |
+| `workload_cluster` | The name of the  |
+| `hosts`|A list of host addresses generated from cluster information|
+
+#### Example
+```python
+
+ssh=ssh_config(
+    username=os.username,
+    private_key_path="{0}/.ssh/id_rsa".format(os.home),
+    port=args.ssh_port,
+    max_retries=5,
+)
+
+kube=kube_config(path=args.kube_conf)
+
+capa_provider(
+    workload_cluster="my-wc-cluster",
+    namespace="workloads"
+    ssh_config=ssh,
+    kube_config=kube
+)
+```
 
 ### `capv_provider()`
 This function configures a provider for a Cluster-API managed cluster running on vSphere (CAPV).  By default, this provider will enumerate cluster resources for the management cluster.  However, by specifying the name of a `workload_cluster`, the provider will enumarate cluster compute resources for the workload cluster. 
@@ -199,8 +236,9 @@ This function configures a provider for a Cluster-API managed cluster running on
 | Param | Description | Required |
 | -------- | -------- | -------- |
 | `ssh_config`|SSH configuration returned by `ssh_config()`|Yes |
-| `kube_config` |Kubernetes configuration returned by `kube_config`|Yes|
+| `mgmt_kube_config` |Kubernetes configuration returned by `kube_config`|Yes|
 | `workload_cluster`|The name of a workload cluster. When specified the provider will retrieve a cluster's compute nodes for the workload cluster.|No|
+| `namespace`|The namespace in which the workload cluster was created, if `workload_cluster` is specified. If no `workload_cluster` is specified, then this should be the namespace of the management cluster.|No|
 | `labels`|A list of labels used to filter cluster's compute nodes|No|
 | `nodes` |A list of node names that can filter selected cluster nodes|No|
 

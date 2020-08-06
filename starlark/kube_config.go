@@ -40,7 +40,7 @@ func KubeConfigFn(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, 
 			}
 		}
 
-		pathVal, err := provider.Attr("kubeconfig")
+		pathVal, err := provider.Attr("kube_config")
 		if err != nil {
 			return starlark.None, errors.Wrap(err, "could not find the kubeconfig attribute")
 		}
