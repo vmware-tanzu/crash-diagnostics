@@ -15,15 +15,15 @@ import (
 )
 
 // FetchWorkloadConfig...
-func FetchWorkloadConfig(name, mgmtKubeConfigPath string) (string, error) {
+func FetchWorkloadConfig(clusterName, clusterNamespace, mgmtKubeConfigPath string) (string, error) {
 	var filePath string
-	cmdStr := fmt.Sprintf(`kubectl get secrets/%s-kubeconfig --template '{{.data.value}}' --kubeconfig %s`, name, mgmtKubeConfigPath)
+	cmdStr := fmt.Sprintf(`kubectl get secrets/%s-kubeconfig --template '{{.data.value}}' --namespace=%s --kubeconfig %s`, clusterName, clusterNamespace, mgmtKubeConfigPath)
 	p := echo.New().RunProc(cmdStr)
 	if p.Err() != nil {
 		return filePath, fmt.Errorf("kubectl get secrets failed: %s: %s", p.Err(), p.Result())
 	}
 
-	f, err := ioutil.TempFile(os.TempDir(), fmt.Sprintf("%s-workload-config", name))
+	f, err := ioutil.TempFile(os.TempDir(), fmt.Sprintf("%s-workload-config", clusterName))
 	if err != nil {
 		return filePath, errors.Wrap(err, "Cannot create temporary file")
 	}

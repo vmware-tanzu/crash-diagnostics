@@ -18,7 +18,7 @@ func newRunCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Args:  cobra.ExactArgs(1),
-		Use:   "run [flags] <file-name>",
+		Use:   "run <file-name>",
 		Short: "Executes a diagnostics script file",
 		Long:  "Executes a diagnostics script and collects its output as an archive bundle",
 		RunE: func(cmd *cobra.Command, args []string) error {

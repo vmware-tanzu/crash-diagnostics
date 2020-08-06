@@ -57,15 +57,20 @@ func sshConfigFn(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, k
 		pkPath = defaults.pkPath
 	}
 
-	structVal := starlarkstruct.FromStringDict(starlark.String(identifiers.sshCfg), starlark.StringDict{
+	sshConfigDict := starlark.StringDict{
 		"username":         starlark.String(uname),
 		"port":             starlark.String(port),
 		"private_key_path": starlark.String(pkPath),
 		"max_retries":      starlark.MakeInt(maxRetries),
 		"conn_timeout":     starlark.MakeInt(connTimeout),
-		"jump_user":        starlark.String(jUser),
-		"jump_host":        starlark.String(jHost),
-	})
+	}
+	if len(jUser) != 0 {
+		sshConfigDict["jump_user"] = starlark.String(jUser)
+	}
+	if len(jHost) != 0 {
+		sshConfigDict["jump_host"] = starlark.String(jHost)
+	}
+	structVal := starlarkstruct.FromStringDict(starlark.String(identifiers.sshCfg), sshConfigDict)
 
 	return structVal, nil
 }
