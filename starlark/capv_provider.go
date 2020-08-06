@@ -56,9 +56,9 @@ func CapvProviderFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.
 
 	// dictionary for capv provider struct
 	capvProviderDict := starlark.StringDict{
-		"kind":       starlark.String(identifiers.capvProvider),
-		"transport":  starlark.String("ssh"),
-		"kubeconfig": starlark.String(providerConfigPath),
+		"kind":        starlark.String(identifiers.capvProvider),
+		"transport":   starlark.String("ssh"),
+		"kube_config": starlark.String(providerConfigPath),
 	}
 
 	// add node info to dictionary

@@ -104,7 +104,7 @@ var _ = Describe("KubeConfigFn", func() {
 					[]starlark.Value{
 						starlark.String("capi_provider"),
 						starlarkstruct.FromStringDict(starlark.String(identifiers.capvProvider), starlark.StringDict{
-							"kubeconfig": starlark.String("/foo/bar"),
+							"kube_config": starlark.String("/foo/bar"),
 						}),
 					},
 				})
@@ -124,7 +124,7 @@ var _ = Describe("KubeConfigFn", func() {
 					[]starlark.Value{
 						starlark.String("capi_provider"),
 						starlarkstruct.FromStringDict(starlark.String("meh"), starlark.StringDict{
-							"kubeconfig": starlark.String("/foo/bar"),
+							"kube_config": starlark.String("/foo/bar"),
 						}),
 					},
 				})

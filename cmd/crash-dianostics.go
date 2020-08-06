@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -11,7 +12,10 @@ import (
 	"github.com/vmware-tanzu/crash-diagnostics/buildinfo"
 )
 
-const defaultLogLevel = logrus.InfoLevel
+const (
+	defaultLogLevel = logrus.InfoLevel
+	CliName         = "crashd"
+)
 
 // globalFlags flags for the command
 type globalFlags struct {
@@ -23,9 +27,9 @@ func crashDiagnosticsCommand() *cobra.Command {
 	flags := &globalFlags{debug: false}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
-		Use:   "crash-diagnostics",
-		Short: "crash-diagnostics helps to troubleshoot kubernetes cluster",
-		Long:  "crash-diagnostics collects diagnostics from an unresponsive Kubernetes cluster",
+		Use:   CliName,
+		Short: fmt.Sprintf("%s helps to troubleshoot kubernetes cluster", CliName),
+		Long:  fmt.Sprintf("%s collects diagnostics from an unresponsive Kubernetes cluster", CliName),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return preRun(flags)
 		},
