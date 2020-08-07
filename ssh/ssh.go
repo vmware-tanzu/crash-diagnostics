@@ -102,7 +102,7 @@ func makeSSHCmdStr(progName string, args SSHArgs) (string, error) {
 	}
 
 	sshCmdPrefix := func() string {
-		return fmt.Sprintf("%s -q -o StrictHostKeyChecking=no", progName)
+		return fmt.Sprintf("%s -v -o StrictHostKeyChecking=no", progName)
 	}
 
 	pkPath := func() string {
