@@ -5,7 +5,7 @@ package testing
 
 import (
 	"fmt"
-	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,7 +31,15 @@ func NewSSHServer(name, username, port string) (*SSHServer, error) {
 }
 
 func genSSHKeys() (string, error) {
-	tmpDir, err := ioutil.TempDir("/tmp", "keys")
+	path, err := os.Getwd()
+	if err != nil {
+		log.Println(err)
+	}
+	tmpDir := filepath.Join(path, ".testing")
+	if err := os.MkdirAll(tmpDir, 0744); err != nil {
+		logrus.Error(err)
+		return "", err
+	}
 	err = GenerateKeyPair(tmpDir)
 	return tmpDir, err
 }
