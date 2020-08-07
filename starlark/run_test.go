@@ -5,18 +5,14 @@ package starlark
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
-	"github.com/sirupsen/logrus"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
-
-	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
 
-func testRunFuncHostResources(t *testing.T, port string) {
+func testRunFuncHostResources(t *testing.T, port, privateKey, username string) {
 	tests := []struct {
 		name   string
 		args   func(t *testing.T) starlark.Tuple
@@ -27,7 +23,7 @@ func testRunFuncHostResources(t *testing.T, port string) {
 			name: "default arg single machine",
 			args: func(t *testing.T) starlark.Tuple { return starlark.Tuple{starlark.String("echo 'Hello World!'")} },
 			kwargs: func(t *testing.T) []starlark.Tuple {
-				sshCfg := makeTestSSHConfig(defaults.pkPath, port)
+				sshCfg := makeTestSSHConfig(privateKey, port, username)
 				resources := starlark.NewList([]starlark.Value{makeTestSSHHostResource("127.0.0.1", sshCfg)})
 				return []starlark.Tuple{[]starlark.Value{starlark.String("resources"), resources}}
 			},
@@ -55,7 +51,7 @@ func testRunFuncHostResources(t *testing.T, port string) {
 			name: "kwargs single machine",
 			args: func(t *testing.T) starlark.Tuple { return nil },
 			kwargs: func(t *testing.T) []starlark.Tuple {
-				sshCfg := makeTestSSHConfig(defaults.pkPath, port)
+				sshCfg := makeTestSSHConfig(privateKey, port, username)
 				resources := starlark.NewList([]starlark.Value{makeTestSSHHostResource("127.0.0.1", sshCfg)})
 				return []starlark.Tuple{
 					[]starlark.Value{starlark.String("cmd"), starlark.String("echo 'Hello World!'")},
@@ -86,7 +82,7 @@ func testRunFuncHostResources(t *testing.T, port string) {
 			name: "multiple machines",
 			args: func(t *testing.T) starlark.Tuple { return nil },
 			kwargs: func(t *testing.T) []starlark.Tuple {
-				sshCfg := makeTestSSHConfig(defaults.pkPath, port)
+				sshCfg := makeTestSSHConfig(privateKey, port, username)
 				resources := starlark.NewList([]starlark.Value{
 					makeTestSSHHostResource("localhost", sshCfg),
 					makeTestSSHHostResource("127.0.0.1", sshCfg),
@@ -132,7 +128,7 @@ func testRunFuncHostResources(t *testing.T, port string) {
 	}
 }
 
-func testRunFuncScriptHostResources(t *testing.T, port string) {
+func testRunFuncScriptHostResources(t *testing.T, port, privateKey, username string) {
 	tests := []struct {
 		name   string
 		script string
@@ -141,9 +137,9 @@ func testRunFuncScriptHostResources(t *testing.T, port string) {
 		{
 			name: "default cmd multiple machines",
 			script: fmt.Sprintf(`
-set_defaults(ssh_config(username=os.username, port="%s"))
+set_defaults(ssh_config(username="%s", port="%s", private_key_path="%s"))
 set_defaults(resources(hosts=["127.0.0.1","localhost"]))
-result = run("echo 'Hello World!'")`, port),
+result = run("echo 'Hello World!'")`, username, port, privateKey),
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
@@ -187,9 +183,8 @@ def exec(hosts):
 	return result
 
 # configuration
-ssh_config(username=os.username, port="%s")
-hosts = resources(provider=host_list_provider(hosts=["127.0.0.1","localhost"]))
-result = exec(hosts)`, port),
+hosts = resources(provider=host_list_provider(hosts=["127.0.0.1","localhost"], ssh_config = ssh_config(username="%s", port="%s", private_key_path="%s")))
+result = exec(hosts)`, username, port, privateKey),
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
@@ -231,30 +226,19 @@ result = exec(hosts)`, port),
 }
 
 func TestRunFuncSSHAll(t *testing.T) {
-	port := testcrashd.NextPortValue()
-	sshSvr := testcrashd.NewSSHServer(testcrashd.NextResourceName(), port)
-
-	logrus.Debug("Attempting to start SSH server")
-	if err := sshSvr.Start(); err != nil {
-		logrus.Error(err)
-		os.Exit(1)
-	}
+	port := testSupport.PortValue()
+	username := testSupport.CurrentUsername()
+	privateKey := testSupport.PrivateKeyPath()
 
 	tests := []struct {
 		name string
-		test func(t *testing.T, port string)
+		test func(t *testing.T, port, key, username string)
 	}{
 		{name: "testRunFuncWithHostResources", test: testRunFuncHostResources},
-		{name: "testRunFuncScriptWithHostResources", test: testRunFuncHostResources},
+		{name: "testRunFuncScriptWithHostResources", test: testRunFuncScriptHostResources},
 	}
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) { test.test(t, port) })
-	}
-
-	logrus.Debug("Stopping SSH server...")
-	if err := sshSvr.Stop(); err != nil {
-		logrus.Error(err)
-		os.Exit(1)
+		t.Run(test.name, func(t *testing.T) { test.test(t, port, privateKey, username) })
 	}
 }

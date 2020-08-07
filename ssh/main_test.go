@@ -13,26 +13,34 @@ import (
 )
 
 var (
-	testSSHPort    = testcrashd.NextPortValue()
-	testMaxRetries = 30
+	support     *testcrashd.TestSupport
+	testSSHArgs SSHArgs
 )
 
 func TestMain(m *testing.M) {
-	testcrashd.Init()
+	test, err := testcrashd.Init()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	support = test
 
-	sshSvr := testcrashd.NewSSHServer(testcrashd.NextResourceName(), testSSHPort)
-	logrus.Debug("Attempting to start SSH server")
-	if err := sshSvr.Start(); err != nil {
-		logrus.Error(err)
-		os.Exit(1)
+	if err := support.SetupSSHServer(); err != nil {
+		logrus.Fatal(err)
+	}
+
+	testSSHArgs = SSHArgs{
+		User:           support.CurrentUsername(),
+		PrivateKeyPath: support.PrivateKeyPath(),
+		Host:           "127.0.0.1",
+		Port:           support.PortValue(),
+		MaxRetries:     support.MaxConnectionRetries(),
 	}
 
 	testResult := m.Run()
 
-	logrus.Debug("Stopping SSH server...")
-	if err := sshSvr.Stop(); err != nil {
-		logrus.Error(err)
-		os.Exit(1)
+	logrus.Debug("Shutting down test...")
+	if err := support.TearDown(); err != nil {
+		logrus.Fatal(err)
 	}
 
 	os.Exit(testResult)

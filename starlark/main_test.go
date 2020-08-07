@@ -4,26 +4,56 @@
 package starlark
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 
 	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
 
+var (
+	testSupport *testcrashd.TestSupport
+)
+
 func TestMain(m *testing.M) {
-	testcrashd.Init()
-	os.Exit(m.Run())
+	test, err := testcrashd.Init()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	testSupport = test
+
+	if err := testSupport.SetupSSHServer(); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := testSupport.SetupKindCluster(); err != nil {
+		logrus.Fatal(err)
+	}
+
+	// precaution
+	if testSupport == nil {
+		logrus.Fatal("failed to setup test support")
+	}
+
+	result := m.Run()
+
+	if err := testSupport.TearDown(); err != nil {
+		logrus.Fatal(err)
+	}
+
+	os.Exit(result)
 }
 
-func makeTestSSHConfig(pkPath, port string) *starlarkstruct.Struct {
+func makeTestSSHConfig(pkPath, port, username string) *starlarkstruct.Struct {
 	return starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
-		identifiers.username:       starlark.String(getUsername()),
+		identifiers.username:       starlark.String(username),
 		identifiers.port:           starlark.String(port),
 		identifiers.privateKeyPath: starlark.String(pkPath),
-		identifiers.maxRetries:     starlark.String(defaults.connRetries),
+		identifiers.maxRetries:     starlark.String(fmt.Sprintf("%d", testSupport.MaxConnectionRetries())),
 	})
 }
 

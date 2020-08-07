@@ -11,15 +11,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sirupsen/logrus"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 
 	"github.com/vmware-tanzu/crash-diagnostics/ssh"
-	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
 
-func testCopyFuncForHostResources(t *testing.T, port string) {
+func testCopyFuncForHostResources(t *testing.T, port, privateKey, username string) {
 	tests := []struct {
 		name        string
 		remoteFiles map[string]string
@@ -32,7 +30,7 @@ func testCopyFuncForHostResources(t *testing.T, port string) {
 			remoteFiles: map[string]string{"foo.txt": "FooBar"},
 			args:        func(t *testing.T) starlark.Tuple { return starlark.Tuple{starlark.String("foo.txt")} },
 			kwargs: func(t *testing.T) []starlark.Tuple {
-				sshCfg := makeTestSSHConfig(defaults.pkPath, port)
+				sshCfg := makeTestSSHConfig(privateKey, port, username)
 				resources := starlark.NewList([]starlark.Value{makeTestSSHHostResource("127.0.0.1", sshCfg)})
 				return []starlark.Tuple{[]starlark.Value{starlark.String("resources"), resources}}
 			},
@@ -82,7 +80,7 @@ func testCopyFuncForHostResources(t *testing.T, port string) {
 			remoteFiles: map[string]string{"bar/bar.txt": "BarBar", "bar/foo.txt": "FooBar", "baz.txt": "BazBuz"},
 			args:        func(t *testing.T) starlark.Tuple { return nil },
 			kwargs: func(t *testing.T) []starlark.Tuple {
-				sshCfg := makeTestSSHConfig(defaults.pkPath, port)
+				sshCfg := makeTestSSHConfig(privateKey, port, username)
 				resources := starlark.NewList([]starlark.Value{
 					makeTestSSHHostResource("localhost", sshCfg),
 					makeTestSSHHostResource("127.0.0.1", sshCfg),
@@ -143,7 +141,7 @@ func testCopyFuncForHostResources(t *testing.T, port string) {
 			remoteFiles: map[string]string{"bar/bar.txt": "BarBar", "bar/foo.txt": "FooBar", "bar/baz.csv": "BizzBuzz"},
 			args:        func(t *testing.T) starlark.Tuple { return nil },
 			kwargs: func(t *testing.T) []starlark.Tuple {
-				sshCfg := makeTestSSHConfig(defaults.pkPath, port)
+				sshCfg := makeTestSSHConfig(privateKey, port, username)
 				resources := starlark.NewList([]starlark.Value{
 					makeTestSSHHostResource("localhost", sshCfg),
 					makeTestSSHHostResource("127.0.0.1", sshCfg),
@@ -205,7 +203,7 @@ func testCopyFuncForHostResources(t *testing.T, port string) {
 		},
 	}
 
-	sshArgs := ssh.SSHArgs{User: getUsername(), Host: "127.0.0.1", Port: port}
+	sshArgs := ssh.SSHArgs{User: username, Host: "127.0.0.1", Port: port, PrivateKeyPath: privateKey}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			for file, content := range test.remoteFiles {
@@ -222,7 +220,7 @@ func testCopyFuncForHostResources(t *testing.T, port string) {
 	}
 }
 
-func testCopyFuncScriptForHostResources(t *testing.T, port string) {
+func testCopyFuncScriptForHostResources(t *testing.T, port, privateKey, username string) {
 	tests := []struct {
 		name        string
 		remoteFiles map[string]string
@@ -233,8 +231,8 @@ func testCopyFuncScriptForHostResources(t *testing.T, port string) {
 			name:        "multiple machines single copyFrom",
 			remoteFiles: map[string]string{"foobar.c": "footext", "bar/bar.txt": "BarBar", "bar/foo.txt": "FooBar", "bar/baz.csv": "BizzBuzz"},
 			script: fmt.Sprintf(`
-set_defaults(resources(provider = host_list_provider(hosts=["127.0.0.1","localhost"], ssh_config = ssh_config(username=os.username, port="%s"))))
-result = copy_from("bar/foo.txt")`, port),
+set_defaults(resources(provider = host_list_provider(hosts=["127.0.0.1","localhost"], ssh_config = ssh_config(username="%s", port="%s", private_key_path="%s"))))
+result = copy_from("bar/foo.txt")`, username, port, privateKey),
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
@@ -295,11 +293,11 @@ def cp(hosts):
 	for host in hosts:
 		result.append(copy_from(path="bar/*.txt", resources=[host]))
 		return result
-		
+
 # configuration
-set_defaults(ssh_config(username=os.username, port="%s"))
+set_defaults(ssh_config(username="%s", port="%s", private_key_path="%s"))
 hosts = resources(provider=host_list_provider(hosts=["127.0.0.1","localhost"]))
-result = cp(hosts)`, port),
+result = cp(hosts)`, username, port, privateKey),
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
@@ -356,7 +354,7 @@ result = cp(hosts)`, port),
 		},
 	}
 
-	sshArgs := ssh.SSHArgs{User: getUsername(), Host: "127.0.0.1", Port: port}
+	sshArgs := ssh.SSHArgs{User: username, Host: "127.0.0.1", Port: port, PrivateKeyPath: privateKey}
 	for _, test := range tests {
 		for file, content := range test.remoteFiles {
 			ssh.MakeTestSSHFile(t, sshArgs, file, content)
@@ -374,18 +372,13 @@ result = cp(hosts)`, port),
 }
 
 func TestCopyFuncSSHAll(t *testing.T) {
-	port := testcrashd.NextPortValue()
-	sshSvr := testcrashd.NewSSHServer(testcrashd.NextResourceName(), port)
-
-	logrus.Debug("Attempting to start SSH server")
-	if err := sshSvr.Start(); err != nil {
-		logrus.Error(err)
-		os.Exit(1)
-	}
+	port := testSupport.PortValue()
+	username := testSupport.CurrentUsername()
+	privateKey := testSupport.PrivateKeyPath()
 
 	tests := []struct {
 		name string
-		test func(t *testing.T, port string)
+		test func(t *testing.T, port, privateKey, username string)
 	}{
 		{name: "copyFrom func for host resources", test: testCopyFuncForHostResources},
 		{name: "copy_from script for host resources", test: testCopyFuncScriptForHostResources},
@@ -393,14 +386,8 @@ func TestCopyFuncSSHAll(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			test.test(t, port)
+			test.test(t, port, privateKey, username)
 			defer os.RemoveAll(defaults.workdir)
 		})
-	}
-
-	logrus.Debug("Stopping SSH server...")
-	if err := sshSvr.Stop(); err != nil {
-		logrus.Error(err)
-		os.Exit(1)
 	}
 }
