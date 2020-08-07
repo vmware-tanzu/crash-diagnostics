@@ -5,9 +5,10 @@ package testing
 
 import (
 	"fmt"
-	"log"
 	"os"
+	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -31,16 +32,14 @@ func NewSSHServer(name, username, port string) (*SSHServer, error) {
 }
 
 func genSSHKeys() (string, error) {
-	path, err := os.Getwd()
-	if err != nil {
-		log.Println(err)
-	}
-	tmpDir := filepath.Join(path, ".testing")
-	if err := os.MkdirAll(tmpDir, 0744); err != nil {
+	_, b, _, _ := runtime.Caller(0)
+	d := path.Join(path.Dir(b))
+	tmpDir := path.Join(filepath.Dir(d), ".testing")
+	if err := os.MkdirAll(tmpDir, 0777); err != nil {
 		logrus.Error(err)
 		return "", err
 	}
-	err = GenerateKeyPair(tmpDir)
+	err := GenerateKeyPair(tmpDir)
 	return tmpDir, err
 }
 
