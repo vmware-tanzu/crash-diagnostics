@@ -21,7 +21,7 @@ func GenerateKeyPair(directory string) error {
 	}
 	err = ioutil.WriteFile(filepath.Join(directory, "id_rsa"), encodePrivateKeyToPEM(priv), 0600)
 	if err != nil {
-		return errors.Wrap(err, "could not write public key to file")
+		return errors.Wrap(err, "could not write private key to file")
 	}
 
 	pub, err := generatePublicKey(&priv.PublicKey)

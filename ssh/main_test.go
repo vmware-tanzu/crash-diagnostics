@@ -5,6 +5,7 @@ package ssh
 
 import (
 	"os"
+	"os/user"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -14,7 +15,7 @@ import (
 
 var (
 	testSSHPort     = testcrashd.NextPortValue()
-	testSSHUsername = testcrashd.NextUsername()
+	testSSHUsername string
 	testMaxRetries  = 30
 	sshSvr          *testcrashd.SSHServer
 )
@@ -22,6 +23,9 @@ var (
 func TestMain(m *testing.M) {
 	var err error
 	testcrashd.Init()
+
+	usr, _ := user.Current()
+	testSSHUsername = usr.Username
 
 	sshSvr, err = testcrashd.NewSSHServer(testcrashd.NextResourceName(), testSSHUsername, testSSHPort)
 	if err != nil {
