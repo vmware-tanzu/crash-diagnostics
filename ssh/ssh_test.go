@@ -7,13 +7,10 @@ import (
 	"bytes"
 	"strings"
 	"testing"
-
-	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
 
 func TestRun(t *testing.T) {
-	usr := testcrashd.GetSSHUsername()
-	pkPath := testcrashd.GetSSHPrivateKey()
+	pkPath := sshSvr.PrivateKey()
 
 	tests := []struct {
 		name   string
@@ -23,7 +20,7 @@ func TestRun(t *testing.T) {
 	}{
 		{
 			name:   "simple cmd",
-			args:   SSHArgs{User: usr, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: testMaxRetries},
+			args:   SSHArgs{User: testSSHUsername, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: testMaxRetries},
 			cmd:    "echo 'Hello World!'",
 			result: "Hello World!",
 		},
@@ -43,8 +40,7 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunRead(t *testing.T) {
-	usr := testcrashd.GetSSHUsername()
-	pkPath := testcrashd.GetSSHPrivateKey()
+	pkPath := sshSvr.PrivateKey()
 
 	tests := []struct {
 		name   string
@@ -54,7 +50,7 @@ func TestRunRead(t *testing.T) {
 	}{
 		{
 			name:   "simple cmd",
-			args:   SSHArgs{User: usr, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: testMaxRetries},
+			args:   SSHArgs{User: testSSHUsername, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: testMaxRetries},
 			cmd:    "echo 'Hello World!'",
 			result: "Hello World!",
 		},

@@ -5,6 +5,9 @@ package testing
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -12,13 +15,25 @@ import (
 )
 
 type SSHServer struct {
-	name string
-	port string
-	e    *echo.Echo
+	name        string
+	port        string
+	keyMountDir string
+	username    string
+	e           *echo.Echo
 }
 
-func NewSSHServer(name, port string) *SSHServer {
-	return &SSHServer{name: name, port: port, e: echo.New()}
+func NewSSHServer(name, username, port string) (*SSHServer, error) {
+	mountDir, err := genSSHKeys()
+	if err != nil {
+		return nil, err
+	}
+	return &SSHServer{name: name, port: port, keyMountDir: mountDir, username: username, e: echo.New()}, nil
+}
+
+func genSSHKeys() (string, error) {
+	tmpDir, err := ioutil.TempDir("/tmp", "keys")
+	err = GenerateKeyPair(tmpDir)
+	return tmpDir, err
 }
 
 // StartSSHServer starts starts sshd process using image linuxserver/openssh-server.DockerRunSSH
@@ -48,8 +63,8 @@ func (s *SSHServer) Start() error {
 	s.e.SetVar("CONTAINER_NAME", s.name)
 	s.e.SetVar("SSH_PORT", fmt.Sprintf("%s:2222", s.port))
 	s.e.SetVar("SSH_DOCKER_IMAGE", "vladimirvivien/openssh-server")
-	s.e.SetVar("USERNAME", GetSSHUsername())
-	s.e.SetVar("KEY_VOLUME_MOUNT", GetSSHKeyDirectory())
+	s.e.SetVar("USERNAME", s.username)
+	s.e.SetVar("KEY_VOLUME_MOUNT", s.keyMountDir)
 
 	cmd := s.e.Eval("docker run --rm --detach --name=$CONTAINER_NAME -p $SSH_PORT -e PUBLIC_KEY_FILE=/config/id_rsa.pub -e USER_NAME=$USERNAME -e SUDO_ACCESS=true -v $KEY_VOLUME_MOUNT:/config $SSH_DOCKER_IMAGE")
 	logrus.Debugf("Starting SSH server: %s", cmd)
@@ -83,6 +98,7 @@ func (s *SSHServer) Stop() error {
 		return fmt.Errorf(msg)
 	}
 	logrus.Info("SSH server stopped: ", result)
+	defer os.RemoveAll(s.keyMountDir)
 
 	// attempt to remove container if still lingering
 	if strings.Contains(s.e.Run("docker ps"), s.name) {
@@ -97,4 +113,8 @@ func (s *SSHServer) Stop() error {
 	}
 
 	return nil
+}
+
+func (s *SSHServer) PrivateKey() string {
+	return filepath.Join(s.keyMountDir, "id_rsa")
 }

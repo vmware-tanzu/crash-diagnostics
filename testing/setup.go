@@ -7,13 +7,12 @@ import (
 	"flag"
 	"fmt"
 	"math/rand"
-	"path"
-	"path/filepath"
-	"runtime"
 	"time"
 
 	"github.com/sirupsen/logrus"
 )
+
+const charset = "abcdefghijklmnopqrstuvwxyz"
 
 var (
 	InfraSetupWait = time.Second * 11
@@ -46,16 +45,10 @@ func NextResourceName() string {
 	return fmt.Sprintf("crashd-test-%x", rnd.Uint64())
 }
 
-func GetSSHKeyDirectory() string {
-	_, b, _, _ := runtime.Caller(0)
-	d := path.Join(path.Dir(b))
-	return path.Join(filepath.Dir(d), "testing", "keys")
-}
-
-func GetSSHPrivateKey() string {
-	return filepath.Join(GetSSHKeyDirectory(), "id_rsa")
-}
-
-func GetSSHUsername() string {
-	return "vivienv"
+func NextUsername() string {
+	b := make([]byte, 10)
+	for i := range b {
+		b[i] = charset[rnd.Intn(len(charset))]
+	}
+	return string(b)
 }

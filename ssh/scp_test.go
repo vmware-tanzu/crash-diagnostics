@@ -9,14 +9,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
 
 func TestCopy(t *testing.T) {
-	usr := testcrashd.GetSSHUsername()
-	pkPath := testcrashd.GetSSHPrivateKey()
-	sshArgs := SSHArgs{User: usr, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: testMaxRetries}
+	pkPath := sshSvr.PrivateKey()
+	sshArgs := SSHArgs{User: testSSHUsername, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: testMaxRetries}
+
 	tests := []struct {
 		name        string
 		sshArgs     SSHArgs

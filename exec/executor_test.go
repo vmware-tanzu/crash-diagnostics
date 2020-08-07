@@ -16,16 +16,22 @@ import (
 )
 
 var (
-	testSSHPort     = testcrashd.NextPortValue()
-	testServerName  = testcrashd.NextResourceName()
-	testClusterName = testcrashd.NextResourceName()
-	getTestKubeConf func() string
+	testSSHPort                    = testcrashd.NextPortValue()
+	testServerName                 = testcrashd.NextResourceName()
+	testClusterName                = testcrashd.NextResourceName()
+	testUserName                   = testcrashd.NextUsername()
+	getTestKubeConf, getPrivateKey func() string
 )
 
 func TestMain(m *testing.M) {
 	testcrashd.Init()
 
-	sshSvr := testcrashd.NewSSHServer(testServerName, testSSHPort)
+	sshSvr, err := testcrashd.NewSSHServer(testServerName, testUserName, testSSHPort)
+	if err != nil {
+		logrus.Error(err)
+		os.Exit(1)
+	}
+
 	logrus.Debug("Attempting to start SSH server")
 	if err := sshSvr.Start(); err != nil {
 		logrus.Error(err)
@@ -62,6 +68,10 @@ func TestMain(m *testing.M) {
 
 	getTestKubeConf = func() string {
 		return tmpFile.Name()
+	}
+
+	getPrivateKey = func() string {
+		return sshSvr.PrivateKey()
 	}
 
 	if err := kind.MakeKubeConfigFile(getTestKubeConf()); err != nil {
@@ -108,8 +118,8 @@ func TestKindScript(t *testing.T) {
 		//	args: ArgMap{
 		//		"kubecfg":  getTestKubeConf(),
 		//		"ssh_port": testSSHPort,
-		//		"username": testcrashd.GetSSHUsername(),
-		//		"key_path": testcrashd.GetSSHPrivateKey(),
+		//		"username": getUsername(),
+		//		"key_path": getPrivateKey(),
 		//	},
 		//},
 		{

@@ -19,7 +19,7 @@ import (
 	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
 
-func testCaptureFuncForHostResources(t *testing.T, port string) {
+func testCaptureFuncForHostResources(t *testing.T, port, privateKey, username string) {
 	tests := []struct {
 		name   string
 		args   func(t *testing.T) starlark.Tuple
@@ -30,7 +30,7 @@ func testCaptureFuncForHostResources(t *testing.T, port string) {
 			name: "default args single machine",
 			args: func(t *testing.T) starlark.Tuple { return starlark.Tuple{starlark.String("echo 'Hello World!'")} },
 			kwargs: func(t *testing.T) []starlark.Tuple {
-				sshCfg := makeTestSSHConfig(testcrashd.GetSSHPrivateKey(), port)
+				sshCfg := makeTestSSHConfig(privateKey, port, username)
 				resources := starlark.NewList([]starlark.Value{makeTestSSHHostResource("127.0.0.1", sshCfg)})
 				return []starlark.Tuple{[]starlark.Value{starlark.String("resources"), resources}}
 			},
@@ -76,7 +76,7 @@ func testCaptureFuncForHostResources(t *testing.T, port string) {
 			name: "kwargs single machine",
 			args: func(t *testing.T) starlark.Tuple { return nil },
 			kwargs: func(t *testing.T) []starlark.Tuple {
-				sshCfg := makeTestSSHConfig(testcrashd.GetSSHPrivateKey(), port)
+				sshCfg := makeTestSSHConfig(privateKey, port, username)
 				resources := starlark.NewList([]starlark.Value{makeTestSSHHostResource("127.0.0.1", sshCfg)})
 				return []starlark.Tuple{
 					[]starlark.Value{starlark.String("cmd"), starlark.String("echo 'Hello World!'")},
@@ -127,7 +127,7 @@ func testCaptureFuncForHostResources(t *testing.T, port string) {
 			name: "multiple machines",
 			args: func(t *testing.T) starlark.Tuple { return nil },
 			kwargs: func(t *testing.T) []starlark.Tuple {
-				sshCfg := makeTestSSHConfig(testcrashd.GetSSHPrivateKey(), port)
+				sshCfg := makeTestSSHConfig(privateKey, port, username)
 				resources := starlark.NewList([]starlark.Value{
 					makeTestSSHHostResource("localhost", sshCfg),
 					makeTestSSHHostResource("127.0.0.1", sshCfg),
@@ -173,7 +173,7 @@ func testCaptureFuncForHostResources(t *testing.T, port string) {
 	}
 }
 
-func testCaptureFuncScriptForHostResources(t *testing.T, port string) {
+func testCaptureFuncScriptForHostResources(t *testing.T, port, privateKey, username string) {
 	tests := []struct {
 		name   string
 		script string
@@ -183,7 +183,7 @@ func testCaptureFuncScriptForHostResources(t *testing.T, port string) {
 			name: "default cmd multiple machines",
 			script: fmt.Sprintf(`
 set_defaults(resources(provider = host_list_provider(hosts=["127.0.0.1","localhost"], ssh_config = ssh_config(username="%s", port="%s", private_key_path="%s"))))
-result = capture("echo 'Hello World!'")`, testcrashd.GetSSHUsername(), port, testcrashd.GetSSHPrivateKey()),
+result = capture("echo 'Hello World!'")`, username, port, privateKey),
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
@@ -230,7 +230,7 @@ def exec(hosts):
 # configuration
 set_defaults(ssh_config(username="%s", port="%s", private_key_path="%s"))
 hosts = resources(provider=host_list_provider(hosts=["127.0.0.1","localhost"]))
-result = exec(hosts)`, testcrashd.GetSSHUsername(), port, testcrashd.GetSSHPrivateKey()),
+result = exec(hosts)`, username, port, privateKey),
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
@@ -274,7 +274,12 @@ result = exec(hosts)`, testcrashd.GetSSHUsername(), port, testcrashd.GetSSHPriva
 
 func TestCaptureFuncSSHAll(t *testing.T) {
 	port := testcrashd.NextPortValue()
-	sshSvr := testcrashd.NewSSHServer(testcrashd.NextResourceName(), port)
+	username := testcrashd.NextUsername()
+	sshSvr, err := testcrashd.NewSSHServer(testcrashd.NextResourceName(), username, port)
+	if err != nil {
+		logrus.Error(err)
+		os.Exit(1)
+	}
 
 	logrus.Debug("Attempting to start SSH server")
 	if err := sshSvr.Start(); err != nil {
@@ -282,9 +287,11 @@ func TestCaptureFuncSSHAll(t *testing.T) {
 		os.Exit(1)
 	}
 
+	privateKey := sshSvr.PrivateKey()
+
 	tests := []struct {
 		name string
-		test func(t *testing.T, port string)
+		test func(t *testing.T, port, key, username string)
 	}{
 		{name: "capture func for host resources", test: testCaptureFuncForHostResources},
 		{name: "capture script for host resources", test: testCaptureFuncScriptForHostResources},
@@ -292,7 +299,7 @@ func TestCaptureFuncSSHAll(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			test.test(t, port)
+			test.test(t, port, privateKey, username)
 			defer os.RemoveAll(defaults.workdir)
 		})
 	}
