@@ -78,45 +78,45 @@ func TestKindScript(t *testing.T) {
 		scriptPath string
 		args       ArgMap
 	}{
-		//{
-		//	name:       "api objects",
-		//	scriptPath: "../examples/kind-api-objects.crsh",
-		//	args:       ArgMap{"kubecfg": getTestKubeConf()},
-		//},
-		//{
-		//	name:       "pod logs",
-		//	scriptPath: "../examples/pod-logs.crsh",
-		//	args:       ArgMap{"kubecfg": getTestKubeConf()},
-		//},
-		//{
-		//	name:       "script with args",
-		//	scriptPath: "../examples/script-args.crsh",
-		//	args: ArgMap{
-		//		"workdir": "/tmp/crashargs",
-		//		"kubecfg": getTestKubeConf(),
-		//		"output":  "/tmp/craslogs.tar.gz",
-		//	},
-		//},
-		//{
-		//	name:       "host-list provider",
-		//	scriptPath: "../examples/host-list-provider.crsh",
-		//	args:       ArgMap{"kubecfg": getTestKubeConf(), "ssh_port": testSSHPort},
-		//},
 		{
-			name:       "kube-nodes provider",
-			scriptPath: "../examples/kube-nodes-provider.crsh",
+			name:       "api objects",
+			scriptPath: "../examples/kind-api-objects.crsh",
+			args:       ArgMap{"kubecfg": getTestKubeConf()},
+		},
+		{
+			name:       "pod logs",
+			scriptPath: "../examples/pod-logs.crsh",
+			args:       ArgMap{"kubecfg": getTestKubeConf()},
+		},
+		{
+			name:       "script with args",
+			scriptPath: "../examples/script-args.crsh",
 			args: ArgMap{
-				"kubecfg":  getTestKubeConf(),
-				"ssh_port": testSSHPort,
-				"username": testcrashd.GetSSHUsername(),
-				"key_path": testcrashd.GetSSHPrivateKey(),
+				"workdir": "/tmp/crashargs",
+				"kubecfg": getTestKubeConf(),
+				"output":  "/tmp/craslogs.tar.gz",
 			},
 		},
+		{
+			name:       "host-list provider",
+			scriptPath: "../examples/host-list-provider.crsh",
+			args:       ArgMap{"kubecfg": getTestKubeConf(), "ssh_port": testSSHPort},
+		},
 		//{
-		//	name:       "kind-capi-bootstrap",
-		//	scriptPath: "../examples/kind-capi-bootstrap.crsh",
-		//	args:       ArgMap{"cluster_name": testClusterName},
+		//	name:       "kube-nodes provider",
+		//	scriptPath: "../examples/kube-nodes-provider.crsh",
+		//	args: ArgMap{
+		//		"kubecfg":  getTestKubeConf(),
+		//		"ssh_port": testSSHPort,
+		//		"username": testcrashd.GetSSHUsername(),
+		//		"key_path": testcrashd.GetSSHPrivateKey(),
+		//	},
 		//},
+		{
+			name:       "kind-capi-bootstrap",
+			scriptPath: "../examples/kind-capi-bootstrap.crsh",
+			args:       ArgMap{"cluster_name": testClusterName},
+		},
 	}
 
 	for _, test := range tests {
