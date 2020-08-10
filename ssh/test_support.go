@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-func makeTestSSHDir(t *testing.T, args SSHArgs, dir string) {
+func MakeTestSSHDir(t *testing.T, args SSHArgs, dir string) {
 	t.Logf("creating test dir over SSH: %s", dir)
 	_, err := Run(args, fmt.Sprintf(`mkdir -p %s`, dir))
 	if err != nil {
@@ -26,7 +26,7 @@ func makeTestSSHDir(t *testing.T, args SSHArgs, dir string) {
 func MakeTestSSHFile(t *testing.T, args SSHArgs, fileName, content string) {
 	srcDir := filepath.Dir(fileName)
 	if len(srcDir) > 0 && srcDir != "." {
-		makeTestSSHDir(t, args, srcDir)
+		MakeTestSSHDir(t, args, srcDir)
 	}
 
 	t.Logf("creating test file over SSH: %s", fileName)
