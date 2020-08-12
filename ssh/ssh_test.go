@@ -5,15 +5,24 @@ package ssh
 
 import (
 	"bytes"
+	"os"
+	"os/user"
+	"path/filepath"
 	"strings"
 	"testing"
-
-	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
 
 func TestRun(t *testing.T) {
-	usr := testcrashd.GetSSHUsername()
-	pkPath := testcrashd.GetSSHPrivateKey()
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	usr, err := user.Current()
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkPath := filepath.Join(homeDir, ".ssh/id_rsa")
 
 	tests := []struct {
 		name   string
@@ -23,7 +32,7 @@ func TestRun(t *testing.T) {
 	}{
 		{
 			name:   "simple cmd",
-			args:   SSHArgs{User: usr, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: testMaxRetries},
+			args:   SSHArgs{User: usr.Username, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: testMaxRetries},
 			cmd:    "echo 'Hello World!'",
 			result: "Hello World!",
 		},
@@ -43,8 +52,16 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunRead(t *testing.T) {
-	usr := testcrashd.GetSSHUsername()
-	pkPath := testcrashd.GetSSHPrivateKey()
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	usr, err := user.Current()
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkPath := filepath.Join(homeDir, ".ssh/id_rsa")
 
 	tests := []struct {
 		name   string
@@ -54,7 +71,7 @@ func TestRunRead(t *testing.T) {
 	}{
 		{
 			name:   "simple cmd",
-			args:   SSHArgs{User: usr, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: testMaxRetries},
+			args:   SSHArgs{User: usr.Username, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: testMaxRetries},
 			cmd:    "echo 'Hello World!'",
 			result: "Hello World!",
 		},
