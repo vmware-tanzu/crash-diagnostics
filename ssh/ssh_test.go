@@ -115,7 +115,12 @@ func TestSSHRunMakeCmdStr(t *testing.T) {
 		{
 			name:   "user host pkpath and proxy",
 			args:   SSHArgs{User: "sshuser", Host: "local.host", PrivateKeyPath: "/pk/path", ProxyJump: &ProxyJumpArgs{User: "juser", Host: "jhost"}},
-			cmdStr: "ssh -q -o StrictHostKeyChecking=no -i /pk/path -p 22 -J juser@jhost sshuser@local.host",
+			cmdStr: "ssh -q -o StrictHostKeyChecking=no -i /pk/path -p 22 sshuser@local.host -o \"ProxyCommand ssh -o StrictHostKeyChecking=no -W %h:%p -i /pk/path juser@jhost\"",
+		},
+		{
+			name:   "user host and proxy",
+			args:   SSHArgs{User: "sshuser", Host: "local.host", ProxyJump: &ProxyJumpArgs{User: "juser", Host: "jhost"}},
+			cmdStr: "ssh -q -o StrictHostKeyChecking=no -p 22 sshuser@local.host -o \"ProxyCommand ssh -o StrictHostKeyChecking=no -W %h:%p juser@jhost\"",
 		},
 		{
 			name:       "missing host",
