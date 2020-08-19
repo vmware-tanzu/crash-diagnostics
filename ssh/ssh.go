@@ -121,15 +121,25 @@ func makeSSHCmdStr(progName string, args SSHArgs) (string, error) {
 
 	proxyJump := func() string {
 		if args.ProxyJump != nil {
-			return fmt.Sprintf("-J %s@%s", args.ProxyJump.User, args.ProxyJump.Host)
+			return fmt.Sprintf("%s@%s", args.User, args.Host) + ` -o "ProxyCommand ssh -o StrictHostKeyChecking=no -W %h:%p ` + fmt.Sprintf("%s %s@%s\"", pkPath(), args.ProxyJump.User, args.ProxyJump.Host)
 		}
 		return ""
 	}
+
 	// build command as
-	// ssh -i <pkpath> -P <port> -J <proxyjump> user@host
-	cmd := fmt.Sprintf(
-		`%s %s %s %s %s@%s`,
-		sshCmdPrefix(), pkPath(), port(), proxyJump(), args.User, args.Host,
-	)
-	return cmd, nil
+	// ssh -i <pkpath> -P <port> user@host OR
+	// ssh -i <pkpath> -P <port> user@host -o "ProxyCommand ssh -W %h:%p -i <pkpath> <proxyJump>"
+	cmd := func() string {
+		cmdStr := fmt.Sprintf("%s %s %s ", sshCmdPrefix(), pkPath(), port())
+
+		if proxyDetails := proxyJump(); proxyDetails != "" {
+			cmdStr += proxyDetails
+		} else {
+			cmdStr += fmt.Sprintf("%s@%s", args.User, args.Host)
+		}
+
+		return cmdStr
+	}
+
+	return cmd(), nil
 }
