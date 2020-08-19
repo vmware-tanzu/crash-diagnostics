@@ -5,25 +5,11 @@ package ssh
 
 import (
 	"bytes"
-	"os"
-	"os/user"
-	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestRun(t *testing.T) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	usr, err := user.Current()
-	if err != nil {
-		t.Fatal(err)
-	}
-	pkPath := filepath.Join(homeDir, ".ssh/id_rsa")
-
 	tests := []struct {
 		name   string
 		args   SSHArgs
@@ -32,7 +18,7 @@ func TestRun(t *testing.T) {
 	}{
 		{
 			name:   "simple cmd",
-			args:   SSHArgs{User: usr.Username, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: testMaxRetries},
+			args:   testSSHArgs,
 			cmd:    "echo 'Hello World!'",
 			result: "Hello World!",
 		},
@@ -52,17 +38,6 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunRead(t *testing.T) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	usr, err := user.Current()
-	if err != nil {
-		t.Fatal(err)
-	}
-	pkPath := filepath.Join(homeDir, ".ssh/id_rsa")
-
 	tests := []struct {
 		name   string
 		args   SSHArgs
@@ -71,7 +46,7 @@ func TestRunRead(t *testing.T) {
 	}{
 		{
 			name:   "simple cmd",
-			args:   SSHArgs{User: usr.Username, PrivateKeyPath: pkPath, Host: "127.0.0.1", Port: testSSHPort, MaxRetries: testMaxRetries},
+			args:   testSSHArgs,
 			cmd:    "echo 'Hello World!'",
 			result: "Hello World!",
 		},

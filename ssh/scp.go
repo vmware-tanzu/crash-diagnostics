@@ -41,7 +41,7 @@ func CopyFrom(args SSHArgs, rootDir string, sourcePath string) error {
 		return fmt.Errorf("scp: failed to build command string: %s", err)
 	}
 
-	effectiveCmd := fmt.Sprintf(`%s "%s"`, sshCmd, targetPath)
+	effectiveCmd := fmt.Sprintf(`%s %s`, sshCmd, targetPath)
 	logrus.Debug("scp: ", effectiveCmd)
 
 	maxRetries := args.MaxRetries

@@ -6,7 +6,6 @@ package starlark
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -21,7 +20,6 @@ import (
 var _ = Describe("kube_capture", func() {
 
 	var (
-		workdir  string
 		executor *Executor
 		err      error
 	)
@@ -30,15 +28,6 @@ var _ = Describe("kube_capture", func() {
 		executor = New()
 		err = executor.Exec("test.kube.capture", strings.NewReader(crashdScript))
 	}
-
-	BeforeEach(func() {
-		workdir, err = ioutil.TempDir(os.TempDir(), "test")
-		Expect(err).NotTo(HaveOccurred())
-	})
-
-	AfterEach(func() {
-		os.RemoveAll(workdir)
-	})
 
 	It("creates a directory and files for namespaced objects", func() {
 		crashdScript := fmt.Sprintf(`

@@ -54,6 +54,7 @@ func (k *KindCluster) Create() error {
 }
 
 func (k *KindCluster) GetKubeConfig() (io.Reader, error) {
+	logrus.Infof("Retrieving kind kubeconfig for cluster: %s", k.name)
 	p := k.e.RunProc(fmt.Sprintf(`kind get kubeconfig --name %s`, k.name))
 	if p.Err() != nil {
 		return nil, p.Err()
@@ -62,17 +63,19 @@ func (k *KindCluster) GetKubeConfig() (io.Reader, error) {
 }
 
 func (k *KindCluster) MakeKubeConfigFile(path string) error {
-	logrus.Debugf("Creating kind kubeconfig file: %s", path)
-	f, err := os.Create(path)
+	logrus.Infof("Creating kind kubeconfig file: %s", path)
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to initialize kind kubeconfig file: %s", err)
 	}
+	defer f.Close()
+
 	reader, err := k.GetKubeConfig()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to generate kind kubeconfig: %s", err)
 	}
 	if _, err := io.Copy(f, reader); err != nil {
-		return err
+		return fmt.Errorf("failed to write kind kubeconfig file: %s", err)
 	}
 	return nil
 }
@@ -92,8 +95,10 @@ func (k *KindCluster) Destroy() error {
 		return fmt.Errorf("failed to install kind: %s: %s", p.Err(), p.Result())
 	}
 
+	logrus.Info("Kind cluster destroyed")
+
 	clusters := k.e.Run("kind get clusters")
-	logrus.Infof("kind clusters available: %s", clusters)
+	logrus.Infof("Available kind clusters: %s", clusters)
 
 	return nil
 }

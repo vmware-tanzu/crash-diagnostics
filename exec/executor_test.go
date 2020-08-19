@@ -4,11 +4,9 @@
 package exec
 
 import (
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -16,60 +14,36 @@ import (
 )
 
 var (
-	testSSHPort     = testcrashd.NextPortValue()
-	testServerName  = testcrashd.NextResourceName()
-	testClusterName = testcrashd.NextResourceName()
-	getTestKubeConf func() string
+	support *testcrashd.TestSupport
 )
 
 func TestMain(m *testing.M) {
-	testcrashd.Init()
-
-	sshSvr := testcrashd.NewSSHServer(testServerName, testSSHPort)
-	logrus.Debug("Attempting to start SSH server")
-	if err := sshSvr.Start(); err != nil {
-		logrus.Error(err)
-		os.Exit(1)
-	}
-
-	kind := testcrashd.NewKindCluster("../testing/kind-cluster-docker.yaml", testClusterName)
-	if err := kind.Create(); err != nil {
-		logrus.Error(err)
-		os.Exit(1)
-	}
-
-	// attempt to wait for cluster up
-	time.Sleep(time.Second * 10)
-
-	tmpFile, err := ioutil.TempFile(os.TempDir(), testClusterName)
+	test, err := testcrashd.Init()
 	if err != nil {
-		logrus.Error(err)
-		os.Exit(1)
+		logrus.Fatal(err)
+	}
+	support = test
+
+	if err := support.SetupSSHServer(); err != nil {
+		logrus.Fatal(err)
 	}
 
-	defer func() {
-		logrus.Debug("Stopping SSH server...")
-		if err := sshSvr.Stop(); err != nil {
-			logrus.Error(err)
-			os.Exit(1)
-		}
-
-		if err := kind.Destroy(); err != nil {
-			logrus.Error(err)
-			os.Exit(1)
-		}
-	}()
-
-	getTestKubeConf = func() string {
-		return tmpFile.Name()
+	if err := support.SetupKindCluster(); err != nil {
+		logrus.Fatal(err)
 	}
 
-	if err := kind.MakeKubeConfigFile(getTestKubeConf()); err != nil {
-		logrus.Error(err)
-		os.Exit(1)
+	_, err = support.SetupKindKubeConfig()
+	if err != nil {
+		logrus.Fatal(err)
 	}
 
-	os.Exit(m.Run())
+	result := m.Run()
+
+	if err := support.TearDown(); err != nil {
+		logrus.Fatal(err)
+	}
+
+	os.Exit(result)
 }
 
 func TestKindScript(t *testing.T) {
@@ -81,26 +55,30 @@ func TestKindScript(t *testing.T) {
 		{
 			name:       "api objects",
 			scriptPath: "../examples/kind-api-objects.crsh",
-			args:       ArgMap{"kubecfg": getTestKubeConf()},
+			args:       ArgMap{"kubecfg": support.KindKubeConfigFile()},
 		},
 		{
 			name:       "pod logs",
 			scriptPath: "../examples/pod-logs.crsh",
-			args:       ArgMap{"kubecfg": getTestKubeConf()},
+			args:       ArgMap{"kubecfg": support.KindKubeConfigFile()},
 		},
 		{
 			name:       "script with args",
 			scriptPath: "../examples/script-args.crsh",
 			args: ArgMap{
 				"workdir": "/tmp/crashargs",
-				"kubecfg": getTestKubeConf(),
+				"kubecfg": support.KindKubeConfigFile(),
 				"output":  "/tmp/craslogs.tar.gz",
 			},
 		},
 		{
 			name:       "host-list provider",
 			scriptPath: "../examples/host-list-provider.crsh",
-			args:       ArgMap{"kubecfg": getTestKubeConf(), "ssh_port": testSSHPort},
+			args: ArgMap{
+				"kubecfg":     support.KindKubeConfigFile(),
+				"ssh_pk_path": support.PrivateKeyPath(),
+				"ssh_port":    support.PortValue(),
+			},
 		},
 		//{
 		//	name:       "kube-nodes provider",
@@ -108,14 +86,14 @@ func TestKindScript(t *testing.T) {
 		//	args: ArgMap{
 		//		"kubecfg":  getTestKubeConf(),
 		//		"ssh_port": testSSHPort,
-		//		"username": testcrashd.GetSSHUsername(),
-		//		"key_path": testcrashd.GetSSHPrivateKey(),
+		//		"username": getUsername(),
+		//		"key_path": getPrivateKey(),
 		//	},
 		//},
 		{
 			name:       "kind-capi-bootstrap",
 			scriptPath: "../examples/kind-capi-bootstrap.crsh",
-			args:       ArgMap{"cluster_name": testClusterName},
+			args:       ArgMap{"cluster_name": support.ResourceName()},
 		},
 	}
 

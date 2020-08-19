@@ -11,9 +11,9 @@
 # setup and configuration
 ssh=ssh_config(
     username=os.username,
-    private_key_path="{0}/.ssh/id_rsa".format(os.home),
+    private_key_path=args.ssh_pk_path,
     port=args.ssh_port,
-    max_retries=5,
+    max_retries=50,
 )
 
 provider=host_list_provider(hosts=["localhost", "127.0.0.1"], ssh_config=ssh)
