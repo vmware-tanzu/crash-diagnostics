@@ -124,7 +124,7 @@ kube_capture(what="logs", namespaces=[os.getenv("KUBE_DEFAULT_NS")])
 Scripts can also access command-line arguments passed as key/value pairs using the `--args` flag. For instance, when the following command is used to start a script:
 
 ```
-  crashd run --args="kube_ns=kube-system username=$(whoami)" diagnostics.crsh
+  crashd run --args="kube_ns=kube-system, username=$(whoami)" diagnostics.crsh
 ```
 
 Values from `--args` can be accessed as shown below:
