@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/vladimirvivien/echo"
 )
 
 const charset = "abcdefghijklmnopqrstuvwxyz"
@@ -46,7 +45,6 @@ func Init() (*TestSupport, error) {
 	debug := false
 	flag.BoolVar(&debug, "debug", debug, "Enables debug level")
 	flag.Parse()
-	e := echo.New()
 
 	logLevel := logrus.InfoLevel
 	if debug {
@@ -79,16 +77,8 @@ func Init() (*TestSupport, error) {
 	}
 	logrus.Infof("Created testing work dir: %s", workDir)
 
-	sshKeyPath, err := filepath.Abs(filepath.Join("..", "testing"))
-	if err != nil {
+	if err := WriteKeys(workDir); err != nil {
 		return nil, err
-	}
-	cpCmd := fmt.Sprintf(`/bin/sh -c "cp %s/id_rsa* %s"`, sshKeyPath, workDir)
-	logrus.Infof("Copying SSH key files: %s", cpCmd)
-	proc := e.RunProc(cpCmd)
-	if proc.Err() != nil {
-		logrus.Errorf("Error copying key files: %s %s", proc.Err(), proc.Result())
-		return nil, proc.Err()
 	}
 
 	// setup tempDir
