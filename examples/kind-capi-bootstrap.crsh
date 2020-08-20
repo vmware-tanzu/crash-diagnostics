@@ -1,0 +1,40 @@
+# Copyright (c) 2020 VMware, Inc. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Kind CAPI Bootstrap example
+# The following script extracts CAPI bootstrap info from a kind cluster.
+
+# declare global default config for script
+conf=crashd_config(workdir="/tmp/crashd-test")
+
+kind_cluster = args.cluster_name
+
+# exports kind logs to a file under workdir directory
+run_local("kind export logs --name {0} {1}/kind-logs".format(kind_cluster, conf.workdir))
+
+# runs `kind get kubeconfig` to capture kubeconfig file
+kind_cfg = capture_local(
+    cmd="kind get kubeconfig --name {0}".format(kind_cluster),
+    file_name="kind.kubecfg"
+)
+
+# declares default configuration for Kubernetes commands
+
+nspaces=[
+    "capi-kubeadm-bootstrap-system",
+    "capi-kubeadm-control-plane-system",
+    "capi-system", "capi-webhook-system",
+    "capv-system", "capa-system",
+    "cert-manager", "tkg-system",
+]
+
+
+kconf = kube_config(path=kind_cfg)
+
+# capture Kubernetes API object and store in files (under working dir)
+kube_capture(what="objects", kinds=["services", "pods"], namespaces=nspaces, kube_config = kconf)
+kube_capture(what="objects", kinds=["deployments", "replicasets"], namespaces=nspaces, kube_config = kconf)
+kube_capture(what="objects", kinds=["clusters", "machines", "machinesets", "machinedeployments"], namespaces=["tkg-system"], kube_config = kconf)
+
+# bundle files stored in working dir
+archive(output_file="/tmp/crashout.tar.gz", source_paths=[conf.workdir])

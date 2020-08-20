@@ -1,0 +1,28 @@
+# Copyright (c) 2020 VMware, Inc. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# This script shows how to use the host list provider.
+# As its name implies, this provider takes a list of hosts
+# and allows command functions to execute on those hosts using
+# SSH.
+#
+# This example requires an SSH server running on the targeted hosts.
+
+# setup and configuration
+ssh=ssh_config(
+    username=os.username,
+    private_key_path=args.ssh_pk_path,
+    port=args.ssh_port,
+    max_retries=50,
+)
+
+provider=host_list_provider(hosts=["localhost", "127.0.0.1"], ssh_config=ssh)
+hosts=resources(provider=provider)
+
+# commands to run on each host
+uptimes = run(cmd="uptime", resources=hosts)
+
+# result for resource 0 (localhost)
+print(uptimes[0].result)
+# result for resource 1 (127.0.0.1)
+print(uptimes[1].result)

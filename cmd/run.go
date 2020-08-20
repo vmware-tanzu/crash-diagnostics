@@ -7,63 +7,38 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/vmware-tanzu/crash-diagnostics/exec"
-	"github.com/vmware-tanzu/crash-diagnostics/parser"
-	"github.com/vmware-tanzu/crash-diagnostics/script"
 )
 
-type runFlags struct {
-	file   string
-	output string
-}
-
-// newRunCommand creates a command to run the Diaganostics script a file
+// newRunCommand creates a command to run the Diagnostics script a file
 func newRunCommand() *cobra.Command {
-	flags := &runFlags{
-		file:   "Diagnostics.file",
-		output: "out.tar.gz",
-	}
+	scriptArgs := make(map[string]string)
 
 	cmd := &cobra.Command{
-		Args:  cobra.NoArgs,
-		Use:   "run",
+		Args:  cobra.ExactArgs(1),
+		Use:   "run <file-name>",
 		Short: "Executes a diagnostics script file",
 		Long:  "Executes a diagnostics script and collects its output as an archive bundle",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return run(flags, args)
+			return run(scriptArgs, args[0])
 		},
 	}
-	cmd.Flags().StringVar(&flags.file, "file", flags.file, "the path to the dianostics script file to run")
-	cmd.Flags().StringVar(&flags.output, "output", "", "the path of the generated archive file")
+	cmd.Flags().StringToStringVar(&scriptArgs, "args", scriptArgs, "comma-separated key=value arguments to pass to the diagnostics file")
 	return cmd
 }
 
-func run(flag *runFlags, args []string) error {
-	file, err := os.Open(flag.file)
+func run(scriptArgs map[string]string, path string) error {
+	file, err := os.Open(path)
 	if err != nil {
-		return fmt.Errorf("Unable to find script file %s", flag.file)
+		return errors.Wrap(err, fmt.Sprintf("script file not found: %s", path))
 	}
 
 	defer file.Close()
 
-	src, err := parser.Parse(file)
-	if err != nil {
-		return err
-	}
-
-	// override output if needed
-	if flag.output != "" {
-		cmd, err := script.NewOutputCommand(0, fmt.Sprintf("path:%s", flag.output))
-		if err != nil {
-			return err
-		}
-		src.Preambles[script.CmdOutput] = []script.Command{cmd}
-	}
-
-	exe := exec.New(src)
-	if err := exe.Execute(); err != nil {
-		return err
+	if err := exec.ExecuteFile(file, scriptArgs); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("execution failed for %s", file.Name()))
 	}
 
 	return nil

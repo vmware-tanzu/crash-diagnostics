@@ -31,16 +31,6 @@ type Client struct {
 	JsonPrinter printers.JSONPrinter
 }
 
-type SearchResult struct {
-	ListKind             string
-	ResourceName         string
-	ResourceKind         string
-	GroupVersionResource schema.GroupVersionResource
-	List                 *unstructured.UnstructuredList
-	Namespaced           bool
-	Namespace            string
-}
-
 // New returns a *Client
 func New(kubeconfig string) (*Client, error) {
 	// creating cfg for each client type because each
@@ -76,13 +66,23 @@ func New(kubeconfig string) (*Client, error) {
 	return &Client{Client: client, Disco: disco, CoreRest: restc}, nil
 }
 
+func (k8sc *Client) Search(params SearchParams) ([]SearchResult, error) {
+	return k8sc._search(strings.Join(params.Groups, " "),
+		strings.Join(params.Kinds, " "),
+		strings.Join(params.Namespaces, " "),
+		strings.Join(params.Versions, " "),
+		strings.Join(params.Names, " "),
+		strings.Join(params.Labels, " "),
+		strings.Join(params.Containers, " "))
+}
+
 // Search does a drill-down search from group, version, resourceList, to resources.  The following rules are applied
 // 1) Legacy core group (api/v1) can be specified as "core"
 // 2) All specified search params will use AND operator for match (i.e. groups=core AND kinds=pods AND versions=v1 AND ... etc)
 // 3) kinds will match resource.Kind or resource.Name
 // 4) All search params are passed as comma- or space-separated sets that are matched using OR (i.e. kinds=pods services
 //    will match resouces of type pods or services)
-func (k8sc *Client) Search(groups, kinds, namespaces, versions, names, labels, containers string) ([]SearchResult, error) {
+func (k8sc *Client) _search(groups, kinds, namespaces, versions, names, labels, containers string) ([]SearchResult, error) {
 	// normalize params
 	groups = strings.ToLower(groups)
 	kinds = strings.ToLower(kinds)

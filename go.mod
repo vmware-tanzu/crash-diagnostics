@@ -4,9 +4,13 @@ go 1.12
 
 require (
 	github.com/imdario/mergo v0.3.7 // indirect
+	github.com/onsi/ginkgo v1.10.1
+	github.com/onsi/gomega v1.7.0
+	github.com/pkg/errors v0.8.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.5
-	github.com/vladimirvivien/echo v0.0.1-alpha.4
+	github.com/vladimirvivien/echo v0.0.1-alpha.6
+	go.starlark.net v0.0.0-20200615180055-61b64bc45990
 	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
 	golang.org/x/sys v0.0.0-20200113162924-86b910548bc1 // indirect
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect

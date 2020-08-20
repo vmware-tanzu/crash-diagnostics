@@ -5,6 +5,7 @@ package testing
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -12,13 +13,21 @@ import (
 )
 
 type SSHServer struct {
-	name string
-	port string
-	e    *echo.Echo
+	name     string
+	port     string
+	mountDir string
+	username string
+	e        *echo.Echo
 }
 
-func NewSSHServer(name, port string) *SSHServer {
-	return &SSHServer{name: name, port: port, e: echo.New()}
+func NewSSHServer(serverName, username, port, sshMountDir string) (*SSHServer, error) {
+	return &SSHServer{
+		name:     serverName,
+		port:     port,
+		mountDir: sshMountDir,
+		username: username,
+		e:        echo.New(),
+	}, nil
 }
 
 // StartSSHServer starts starts sshd process using image linuxserver/openssh-server.DockerRunSSH
@@ -31,7 +40,7 @@ docker create \
   -e USER_NAME=$USER \
   -e SUDO_ACCESS=true \
   -p 2222:2222 \
-  -v $HOME/.ssh:/config
+  -v ./testing/server-name:/config
   linuxserver/openssh-server
 
 */
@@ -47,9 +56,13 @@ func (s *SSHServer) Start() error {
 
 	s.e.SetVar("CONTAINER_NAME", s.name)
 	s.e.SetVar("SSH_PORT", fmt.Sprintf("%s:2222", s.port))
-	s.e.SetVar("SSH_DOCKER_IMAGE", "vladimirvivien/openssh-server")
-	cmd := s.e.Eval("docker run --rm --detach --name=$CONTAINER_NAME -p $SSH_PORT -e PUBLIC_KEY_FILE=/config/id_rsa.pub -e USER_NAME=$USER -e SUDO_ACCESS=true -v $HOME/.ssh:/config $SSH_DOCKER_IMAGE")
-	logrus.Debugf("Starting SSH server: %s", cmd)
+	s.e.SetVar("SSH_DOCKER_IMAGE", "linuxserver/openssh-server")
+	s.e.SetVar("USERNAME", s.username)
+	s.e.SetVar("KEY_VOLUME_MOUNT", s.mountDir)
+	s.e.SetVar("DOCKER_MODS", "linuxserver/mods:openssh-server-openssh-client")
+
+	cmd := s.e.Eval("docker run --rm --detach --name=$CONTAINER_NAME -p $SSH_PORT -e PUBLIC_KEY_FILE=/config/id_rsa.pub -e USER_NAME=$USERNAME -e DOCKER_MODS=$DOCKER_MODS -e SUDO_ACCESS=true -v $KEY_VOLUME_MOUNT:/config $SSH_DOCKER_IMAGE")
+	logrus.Infof("Starting SSH server: %s", cmd)
 	proc := s.e.RunProc(cmd)
 	result := proc.Result()
 	if proc.Err() != nil {
@@ -79,10 +92,9 @@ func (s *SSHServer) Stop() error {
 		msg := fmt.Sprintf("failed to stop container: %s: %s", proc.Err(), result)
 		return fmt.Errorf(msg)
 	}
-	logrus.Info("SSH server stopped: ", result)
 
 	// attempt to remove container if still lingering
-	if strings.Contains(s.e.Run("docker ps"), s.name) {
+	if strings.Contains(s.e.Run("docker ps -a"), s.name) {
 		logrus.Info("Forcing container removal:", s.name)
 		proc := s.e.RunProc("docker rm --force $CONTAINER_NAME")
 		result := proc.Result()
@@ -94,4 +106,12 @@ func (s *SSHServer) Stop() error {
 	}
 
 	return nil
+}
+
+func (s *SSHServer) MountedDir() string {
+	return s.mountDir
+}
+
+func (s *SSHServer) PrivateKey() string {
+	return filepath.Join(s.mountDir, "id_rsa")
 }
