@@ -3,7 +3,8 @@ before:
     # you may remove this if you don't use vgo
     - go mod tidy
 builds:
-- binary: crash-diagnostics
+- id: crashd
+  binary: crashd
   env:
   - CGO_ENABLED=0
   goos:
@@ -11,8 +12,18 @@ builds:
     - linux
   goarch:
     - amd64
+    - arm64
+    - 386
+  ignore:
+    - goos: darwin
+      goarch: 386
+    - goos: darwin
+      goarch: arm64
   ldflags: -s -w -X github.com/vmware-tanzu/crash-diagnostics/buildinfo.Version=v{{.Version}} -X github.com/vmware-tanzu/crash-diagnostics/buildinfo.GitSHA={{.FullCommit}}
 archives:
+  - id: tar
+    format: tar.gz
+    name_template: '{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm}}v{{ .Arm }}{{ end }}{{ if .Mips }}_{{ .Mips }}{{ end }}'
 checksum:
   name_template: 'checksums.txt'
 
