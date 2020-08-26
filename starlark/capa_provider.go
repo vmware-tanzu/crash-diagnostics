@@ -75,7 +75,7 @@ func CapaProviderFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.
 
 	// dictionary for capa provider struct
 	capaProviderDict := starlark.StringDict{
-		"kind":        starlark.String(identifiers.capvProvider),
+		"kind":        starlark.String(identifiers.capaProvider),
 		"transport":   starlark.String("ssh"),
 		"kube_config": starlark.String(providerConfigPath),
 	}

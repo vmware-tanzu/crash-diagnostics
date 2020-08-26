@@ -10,11 +10,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
-
-	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 )
 
 // captureFunc is a built-in starlark function that runs a provided command and
@@ -58,7 +58,16 @@ func captureFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tup
 		resources = res
 	}
 
-	results, err := execCapture(cmdStr, workdir, fileName, desc, resources)
+	var agent ssh.Agent
+	var ok bool
+	if agentVal := thread.Local(identifiers.sshAgent); agentVal != nil {
+		agent, ok = agentVal.(ssh.Agent)
+		if !ok {
+			return starlark.None, errors.New("unable to fetch ssh-agent")
+		}
+	}
+
+	results, err := execCapture(cmdStr, workdir, fileName, desc, agent, resources)
 	if err != nil {
 		return starlark.None, fmt.Errorf("%s: %s", identifiers.capture, err)
 	}
@@ -75,7 +84,7 @@ func captureFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tup
 	return starlark.NewList(resultList), nil
 }
 
-func execCapture(cmdStr, rootPath, fileName, desc string, resources *starlark.List) ([]commandResult, error) {
+func execCapture(cmdStr, rootPath, fileName, desc string, agent ssh.Agent, resources *starlark.List) ([]commandResult, error) {
 	if resources == nil {
 		return nil, fmt.Errorf("%s: missing resources", identifiers.capture)
 	}
@@ -110,7 +119,7 @@ func execCapture(cmdStr, rootPath, fileName, desc string, resources *starlark.Li
 
 		switch {
 		case string(kind) == identifiers.hostResource && string(transport) == "ssh":
-			result, err := execCaptureSSH(host, cmdStr, rootDir, fileName, desc, res)
+			result, err := execCaptureSSH(host, cmdStr, rootDir, fileName, desc, agent, res)
 			if err != nil {
 				logrus.Errorf("%s failed: cmd=[%s]: %s", identifiers.capture, cmdStr, err)
 			}
@@ -124,7 +133,7 @@ func execCapture(cmdStr, rootPath, fileName, desc string, resources *starlark.Li
 	return results, nil
 }
 
-func execCaptureSSH(host, cmdStr, rootDir, fileName, desc string, res *starlarkstruct.Struct) (commandResult, error) {
+func execCaptureSSH(host, cmdStr, rootDir, fileName, desc string, agent ssh.Agent, res *starlarkstruct.Struct) (commandResult, error) {
 	sshCfg := starlarkstruct.FromKeywords(starlarkstruct.Default, makeDefaultSSHConfig())
 	if val, err := res.Attr(identifiers.sshCfg); err == nil {
 		if cfg, ok := val.(*starlarkstruct.Struct); ok {
@@ -151,7 +160,7 @@ func execCaptureSSH(host, cmdStr, rootDir, fileName, desc string, res *starlarks
 
 	logrus.Debugf("%s: capturing output of [cmd=%s] => [%s] from %s using ssh", identifiers.capture, cmdStr, filePath, args.Host)
 
-	reader, err := ssh.RunRead(args, cmdStr)
+	reader, err := ssh.RunRead(args, agent, cmdStr)
 	if err != nil {
 		logrus.Errorf("%s failed: %s", identifiers.capture, err)
 		if err := captureOutput(strings.NewReader(err.Error()), filePath, fmt.Sprintf("%s: failed", cmdStr)); err != nil {

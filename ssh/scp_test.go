@@ -54,7 +54,7 @@ func TestCopy(t *testing.T) {
 				MakeTestSSHFile(t, test.sshArgs, file, content)
 			}
 
-			if err := CopyFrom(test.sshArgs, support.TmpDirRoot(), test.srcFile); err != nil {
+			if err := CopyFrom(test.sshArgs, nil, support.TmpDirRoot(), test.srcFile); err != nil {
 				t.Fatal(err)
 			}
 

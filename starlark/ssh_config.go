@@ -6,24 +6,27 @@ package starlark
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
 
-// addDefaultSshConf initalizes a Starlark Dict with default
+// addDefaultSshConf initializes a Starlark Dict with default
 // ssh_config configuration data
 func addDefaultSSHConf(thread *starlark.Thread) error {
 	args := makeDefaultSSHConfig()
-	_, err := sshConfigFn(thread, nil, nil, args)
+	_, err := SshConfigFn(thread, nil, nil, args)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// sshConfigFn is the backing built-in fn that saves and returns its argument as struct value.
+// SshConfigFn is the backing built-in fn that saves and returns its argument as struct value.
 // Starlark format: ssh_config(username=name[, port][, private_key_path][,max_retries][,conn_timeout][,jump_user][,jump_host])
-func sshConfigFn(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+func SshConfigFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var uname, port, pkPath, jUser, jHost string
 	var maxRetries, connTimeout int
 
@@ -57,6 +60,17 @@ func sshConfigFn(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, k
 		pkPath = defaults.pkPath
 	}
 
+	if agentVal := thread.Local(identifiers.sshAgent); agentVal != nil {
+		agent, ok := agentVal.(ssh.Agent)
+		if !ok {
+			return starlark.None, errors.New("unable to fetch ssh-agent")
+		}
+		logrus.Debugf("adding key %s to ssh-agent", pkPath)
+		if err := agent.AddKey(pkPath); err != nil {
+			return starlark.None, errors.Wrapf(err, "unable to add key %s", pkPath)
+		}
+	}
+
 	sshConfigDict := starlark.StringDict{
 		"username":         starlark.String(uname),
 		"port":             starlark.String(port),
@@ -77,10 +91,10 @@ func sshConfigFn(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, k
 
 func makeDefaultSSHConfig() []starlark.Tuple {
 	return []starlark.Tuple{
-		starlark.Tuple{starlark.String("username"), starlark.String(getUsername())},
-		starlark.Tuple{starlark.String("port"), starlark.String("22")},
-		starlark.Tuple{starlark.String("private_key_path"), starlark.String(defaults.pkPath)},
-		starlark.Tuple{starlark.String("max_retries"), starlark.MakeInt(defaults.connRetries)},
-		starlark.Tuple{starlark.String("conn_timeout"), starlark.MakeInt(defaults.connTimeout)},
+		{starlark.String("username"), starlark.String(getUsername())},
+		{starlark.String("port"), starlark.String("22")},
+		{starlark.String("private_key_path"), starlark.String(defaults.pkPath)},
+		{starlark.String("max_retries"), starlark.MakeInt(defaults.connRetries)},
+		{starlark.String("conn_timeout"), starlark.MakeInt(defaults.connTimeout)},
 	}
 }

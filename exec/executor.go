@@ -4,10 +4,10 @@
 package exec
 
 import (
-	"fmt"
 	"io"
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/vmware-tanzu/crash-diagnostics/starlark"
 )
 
@@ -25,11 +25,12 @@ func Execute(name string, source io.Reader, args ArgMap) error {
 		star.AddPredeclared("args", starStruct)
 	}
 
-	if err := star.Exec(name, source); err != nil {
-		return fmt.Errorf("exec failed: %s", err)
+	err := star.Exec(name, source)
+	if err != nil {
+		err = errors.Wrap(err, "exec failed")
 	}
 
-	return nil
+	return err
 }
 
 func ExecuteFile(file *os.File, args ArgMap) error {
