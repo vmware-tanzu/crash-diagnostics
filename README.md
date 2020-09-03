@@ -1,16 +1,16 @@
 ![](https://github.com/vmware-tanzu/crash-diagnostics/workflows/Crash%20Diagnostics%20Build/badge.svg)
 
-# Crashd - Crash Diagnostics
+# Crashd -  Crash Diagnostics
 
-Crash Diagnostics (Crashd) is a tool that helps human operators to easily interact and collect information from infrastructures running on Kubernetes for tasks such as automated diagnosis and troubleshooting.  
+Crash Diagnostics (Crashd) is a tool that helps human operators to easily interact and collect information from infrastructures running on Kubernetes for tasks such as automated diagnosis and troubleshooting.
 
 ## Crashd Features
 * Crashd uses the [Starlark language](https://github.com/google/starlark-go/blob/master/doc/spec.md), a Python dialect, to express and invoke automation functions
 * Easily automate interaction with infrastructures running Kubernetes
 * Interact and capture information from compute resources such as machines (via SSH)
-* Automatically execute commands on compute nodes to capture results 
+* Automatically execute commands on compute nodes to capture results
 * Capture object and cluster log from the Kubernetes API server
-* Easily extract data from Cluster-API managed clusters 
+* Easily extract data from Cluster-API managed clusters
 
 
 ## How Does it Work?
@@ -48,17 +48,17 @@ Build amd64/linux OK: .build/amd64/linux/crashd
 ```
 
 ## Getting Started
-A Crashd script consists of a collection of Starlark functions stored in a file.  For instance, the following script (saved as diagnostics.crsh) collects system information from a list of provided hosts using SSH.  The collected data is then bundled as tar.gz file at the end: 
+A Crashd script consists of a collection of Starlark functions stored in a file.  For instance, the following script (saved as diagnostics.crsh) collects system information from a list of provided hosts using SSH.  The collected data is then bundled as tar.gz file at the end:
 
 ```python
 # Crashd global config
 crshd = crashd_config(workdir="{0}/crashd".format(os.home))
 
-# Enumerate compute resources 
+# Enumerate compute resources
 # Define a host list provider with configured SSH
 hosts=resources(
     provider=host_list_provider(
-        hosts=["170.10.20.30", "170.40.50.60"], 
+        hosts=["170.10.20.30", "170.40.50.60"],
         ssh_config=ssh_config(
             username=os.username,
             private_key_path="{0}/.ssh/id_rsa".format(os.home),
@@ -86,7 +86,7 @@ The previous code snippet connects to two hosts (specified in the `host_list_pro
 To run the script, do the following:
 
 ```
-$> crashd run diagnostics.crsh 
+$> crashd run diagnostics.crsh
 ```
 
 If you want to output debug information, use the `--debug` flag as shown:
