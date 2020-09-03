@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
@@ -29,10 +31,11 @@ func addDefaultCrashdConf(thread *starlark.Thread) error {
 	return nil
 }
 
-// crashConfig is built-in starlark function that saves and returns the kwargs as a struct value.
+// crashdConfigFn is built-in starlark function that saves and returns the kwargs as a struct value.
 // Starlark format: crashd_config(workdir=path, default_shell=shellpath, requires=["command0",...,"commandN"])
-func crashdConfigFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+func crashdConfigFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var workdir, gid, uid, defaultShell string
+	var useSSHAgent bool
 	requires := starlark.NewList([]starlark.Value{})
 
 	if err := starlark.UnpackArgs(
@@ -42,6 +45,7 @@ func crashdConfigFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.
 		"uid?", &uid,
 		"default_shell?", &defaultShell,
 		"requires?", &requires,
+		"use_ssh_agent?", &useSSHAgent,
 	); err != nil {
 		return starlark.None, fmt.Errorf("%s: %s", identifiers.crashdCfg, err)
 	}
@@ -61,6 +65,16 @@ func crashdConfigFn(thread *starlark.Thread, b *starlark.Builtin, args starlark.
 
 	if err := makeCrashdWorkdir(workdir); err != nil {
 		return starlark.None, fmt.Errorf("%s: %s", identifiers.crashdCfg, err)
+	}
+
+	if useSSHAgent {
+		agent, err := ssh.StartAgent()
+		if err != nil {
+			return starlark.None, errors.Wrap(err, "failed to start ssh agent")
+		}
+
+		// sets the ssh_agent variable in the current Starlark thread
+		thread.SetLocal(identifiers.sshAgent, agent)
 	}
 
 	cfgStruct := starlarkstruct.FromStringDict(starlark.String(identifiers.crashdCfg), starlark.StringDict{

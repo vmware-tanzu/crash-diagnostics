@@ -6,6 +6,7 @@ package starlark
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
@@ -40,7 +41,7 @@ func (r commandResult) toStarlarkStruct() *starlarkstruct.Struct {
 // about the executed command on the provided compute resources.  If resources
 // is not provided, runFunc uses the default resources found in the starlark thread.
 // Starlark format: run(cmd="command" [,resources=resources])
-func runFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+func runFunc(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var cmdStr string
 	var resources *starlark.List
 	if err := starlark.UnpackArgs(
@@ -63,7 +64,16 @@ func runFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, 
 		resources = resList
 	}
 
-	results, err := execRun(cmdStr, resources)
+	var agent ssh.Agent
+	var ok bool
+	if agentVal := thread.Local(identifiers.sshAgent); agentVal != nil {
+		agent, ok = agentVal.(ssh.Agent)
+		if !ok {
+			return starlark.None, errors.New("unable to fetch ssh-agent")
+		}
+	}
+
+	results, err := execRun(cmdStr, agent, resources)
 	if err != nil {
 		return starlark.None, err
 	}
@@ -80,7 +90,7 @@ func runFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, 
 	return starlark.NewList(resultList), nil
 }
 
-func execRun(cmdStr string, resources *starlark.List) ([]commandResult, error) {
+func execRun(cmdStr string, agent ssh.Agent, resources *starlark.List) ([]commandResult, error) {
 	if resources == nil {
 		return nil, fmt.Errorf("%s: missing resources", identifiers.run)
 	}
@@ -108,7 +118,7 @@ func execRun(cmdStr string, resources *starlark.List) ([]commandResult, error) {
 
 		switch {
 		case string(kind) == identifiers.hostResource && string(transport) == "ssh":
-			result, err := execRunSSH(cmdStr, res)
+			result, err := execRunSSH(cmdStr, agent, res)
 			if err != nil {
 				logrus.Error(err)
 				continue
@@ -124,7 +134,7 @@ func execRun(cmdStr string, resources *starlark.List) ([]commandResult, error) {
 }
 
 // execRunSSH executes `run` command for a Host Resource using SSH
-func execRunSSH(cmdStr string, res *starlarkstruct.Struct) (commandResult, error) {
+func execRunSSH(cmdStr string, agent ssh.Agent, res *starlarkstruct.Struct) (commandResult, error) {
 	sshCfg := starlarkstruct.FromKeywords(starlarkstruct.Default, makeDefaultSSHConfig())
 	if val, err := res.Attr(identifiers.sshCfg); err == nil {
 		if cfg, ok := val.(*starlarkstruct.Struct); ok {
@@ -149,7 +159,7 @@ func execRunSSH(cmdStr string, res *starlarkstruct.Struct) (commandResult, error
 	args.Host = string(host)
 
 	logrus.Debugf("%s: executing command on %s using ssh: [%s]", identifiers.run, args.Host, cmdStr)
-	cmdResult, err := ssh.Run(args, cmdStr)
+	cmdResult, err := ssh.Run(args, agent, cmdStr)
 	return commandResult{resource: args.Host, result: cmdResult, err: err}, nil
 
 }

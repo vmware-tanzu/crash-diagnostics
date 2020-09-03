@@ -1,6 +1,6 @@
 module github.com/vmware-tanzu/crash-diagnostics
 
-go 1.12
+go 1.15
 
 require (
 	github.com/imdario/mergo v0.3.7 // indirect

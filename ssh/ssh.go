@@ -30,8 +30,8 @@ type SSHArgs struct {
 }
 
 // Run runs a command over SSH and returns the result as a string
-func Run(args SSHArgs, cmd string) (string, error) {
-	reader, err := sshRunProc(args, cmd)
+func Run(args SSHArgs, agent Agent, cmd string) (string, error) {
+	reader, err := sshRunProc(args, agent, cmd)
 	if err != nil {
 		return "", err
 	}
@@ -43,11 +43,11 @@ func Run(args SSHArgs, cmd string) (string, error) {
 }
 
 // RunRead runs a command over SSH and returns an io.Reader for stdout/stderr
-func RunRead(args SSHArgs, cmd string) (io.Reader, error) {
-	return sshRunProc(args, cmd)
+func RunRead(args SSHArgs, agent Agent, cmd string) (io.Reader, error) {
+	return sshRunProc(args, agent, cmd)
 }
 
-func sshRunProc(args SSHArgs, cmd string) (io.Reader, error) {
+func sshRunProc(args SSHArgs, agent Agent, cmd string) (io.Reader, error) {
 	e := echo.New()
 	prog := e.Prog.Avail("ssh")
 	if len(prog) == 0 {
@@ -60,6 +60,11 @@ func sshRunProc(args SSHArgs, cmd string) (io.Reader, error) {
 	}
 	effectiveCmd := fmt.Sprintf(`%s "%s"`, sshCmd, cmd)
 	logrus.Debug("ssh.run: ", effectiveCmd)
+
+	if agent != nil {
+		logrus.Debugf("Adding agent info: %s", agent.GetEnvVariables())
+		e = e.Env(agent.GetEnvVariables())
+	}
 
 	var proc *echo.Proc
 	maxRetries := args.MaxRetries

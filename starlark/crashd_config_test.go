@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 	"go.starlark.net/starlarkstruct"
 )
 
@@ -89,6 +90,26 @@ func testCrashdConfigFunc(t *testing.T) {
 				}
 				if trimQuotes(val.String()) != getUid() {
 					t.Fatalf("unexpected value for key %s in configs.crashd", val.String())
+				}
+			},
+		},
+
+		{
+			name:   "crash_config with use-ssh-agent",
+			script: `crashd_config(workdir="fooval", default_shell="barval", use_ssh_agent=True)`,
+			eval: func(t *testing.T, script string) {
+				defer os.RemoveAll("fooval")
+				exe := New()
+				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
+					t.Fatal(err)
+				}
+				data := exe.thread.Local(identifiers.sshAgent)
+				if data == nil {
+					t.Fatal("use_ssh_agent identifier not saved in thread local")
+				}
+				agent, ok := data.(ssh.Agent)
+				if !ok || agent == nil {
+					t.Fatal("ssh agent should have been started")
 				}
 			},
 		},

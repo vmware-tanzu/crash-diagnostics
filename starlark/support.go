@@ -47,6 +47,8 @@ var (
 		kubeNodesProvider string
 		capvProvider      string
 		capaProvider      string
+
+		sshAgent string
 	}{
 		crashdCfg: "crashd_config",
 		kubeCfg:   "kube_config",
@@ -76,6 +78,8 @@ var (
 		kubeNodesProvider: "kube_nodes_provider",
 		capvProvider:      "capv_provider",
 		capaProvider:      "capa_provider",
+
+		sshAgent: "crashd_ssh_agent",
 	}
 
 	defaults = struct {

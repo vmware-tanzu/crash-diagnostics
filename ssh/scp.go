@@ -17,7 +17,7 @@ import (
 
 // CopyFrom copies one or more files using SCP from remote host
 // and returns the paths of files that were successfully copied.
-func CopyFrom(args SSHArgs, rootDir string, sourcePath string) error {
+func CopyFrom(args SSHArgs, agent Agent, rootDir string, sourcePath string) error {
 	e := echo.New()
 	prog := e.Prog.Avail("scp")
 	if len(prog) == 0 {
@@ -43,6 +43,11 @@ func CopyFrom(args SSHArgs, rootDir string, sourcePath string) error {
 
 	effectiveCmd := fmt.Sprintf(`%s %s`, sshCmd, targetPath)
 	logrus.Debug("scp: ", effectiveCmd)
+
+	if agent != nil {
+		logrus.Debugf("Adding agent info: %s", agent.GetEnvVariables())
+		e = e.Env(agent.GetEnvVariables())
+	}
 
 	maxRetries := args.MaxRetries
 	if maxRetries == 0 {
