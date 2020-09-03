@@ -26,7 +26,7 @@ func TestRun(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			expected, err := Run(test.args, test.cmd)
+			expected, err := Run(test.args, nil, test.cmd)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -54,7 +54,7 @@ func TestRunRead(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			reader, err := RunRead(test.args, test.cmd)
+			reader, err := RunRead(test.args, nil, test.cmd)
 			if err != nil {
 				t.Fatal(err)
 			}

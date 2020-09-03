@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/sirupsen/logrus"
+	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 	"go.starlark.net/starlark"
 )
 
@@ -45,6 +47,19 @@ func (e *Executor) Exec(name string, source io.Reader) error {
 	}
 	e.result = result
 
+	// fetch and stop the instance of ssh-agent, if any
+	if agentVal := e.thread.Local(identifiers.sshAgent); agentVal != nil {
+		logrus.Debug("stopping ssh-agent")
+		agent, ok := agentVal.(ssh.Agent)
+		if !ok {
+			logrus.Warn("error fetching ssh-agent")
+		} else {
+			if e := agent.Stop(); e != nil {
+				logrus.Warnf("failed to stop ssh-agent: %v", e)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -76,7 +91,7 @@ func newPredeclareds() starlark.StringDict {
 	return starlark.StringDict{
 		identifiers.os:                setupOSStruct(),
 		identifiers.crashdCfg:         starlark.NewBuiltin(identifiers.crashdCfg, crashdConfigFn),
-		identifiers.sshCfg:            starlark.NewBuiltin(identifiers.sshCfg, sshConfigFn),
+		identifiers.sshCfg:            starlark.NewBuiltin(identifiers.sshCfg, SshConfigFn),
 		identifiers.hostListProvider:  starlark.NewBuiltin(identifiers.hostListProvider, hostListProvider),
 		identifiers.resources:         starlark.NewBuiltin(identifiers.resources, resourcesFunc),
 		identifiers.archive:           starlark.NewBuiltin(identifiers.archive, archiveFunc),
@@ -90,7 +105,7 @@ func newPredeclareds() starlark.StringDict {
 		identifiers.kubeGet:           starlark.NewBuiltin(identifiers.kubeGet, KubeGetFn),
 		identifiers.kubeNodesProvider: starlark.NewBuiltin(identifiers.kubeNodesProvider, KubeNodesProviderFn),
 		identifiers.capvProvider:      starlark.NewBuiltin(identifiers.capvProvider, CapvProviderFn),
-		identifiers.capaProvider:      starlark.NewBuiltin(identifiers.capvProvider, CapaProviderFn),
+		identifiers.capaProvider:      starlark.NewBuiltin(identifiers.capaProvider, CapaProviderFn),
 		identifiers.setDefaults:       starlark.NewBuiltin(identifiers.setDefaults, SetDefaultsFunc),
 	}
 }

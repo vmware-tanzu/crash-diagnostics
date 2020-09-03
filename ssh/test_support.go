@@ -43,12 +43,12 @@ import (
 
 func makeTestSSHDir(t *testing.T, args SSHArgs, dir string) {
 	t.Logf("creating test dir over SSH: %s", dir)
-	_, err := Run(args, fmt.Sprintf(`mkdir -p %s`, dir))
+	_, err := Run(args, nil, fmt.Sprintf(`mkdir -p %s`, dir))
 	if err != nil {
 		t.Fatal(err)
 	}
 	// validate
-	result, _ := Run(args, fmt.Sprintf(`ls %s`, dir))
+	result, _ := Run(args, nil, fmt.Sprintf(`ls %s`, dir))
 	t.Logf("dir created: %s", result)
 }
 
@@ -59,18 +59,18 @@ func MakeTestSSHFile(t *testing.T, args SSHArgs, filePath, content string) {
 	}
 
 	t.Logf("creating test file over SSH: %s", filePath)
-	_, err := Run(args, fmt.Sprintf(`echo '%s' > %s`, content, filePath))
+	_, err := Run(args, nil, fmt.Sprintf(`echo '%s' > %s`, content, filePath))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	result, _ := Run(args, fmt.Sprintf(`ls %s`, filePath))
+	result, _ := Run(args, nil, fmt.Sprintf(`ls %s`, filePath))
 	t.Logf("file created: %s", result)
 }
 
 func RemoveTestSSHFile(t *testing.T, args SSHArgs, fileName string) {
 	t.Logf("removing test file over SSH: %s", fileName)
-	_, err := Run(args, fmt.Sprintf(`rm -rf %s`, fileName))
+	_, err := Run(args, nil, fmt.Sprintf(`rm -rf %s`, fileName))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -65,7 +65,7 @@ func enum(provider *starlarkstruct.Struct) (*starlark.List, error) {
 	kind := trimQuotes(kindVal.String())
 
 	switch kind {
-	case identifiers.hostListProvider, identifiers.kubeNodesProvider, identifiers.capvProvider:
+	case identifiers.hostListProvider, identifiers.kubeNodesProvider, identifiers.capvProvider, identifiers.capaProvider:
 		hosts, err := provider.Attr("hosts")
 		if err != nil {
 			return nil, fmt.Errorf("hosts not found in %s", identifiers.hostListProvider)

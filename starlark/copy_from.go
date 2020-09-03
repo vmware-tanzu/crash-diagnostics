@@ -8,11 +8,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
-
-	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 )
 
 // copyFromFunc is a built-in starlark function that copies file resources from
@@ -57,7 +57,16 @@ func copyFromFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tu
 		resources = res
 	}
 
-	results, err := execCopy(workdir, sourcePath, resources)
+	var agent ssh.Agent
+	var ok bool
+	if agentVal := thread.Local(identifiers.sshAgent); agentVal != nil {
+		agent, ok = agentVal.(ssh.Agent)
+		if !ok {
+			return starlark.None, errors.New("unable to fetch ssh-agent")
+		}
+	}
+
+	results, err := execCopy(workdir, sourcePath, agent, resources)
 	if err != nil {
 		return starlark.None, fmt.Errorf("%s: %s", identifiers.copyFrom, err)
 	}
@@ -74,7 +83,7 @@ func copyFromFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tu
 	return starlark.NewList(resultList), nil
 }
 
-func execCopy(rootPath string, path string, resources *starlark.List) ([]commandResult, error) {
+func execCopy(rootPath string, path string, agent ssh.Agent, resources *starlark.List) ([]commandResult, error) {
 	if resources == nil {
 		return nil, fmt.Errorf("%s: missing resources", identifiers.copyFrom)
 	}
@@ -108,7 +117,7 @@ func execCopy(rootPath string, path string, resources *starlark.List) ([]command
 
 		switch {
 		case string(kind) == identifiers.hostResource && string(transport) == "ssh":
-			result, err := execCopySCP(host, rootDir, path, res)
+			result, err := execCopySCP(host, rootDir, path, agent, res)
 			if err != nil {
 				logrus.Errorf("%s: failed to copyFrom %s: %s", identifiers.copyFrom, path, err)
 			}
@@ -122,7 +131,7 @@ func execCopy(rootPath string, path string, resources *starlark.List) ([]command
 	return results, nil
 }
 
-func execCopySCP(host, rootDir, path string, res *starlarkstruct.Struct) (commandResult, error) {
+func execCopySCP(host, rootDir, path string, agent ssh.Agent, res *starlarkstruct.Struct) (commandResult, error) {
 	sshCfg := starlarkstruct.FromKeywords(starlarkstruct.Default, makeDefaultSSHConfig())
 	if val, err := res.Attr(identifiers.sshCfg); err == nil {
 		if cfg, ok := val.(*starlarkstruct.Struct); ok {
@@ -141,6 +150,6 @@ func execCopySCP(host, rootDir, path string, res *starlarkstruct.Struct) (comman
 		return commandResult{}, err
 	}
 
-	err = ssh.CopyFrom(args, rootDir, path)
+	err = ssh.CopyFrom(args, agent, rootDir, path)
 	return commandResult{resource: args.Host, result: filepath.Join(rootDir, path), err: err}, err
 }
