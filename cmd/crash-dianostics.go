@@ -56,10 +56,10 @@ func preRun(flags *globalFlags) error {
 	}
 	logrus.SetLevel(level)
 
-	return nil
+	return CreateCrashdDir()
 }
 
-// Run satarts the command
+// Run starts the command
 func Run() error {
 	logrus.SetOutput(os.Stdout)
 	return crashDiagnosticsCommand().Execute()
