@@ -123,8 +123,8 @@ kube_capture(what="logs", namespaces=[os.getenv("KUBE_DEFAULT_NS")])
 ### Command-line arguments
 Scripts can also access command-line arguments passed as key/value pairs using the `--args` flag. For instance, when the following command is used to start a script:
 
-```
-  crashd run --args="kube_ns=kube-system, username=$(whoami)" diagnostics.crsh
+```bash
+$ crashd run --args="kube_ns=kube-system, username=$(whoami)" diagnostics.crsh
 ```
 
 Values from `--args` can be accessed as shown below:
@@ -133,6 +133,30 @@ Values from `--args` can be accessed as shown below:
 kube_capture(what="logs", namespaces=["default", args.kube_ns])
 ```
 
+#### Arguments file
+In the case, when the script requires mutliple values to be provided by the user, the `--args` flag becomes difficult to use. The `run` command takes as input the `--args-file` which a file path as input.
+
+The supplied args file should follow the format:
+* A line contains a single key-value pair separated by `=` sign (eg: foo=bar|foo =bar|foo= bar|foo = bar)
+* A line can either contain a key-value pair in the above format or a comment statement starting with #
+* Blank lines are allowed
+
+Any line not adhering to the said format will result in a warning message to appear on the screen, and would be ignored.
+
+```bash
+$ cat /tmp/script.args
+foo=bar
+bloop blah
+
+# this will result in a warning message with foo=bar as the only pair pairs to be passed to the .crsh file
+$ crash run diagnsotics.crsh --args-file /tmp/script.args
+WARN[0000] unknown entry in args file: blooop blah
+```
+
+## Default configuration directory
+The program creates a directory at `$HOME/.crashd/`. This directory houses the following:
+* the default `args` file which is used to pass arguments to the script when no file is passed via the `--args-file` flag.
+
 ## More Examples
 ### SSH Connection via a jump host
 The SSH configuration function can be configured with a jump user and jump host.  This is useful for providers that requires a host proxy for SSH connection as shown in the following example:
@@ -140,6 +164,25 @@ The SSH configuration function can be configured with a jump user and jump host.
 ssh=ssh_config(username=os.username, jump_user=args.jump_user, jump_host=args.jump_host)
 hosts=host_list_provider(hosts=["some.host", "172.100.100.20"], ssh_config=ssh)
 ...
+```
+
+### Use ssh-agent for ssh and scp connections
+By default, the ssh and scp connections in crashd use the default ssh-agent process pointed by the `SSH_AGENT_PID` and `SSH_AUTH_SOCK` environment variables.
+
+```bash
+# starts a ssh-agent
+$> eval "$(ssh-agent -s)"
+$> ssh-add /foo/bar_rsa
+...
+# ssh/scp connections in the diagnotics.crsh script will use the above ssh-agent
+$> crashd run diagnostics.crsh 
+```
+
+If the crashd operator does not want to rely on the default ssh-agent process, the crashd configuration function (`crashd_config()`) has an option to start a new instance of the ssh-agent which will be used for all corresponding ssh/scp connections in the script.
+```python
+# this will force crashd to use a new ssh-agent instance alive for
+#   the scope of script execution
+crashd_config(workdir="/tmp/foo", use_ssh_agent=True)
 ```
 
 ### Connecting to Kubernetes nodes with SSH
@@ -216,7 +259,7 @@ The previous snippet interact with management cluster machines. The provider can
 # enumerates workload cluster nodes
 nodes = resources(
     provider=capv_provider(
-        workload_cluster=args.cluster_name
+        workload_cluster=args.cluster_name,
         ssh_config=ssh_config(username="capv", private_key_path=args.private_key),
         kube_config=kube_config(path=args.mc_config)
     )

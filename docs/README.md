@@ -102,11 +102,12 @@ This function declares script-wide configuration information that is used to con
 #### Parameters
 
 | Param | Description | Required |
-| -------- | -------- | -------- |
-| `workdir`  | the working directory used by some functions to store files.| Yes |
-| `uid`| User ID used to run local commands|No, defaults to current ID|
-| `gid`| Group ID used to run local commands|No, defaults to current ID|
+|:--------|:--------|:--------|
+| `workdir` | the working directory used by some functions to store files.| Yes |
+| `uid` | User ID used to run local commands|No, defaults to current ID|
+| `gid` | Group ID used to run local commands|No, defaults to current ID|
 | `default_shell` |The default shell to use to execute commands |No, defaults to no shell|
+| `use_ssh_agent` | boolean indicator to start a ssh-agent instance or not |No, defaults to `False`|
 
 
 #### Output
