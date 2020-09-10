@@ -1,4 +1,5 @@
 ![](https://github.com/vmware-tanzu/crash-diagnostics/workflows/Crash%20Diagnostics%20Build/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/vmware-tanzu/crash-diagnostics)](https://goreportcard.com/report/github.com/vmware-tanzu/crash-diagnostics)
 
 # Crashd - Crash Diagnostics
 
@@ -121,10 +122,10 @@ kube_capture(what="logs", namespaces=[os.getenv("KUBE_DEFAULT_NS")])
 ```
 
 ### Command-line arguments
-Scripts can also access command-line arguments passed as key/value pairs using the `--args` flag. For instance, when the following command is used to start a script:
+Scripts can also access command-line arguments passed as key/value pairs using the `--args` or `--args-file` flags. For instance, when the following command is used to start a script:
 
-```
-  crashd run --args="kube_ns=kube-system, username=$(whoami)" diagnostics.crsh
+```bash
+$ crashd run --args="kube_ns=kube-system, username=$(whoami)" diagnostics.crsh
 ```
 
 Values from `--args` can be accessed as shown below:
@@ -216,7 +217,7 @@ The previous snippet interact with management cluster machines. The provider can
 # enumerates workload cluster nodes
 nodes = resources(
     provider=capv_provider(
-        workload_cluster=args.cluster_name
+        workload_cluster=args.cluster_name,
         ssh_config=ssh_config(username="capv", private_key_path=args.private_key),
         kube_config=kube_config(path=args.mc_config)
     )

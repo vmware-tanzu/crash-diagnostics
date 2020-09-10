@@ -77,7 +77,7 @@ func TestGoValue_ToStringDict(t *testing.T) {
 		},
 		{
 			name:  "map[string][]string",
-			goVal: NewGoValue(map[string][]string{"key0": []string{"hello", "goodbye"}, "key1": []string{"hi", "bye"}}),
+			goVal: NewGoValue(map[string][]string{"key0": {"hello", "goodbye"}, "key1": {"hi", "bye"}}),
 			eval: func(t *testing.T, goval *GoValue) {
 				actual := goval.Value().(map[string][]string)
 				starVal, err := goval.ToStringDict()
@@ -155,7 +155,7 @@ func TestGoValue_ToDict(t *testing.T) {
 		},
 		{
 			name:  "map[bool][]string",
-			goVal: NewGoValue(map[bool][]string{true: []string{"hello", "goodbye"}, false: []string{"hi", "bye"}}),
+			goVal: NewGoValue(map[bool][]string{true: {"hello", "goodbye"}, false: {"hi", "bye"}}),
 			eval: func(t *testing.T, goval *GoValue) {
 				actual := goval.Value().(map[bool][]string)
 				dict, err := goval.ToDict()

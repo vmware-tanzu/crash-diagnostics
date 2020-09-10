@@ -44,7 +44,7 @@ func TestCopy(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			defer func() {
-				for file, _ := range test.remoteFiles {
+				for file := range test.remoteFiles {
 					RemoveTestSSHFile(t, test.sshArgs, file)
 				}
 			}()
