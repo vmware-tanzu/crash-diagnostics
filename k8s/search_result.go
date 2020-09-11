@@ -62,25 +62,26 @@ func convertToStruct(obj unstructured.Unstructured) starlark.Value {
 	return convertToStarlarkPrimitive(obj.Object)
 }
 
+// convertToStarlarkPrimitive returns a starlark value based on the Golang type passed
+// as input to the function.
 func convertToStarlarkPrimitive(input interface{}) starlark.Value {
 	var value starlark.Value
-	switch input.(type) {
+	switch val := input.(type) {
 	case string:
-		value = starlark.String(input.(string))
+		value = starlark.String(val)
 	case int, int32, int64:
-		value = starlark.MakeInt64(input.(int64))
+		value = starlark.MakeInt64(val.(int64))
 	case bool:
-		value = starlark.Bool(input.(bool))
+		value = starlark.Bool(val)
 	case []interface{}:
-		interfaceArr, _ := input.([]interface{})
 		var structs []starlark.Value
-		for _, i := range interfaceArr {
+		for _, i := range val {
 			structs = append(structs, convertToStarlarkPrimitive(i))
 		}
 		value = starlark.NewList(structs)
 	case map[string]interface{}:
 		dict := starlark.StringDict{}
-		for k, v := range input.(map[string]interface{}) {
+		for k, v := range val {
 			dict[k] = convertToStarlarkPrimitive(v)
 		}
 		value = starlarkstruct.FromStringDict(starlarkstruct.Default, dict)

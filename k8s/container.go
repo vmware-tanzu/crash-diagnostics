@@ -29,13 +29,8 @@ func _getPodContainers(podItem unstructured.Unstructured) ([]corev1.Container, e
 		return nil, fmt.Errorf("error converting container objects: %s", err)
 	}
 
-	for _, c := range pod.Spec.InitContainers {
-		containers = append(containers, c)
-	}
-
-	for _, c := range pod.Spec.Containers {
-		containers = append(containers, c)
-	}
+	containers = append(containers, pod.Spec.InitContainers...)
+	containers = append(containers, pod.Spec.Containers...)
 	containers = append(containers, _getPodEphemeralContainers(pod)...)
 	return containers, nil
 }

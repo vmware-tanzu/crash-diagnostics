@@ -5,7 +5,6 @@ package k8s
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 
 	"go.starlark.net/starlark"
@@ -70,7 +69,7 @@ var _ = Describe("SearchResult", func() {
 		)
 
 		Context("For Namespaced", func() {
-			It(fmt.Sprintf("creates a dictionary with Namespaced value"), func() {
+			It("creates a dictionary with Namespaced value", func() {
 				dict := sr.ToStarlarkValue()
 				val, err := dict.Attr("Namespaced")
 				Expect(err).NotTo(HaveOccurred())

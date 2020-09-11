@@ -15,7 +15,6 @@ import (
 
 var (
 	kindVersion = "v0.7.0"
-	clusterName = "test-crashd-cluster"
 )
 
 type KindCluster struct {

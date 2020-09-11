@@ -4,7 +4,6 @@
 package testing
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"math/rand"
@@ -16,13 +15,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const charset = "abcdefghijklmnopqrstuvwxyz"
-
 var (
-	InfraSetupWait   = time.Second * 11
-	rnd              = rand.New(rand.NewSource(time.Now().Unix()))
-	sshContainerName = "test-sshd"
-	sshPort          = NextPortValue()
+	InfraSetupWait = time.Second * 11
+	rnd            = rand.New(rand.NewSource(time.Now().Unix()))
 )
 
 type TestSupport struct {
@@ -240,7 +235,7 @@ func (t *TestSupport) TearDown() error {
 	}
 
 	if errs != nil {
-		return errors.New(fmt.Sprintf("%v", errs))
+		return fmt.Errorf("%v", errs)
 	}
 
 	return nil

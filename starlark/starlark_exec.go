@@ -86,7 +86,7 @@ func setupLocalDefaults(thread *starlark.Thread) error {
 
 // newPredeclareds creates string dictionary containing the
 // global built-ins values and functions available to the
-// runing script.
+// running script.
 func newPredeclareds() starlark.StringDict {
 	return starlark.StringDict{
 		identifiers.os:                setupOSStruct(),
