@@ -210,7 +210,7 @@ func testCopyFuncForHostResources(t *testing.T, port, privateKey, username strin
 				ssh.MakeTestSSHFile(t, sshArgs, file, content)
 			}
 			defer func() {
-				for file, _ := range test.remoteFiles {
+				for file := range test.remoteFiles {
 					ssh.RemoveTestSSHFile(t, sshArgs, file)
 				}
 			}()
@@ -360,7 +360,7 @@ result = cp(hosts)`, username, port, privateKey),
 			ssh.MakeTestSSHFile(t, sshArgs, file, content)
 		}
 		defer func() {
-			for file, _ := range test.remoteFiles {
+			for file := range test.remoteFiles {
 				ssh.RemoveTestSSHFile(t, sshArgs, file)
 			}
 		}()

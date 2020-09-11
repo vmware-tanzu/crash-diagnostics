@@ -102,11 +102,12 @@ This function declares script-wide configuration information that is used to con
 #### Parameters
 
 | Param | Description | Required |
-| -------- | -------- | -------- |
-| `workdir`  | the working directory used by some functions to store files.| Yes |
-| `uid`| User ID used to run local commands|No, defaults to current ID|
-| `gid`| Group ID used to run local commands|No, defaults to current ID|
+|:--------|:--------|:--------|
+| `workdir` | the working directory used by some functions to store files.| Yes |
+| `uid` | User ID used to run local commands|No, defaults to current ID|
+| `gid` | Group ID used to run local commands|No, defaults to current ID|
 | `default_shell` |The default shell to use to execute commands |No, defaults to no shell|
+| `use_ssh_agent` | boolean indicator to start a ssh-agent instance or not |No, defaults to `False`|
 
 
 #### Output
@@ -125,6 +126,18 @@ crashd_config(
     workdir = "{}/crashd".format(os.home)
 )
 ```
+
+#### Internal Crashd ssh-agent
+If the crashd operator does not want to rely on the default ssh-agent process, the `crashd_config()` provides the option to start a new instance of the ssh-agent which will be used for all corresponding ssh/scp connections in the script.
+```python
+# this will force crashd to use a new ssh-agent instance alive for
+# the scope of script execution
+crashd_config(workdir="/tmp/foo", use_ssh_agent=True)
+```
+
+While leveraging the internal crashd agent, any **passphrase protected keys** will pause the script execution and prompt the script operator to enter the passphrase.
+
+
 ### `kube_config()`
 This configuration function declares and stores configuration needed to connect to a Kubernetes API server.
 
@@ -180,6 +193,8 @@ ssh=ssh_config(
     max_retries=5,
 )
 ```
+
+**NOTE**: For passphrase protected keys, add the key to the default ssh-agent prior to running the diagnostics script, to ensure non-interactive execution of the script.
 
 ## Provider Functions
 A provider function implements the code to cofigure and to enumerate compute resources for a given infrastructure. The result of the provider functions are used by the `resources` function to generate/enumerate the compute resources needed.
@@ -732,4 +747,24 @@ ssh=ssh_config(
 )
 
 kube_config(path=args.kube_cfg)
+```
+
+### Arguments file
+In the case, when the script requires mutliple values to be provided by the user, the `--args` flag becomes difficult to use. The `run` command exposes the `--args-file` flag which takes a file path as input.
+
+The supplied args file should follow the format:
+* A line contains a single key-value pair separated by `=` sign (eg: foo=bar|foo =bar|foo= bar|foo = bar)
+* A line can either contain a key-value pair in the above format or a comment statement starting with #
+* Blank lines are allowed
+
+Any line not adhering to the said format will result in a warning message to appear on the screen, and would be ignored.
+
+```bash
+$ cat /tmp/script.args
+foo=bar
+bloop blah
+
+# this will result in a warning message with foo=bar as the only pair pairs to be passed to the .crsh file
+$ crash run diagnsotics.crsh --args-file /tmp/script.args
+WARN[0000] unknown entry in args file: blooop blah
 ```
