@@ -17,11 +17,16 @@ type runFlags struct {
 	argsFile string
 }
 
+func defaultRunFlags() *runFlags {
+	return &runFlags{
+		args:     make(map[string]string),
+		argsFile: ArgsFile,
+	}
+}
+
 // newRunCommand creates a command to run the Diagnostics script a file
 func newRunCommand() *cobra.Command {
-	flags := &runFlags{
-		args: make(map[string]string),
-	}
+	flags := defaultRunFlags()
 
 	cmd := &cobra.Command{
 		Args:  cobra.ExactArgs(1),
@@ -62,7 +67,7 @@ func run(flags *runFlags, path string) error {
 func processScriptArguments(flags *runFlags) (map[string]string, error) {
 	// read inputs from the scriptArgs-file
 	scriptArgs, err := util.ReadArgsFile(flags.argsFile)
-	if err != nil {
+	if err != nil && flags.argsFile != ArgsFile {
 		return nil, errors.Wrapf(err, "failed to parse scriptArgs file: %s", flags.argsFile)
 	}
 

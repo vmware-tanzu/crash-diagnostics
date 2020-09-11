@@ -4,8 +4,10 @@
 package cmd
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -15,6 +17,21 @@ import (
 var _ = Describe("Run", func() {
 
 	Context("With args-file and args both", func() {
+
+		var argsBackupFile string
+
+		JustBeforeEach(func() {
+			if _, err := os.Stat(ArgsFile); err == nil {
+				argsBackupFile = fmt.Sprintf("%s.BKP.%s", ArgsFile, time.Now().String())
+				Expect(os.Rename(ArgsFile, argsBackupFile)).NotTo(HaveOccurred())
+			}
+		})
+
+		JustAfterEach(func() {
+			if argsBackupFile != "" {
+				Expect(os.Rename(argsBackupFile, ArgsFile)).NotTo(HaveOccurred())
+			}
+		})
 
 		DescribeTable("processScriptArguments", func(argsFileContent string, args map[string]string, size int) {
 			f, err := ioutil.TempFile(os.TempDir(), "")
@@ -38,5 +55,11 @@ var _ = Describe("Run", func() {
 			Entry("file with no keys", "", map[string]string{"key": "b"}, 1),
 			Entry("with file and without args", "key=value", map[string]string{}, 1),
 		)
+
+		It("no args file and args", func() {
+			scriptArgs, err := processScriptArguments(defaultRunFlags())
+			Expect(err).NotTo(HaveOccurred())
+			Expect(scriptArgs).To(HaveLen(0))
+		})
 	})
 })
