@@ -65,8 +65,11 @@ func run(flags *runFlags, path string) error {
 // It builds the map from the args-file as well as the args flag passed to
 // the run command.
 func processScriptArguments(flags *runFlags) (map[string]string, error) {
-	// read inputs from the scriptArgs-file
-	scriptArgs, err := util.ReadArgsFile(flags.argsFile)
+	// initialize the script arguments map
+	scriptArgs := map[string]string{}
+
+	// populates the scriptArgs map from the scriptArgs-file
+	err := util.ReadArgsFile(flags.argsFile, scriptArgs)
 	if err != nil && flags.argsFile != ArgsFile {
 		return nil, errors.Wrapf(err, "failed to parse scriptArgs file: %s", flags.argsFile)
 	}

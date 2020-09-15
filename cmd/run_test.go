@@ -16,7 +16,7 @@ import (
 
 var _ = Describe("Run", func() {
 
-	Context("With args-file and args both", func() {
+	Context("For args-file and args", func() {
 
 		var argsBackupFile string
 
@@ -56,10 +56,18 @@ var _ = Describe("Run", func() {
 			Entry("with file and without args", "key=value", map[string]string{}, 1),
 		)
 
-		It("no args file and args", func() {
-			scriptArgs, err := processScriptArguments(defaultRunFlags())
-			Expect(err).NotTo(HaveOccurred())
-			Expect(scriptArgs).To(HaveLen(0))
+		Context("With no default args file", func() {
+			DescribeTable("does not throw an error", func(args map[string]string, size int) {
+				scriptArgs, err := processScriptArguments(&runFlags{
+					args:     args,
+					argsFile: ArgsFile,
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(scriptArgs).To(HaveLen(size))
+			},
+				Entry("with args", map[string]string{"a": "b"}, 1),
+				Entry("without args", map[string]string{}, 0),
+			)
 		})
 	})
 })
