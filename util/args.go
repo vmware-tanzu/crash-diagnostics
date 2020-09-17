@@ -14,7 +14,18 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// ReadArgsFile parses the args file and populates the map with the contents
+// of that file. The parsing follows the following rules:
+// * each line should contain only a single key=value pair
+// * lines starting with # are ignored
+// * empty lines are ignored
+// * any line not following the above patterns are ignored with a warning message
 func ReadArgsFile(path string, args map[string]string) error {
+	path, err := ExpandPath(path)
+	if err != nil {
+		return err
+	}
+
 	file, err := os.Open(path)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("args file not found: %s", path))
