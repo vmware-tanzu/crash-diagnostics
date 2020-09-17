@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/pkg/errors"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
@@ -22,7 +23,7 @@ func NewGoValue(val interface{}) *GoValue {
 	return &GoValue{val: val}
 }
 
-// Value returns the orginal value as an interface{}
+// Value returns the original value as an interface{}
 func (v *GoValue) Value() interface{} {
 	return v.val
 }
@@ -78,7 +79,9 @@ func (v *GoValue) ToDict() (*starlark.Dict, error) {
 			if err != nil {
 				return nil, fmt.Errorf("ToDict failed value conversion: %s", err)
 			}
-			dict.SetKey(key, val)
+			if err := dict.SetKey(key, val); err != nil {
+				return nil, errors.Wrapf(err, "failed to add key: %s", key)
+			}
 		}
 	default:
 		return nil, fmt.Errorf("ToDict does not support %T", v.val)

@@ -34,7 +34,7 @@ func (w *ResultWriter) GetResultDir() string {
 }
 
 func (w *ResultWriter) Write(searchResults []SearchResult) error {
-	if searchResults == nil || len(searchResults) == 0 {
+	if len(searchResults) == 0 {
 		return fmt.Errorf("cannot write empty (or nil) search result")
 	}
 

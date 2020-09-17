@@ -12,9 +12,9 @@ import (
 
 func main() {
 	e := echo.New()
-	if !e.Empty(e.Run("gofmt -l .")) {
+	if !e.Empty(e.Run("gofmt -s -l .")) {
 		fmt.Println("Go code failed gofmt check:")
-		e.Runout("gofmt -d .")
+		e.Runout("gofmt -s -d .")
 		os.Exit(1)
 	}
 }

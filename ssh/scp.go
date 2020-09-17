@@ -27,7 +27,7 @@ func CopyFrom(args SSHArgs, agent Agent, rootDir string, sourcePath string) erro
 	targetPath := filepath.Join(rootDir, sourcePath)
 	targetDir := filepath.Dir(targetPath)
 	pathDir, pathFile := filepath.Split(sourcePath)
-	if strings.Index(pathFile, "*") != -1 {
+	if strings.Contains(pathFile, "*") {
 		targetPath = filepath.Join(rootDir, pathDir)
 		targetDir = targetPath
 	}

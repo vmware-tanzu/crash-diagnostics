@@ -14,7 +14,7 @@ import (
 	"go.starlark.net/starlarkstruct"
 )
 
-// addDefaultCrashdConf initalizes a Starlark Dict with default
+// addDefaultCrashdConf initializes a Starlark Dict with default
 // crashd_config configuration data
 func addDefaultCrashdConf(thread *starlark.Thread) error {
 	args := []starlark.Tuple{

@@ -260,19 +260,6 @@ func splitParamList(nses string) []string {
 	return strings.Split(nses, " ")
 }
 
-func strSliceContains(values []string, val string) bool {
-	if len(values) == 0 {
-		return false
-	}
-
-	for _, v := range values {
-		if strings.EqualFold(strings.TrimSpace(v), strings.TrimSpace(val)) {
-			return true
-		}
-	}
-	return false
-}
-
 func filterByNames(result SearchResult, names string) SearchResult {
 	if len(names) == 0 {
 		return result

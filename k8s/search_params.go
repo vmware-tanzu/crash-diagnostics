@@ -45,7 +45,7 @@ func contains(arr []string, item string) bool {
 		return false
 	}
 	for _, str := range arr {
-		if strings.ToLower(str) == strings.ToLower(item) {
+		if strings.EqualFold(str, item) {
 			return true
 		}
 	}

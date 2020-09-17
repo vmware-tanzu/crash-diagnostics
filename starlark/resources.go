@@ -52,7 +52,7 @@ func resourcesFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.T
 // info needed to execute commands.
 func enum(provider *starlarkstruct.Struct) (*starlark.List, error) {
 	if provider == nil {
-		fmt.Errorf("missing provider")
+		return nil, fmt.Errorf("missing provider")
 	}
 
 	var resources []starlark.Value
