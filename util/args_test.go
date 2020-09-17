@@ -15,9 +15,14 @@ import (
 )
 
 var _ = Describe("ReadArgsFile", func() {
+	var args map[string]string
+
+	BeforeEach(func() {
+		args = map[string]string{}
+	})
 
 	It("returns an error when an invalid file name is passed", func() {
-		_, err := ReadArgsFile("/foo/blah")
+		err := ReadArgsFile("/foo/blah", args)
 		Expect(err).To(HaveOccurred())
 	})
 
@@ -29,7 +34,8 @@ var _ = Describe("ReadArgsFile", func() {
 			warnBuffer := gbytes.NewBuffer()
 			logrus.SetOutput(warnBuffer)
 
-			args, _ := ReadArgsFile(f.Name())
+			err := ReadArgsFile(f.Name(), args)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(args).To(HaveLen(size))
 
 			if warnMsgPresent {
@@ -65,7 +71,7 @@ key = value
 foo= bar`)
 		defer f.Close()
 
-		args, err := ReadArgsFile(f.Name())
+		err := ReadArgsFile(f.Name(), args)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(args).To(HaveLen(2))
 	})

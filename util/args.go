@@ -14,20 +14,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ReadArgsFile(path string) (map[string]string, error) {
+func ReadArgsFile(path string, args map[string]string) error {
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("args file not found: %s", path))
+		return errors.Wrap(err, fmt.Sprintf("args file not found: %s", path))
 	}
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
-		return nil, err
+		return err
 	}
 
-	args := map[string]string{}
 	for scanner.Scan() {
 		line := scanner.Text()
 		if !strings.HasPrefix(line, "#") && len(strings.TrimSpace(line)) != 0 {
@@ -39,5 +38,5 @@ func ReadArgsFile(path string) (map[string]string, error) {
 		}
 	}
 
-	return args, nil
+	return nil
 }
