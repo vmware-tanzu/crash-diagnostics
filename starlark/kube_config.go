@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"github.com/vmware-tanzu/crash-diagnostics/util"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
@@ -49,6 +50,11 @@ func KubeConfigFn(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, 
 			return starlark.None, errors.New("could not fetch kubeconfig")
 		}
 		path = pathStr.GoString()
+	}
+
+	path, err := util.ExpandPath(path)
+	if err != nil {
+		return starlark.None, err
 	}
 
 	structVal := starlarkstruct.FromStringDict(starlark.String(identifiers.kubeCfg), starlark.StringDict{

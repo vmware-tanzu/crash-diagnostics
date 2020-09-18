@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/vmware-tanzu/crash-diagnostics/ssh"
+	"github.com/vmware-tanzu/crash-diagnostics/util"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
@@ -75,6 +76,11 @@ func crashdConfigFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.
 
 		// sets the ssh_agent variable in the current Starlark thread
 		thread.SetLocal(identifiers.sshAgent, agent)
+	}
+
+	workdir, err := util.ExpandPath(workdir)
+	if err != nil {
+		return starlark.None, err
 	}
 
 	cfgStruct := starlarkstruct.FromStringDict(starlark.String(identifiers.crashdCfg), starlark.StringDict{
