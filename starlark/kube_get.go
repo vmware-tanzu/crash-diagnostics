@@ -4,6 +4,9 @@
 package starlark
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/vmware-tanzu/crash-diagnostics/k8s"
 	"go.starlark.net/starlark"
@@ -13,12 +16,13 @@ import (
 // KubeGetFn is a starlark built-in for the fetching kubernetes objects
 func KubeGetFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var objects *starlark.List
-	var groups, kinds, namespaces, versions, names, labels, containers *starlark.List
+	var groups, categories, kinds, namespaces, versions, names, labels, containers *starlark.List
 	var kubeConfig *starlarkstruct.Struct
 
 	if err := starlark.UnpackArgs(
 		identifiers.kubeGet, args, kwargs,
 		"groups?", &groups,
+		"categories?", &categories,
 		"kinds?", &kinds,
 		"namespaces?", &namespaces,
 		"versions?", &versions,
@@ -28,6 +32,11 @@ func KubeGetFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple
 		"kube_config?", &kubeConfig,
 	); err != nil {
 		return starlark.None, errors.Wrap(err, "failed to read args")
+	}
+
+	ctx, ok := thread.Local(identifiers.scriptCtx).(context.Context)
+	if !ok || ctx == nil {
+		return starlark.None, fmt.Errorf("script context not found")
 	}
 
 	if kubeConfig == nil {
@@ -45,6 +54,7 @@ func KubeGetFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple
 
 	searchParams := k8s.SearchParams{
 		Groups:     toSlice(groups),
+		Categories: toSlice(categories),
 		Kinds:      toSlice(kinds),
 		Namespaces: toSlice(namespaces),
 		Versions:   toSlice(versions),
@@ -52,7 +62,7 @@ func KubeGetFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple
 		Labels:     toSlice(labels),
 		Containers: toSlice(containers),
 	}
-	searchResults, err := client.Search(searchParams)
+	searchResults, err := client.Search(ctx, searchParams)
 	if err == nil {
 		objects = starlark.NewList([]starlark.Value{})
 		for _, searchResult := range searchResults {

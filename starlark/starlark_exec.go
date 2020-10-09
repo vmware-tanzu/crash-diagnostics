@@ -4,6 +4,7 @@
 package starlark
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -69,6 +70,10 @@ func setupLocalDefaults(thread *starlark.Thread) error {
 	if thread == nil {
 		return errors.New("thread local is nil")
 	}
+	// add script context starlark thread
+	ctx := context.Background()
+	thread.SetLocal(identifiers.scriptCtx, ctx)
+
 	if err := addDefaultCrashdConf(thread); err != nil {
 		return err
 	}

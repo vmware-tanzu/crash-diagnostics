@@ -4,18 +4,20 @@
 package k8s
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 	coreV1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func GetNodeAddresses(kubeconfigPath string, labels, names []string) ([]string, error) {
+func GetNodeAddresses(ctx context.Context, kubeconfigPath string, labels, names []string) ([]string, error) {
 	client, err := New(kubeconfigPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not initialize search client")
 	}
 
-	nodes, err := getNodes(client, names, labels)
+	nodes, err := getNodes(ctx, client, names, labels)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not fetch nodes")
 	}
@@ -27,8 +29,8 @@ func GetNodeAddresses(kubeconfigPath string, labels, names []string) ([]string, 
 	return nodeIps, nil
 }
 
-func getNodes(k8sc *Client, names, labels []string) ([]*coreV1.Node, error) {
-	nodeResults, err := k8sc.Search(SearchParams{
+func getNodes(ctx context.Context, k8sc *Client, names, labels []string) ([]*coreV1.Node, error) {
+	nodeResults, err := k8sc.Search(ctx, SearchParams{
 		Groups: []string{"core"},
 		Kinds:  []string{"nodes"},
 		Names:  names,

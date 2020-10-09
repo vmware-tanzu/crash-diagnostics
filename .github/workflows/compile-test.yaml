@@ -20,7 +20,7 @@ jobs:
         sudo ufw allow 2200:2300/tcp
         sudo ufw enable
         sudo ufw status verbose
-        GO111MODULE=on go get sigs.k8s.io/kind@v0.7.0
+        GO111MODULE=on go get sigs.k8s.io/kind@v0.9.0
         GO111MODULE=on go test -timeout 600s -v -p 1 ./...
 
     - name: Run gofmt

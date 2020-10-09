@@ -4,6 +4,9 @@
 package starlark
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/vmware-tanzu/crash-diagnostics/k8s"
 
@@ -28,6 +31,11 @@ func KubeNodesProviderFn(thread *starlark.Thread, _ *starlark.Builtin, args star
 		return starlark.None, errors.Wrap(err, "failed to read args")
 	}
 
+	ctx, ok := thread.Local(identifiers.scriptCtx).(context.Context)
+	if !ok || ctx == nil {
+		return starlark.None, fmt.Errorf("script context not found")
+	}
+
 	if kubeConfig == nil {
 		kubeConfig = thread.Local(identifiers.kubeCfg).(*starlarkstruct.Struct)
 	}
@@ -40,17 +48,17 @@ func KubeNodesProviderFn(thread *starlark.Thread, _ *starlark.Builtin, args star
 		sshConfig = thread.Local(identifiers.sshCfg).(*starlarkstruct.Struct)
 	}
 
-	return newKubeNodesProvider(path, sshConfig, toSlice(names), toSlice(labels))
+	return newKubeNodesProvider(ctx, path, sshConfig, toSlice(names), toSlice(labels))
 }
 
 // newKubeNodesProvider returns a struct with k8s cluster node provider info
-func newKubeNodesProvider(kubeconfig string, sshConfig *starlarkstruct.Struct, names, labels []string) (*starlarkstruct.Struct, error) {
+func newKubeNodesProvider(ctx context.Context, kubeconfig string, sshConfig *starlarkstruct.Struct, names, labels []string) (*starlarkstruct.Struct, error) {
 
 	searchParams := k8s.SearchParams{
 		Names:  names,
 		Labels: labels,
 	}
-	nodeAddresses, err := k8s.GetNodeAddresses(kubeconfig, searchParams.Names, searchParams.Labels)
+	nodeAddresses, err := k8s.GetNodeAddresses(ctx, kubeconfig, searchParams.Names, searchParams.Labels)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not fetch node addresses")
 	}

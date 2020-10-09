@@ -4,6 +4,7 @@
 package k8s
 
 import (
+	"context"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -66,8 +67,9 @@ func New(kubeconfig string) (*Client, error) {
 	return &Client{Client: client, Disco: disco, CoreRest: restc}, nil
 }
 
-func (k8sc *Client) Search(params SearchParams) ([]SearchResult, error) {
-	return k8sc._search(strings.Join(params.Groups, " "),
+func (k8sc *Client) Search(ctx context.Context, params SearchParams) ([]SearchResult, error) {
+	return k8sc._search(ctx, strings.Join(params.Groups, " "),
+		strings.Join(params.Categories, " "),
 		strings.Join(params.Kinds, " "),
 		strings.Join(params.Namespaces, " "),
 		strings.Join(params.Versions, " "),
@@ -82,9 +84,11 @@ func (k8sc *Client) Search(params SearchParams) ([]SearchResult, error) {
 // 3) kinds will match resource.Kind or resource.Name
 // 4) All search params are passed as comma- or space-separated sets that are matched using OR (i.e. kinds=pods services
 //    will match resouces of type pods or services)
-func (k8sc *Client) _search(groups, kinds, namespaces, versions, names, labels, containers string) ([]SearchResult, error) {
+func (k8sc *Client) _search(ctx context.Context, groups, categories, kinds, namespaces, versions, names, labels, containers string) ([]SearchResult, error) {
+
 	// normalize params
 	groups = strings.ToLower(groups)
+	categories = strings.ToLower(categories)
 	kinds = strings.ToLower(kinds)
 	namespaces = strings.ToLower(namespaces)
 	versions = strings.ToLower(versions)
@@ -92,8 +96,8 @@ func (k8sc *Client) _search(groups, kinds, namespaces, versions, names, labels, 
 	containers = strings.ToLower(containers)
 
 	logrus.Debugf(
-		"Search filters groups:[%v]; kinds:[%v]; namespaces:[%v]; versions:[%v]; names:[%v]; labels:[%v] containers:[%s]",
-		groups, kinds, namespaces, versions, names, labels, containers,
+		"Search filters groups:[%v]; categories:[%v]; kinds:[%v]; namespaces:[%v]; versions:[%v]; names:[%v]; labels:[%v] containers:[%s]",
+		groups, categories, kinds, namespaces, versions, names, labels, containers,
 	)
 
 	grpList, err := k8sc.Disco.ServerGroups()
@@ -103,7 +107,7 @@ func (k8sc *Client) _search(groups, kinds, namespaces, versions, names, labels, 
 
 	// if namespace filters not provided, assume all namespaces
 	if len(namespaces) == 0 {
-		nsNames, err := getNamespaces(k8sc)
+		nsNames, err := getNamespaces(ctx, k8sc)
 		if err != nil {
 			return nil, err
 		}
@@ -140,9 +144,13 @@ func (k8sc *Client) _search(groups, kinds, namespaces, versions, names, labels, 
 				continue
 			}
 
-			// filter by resource kind
+			// filter by resource kind and categories
 			for _, res := range resources.APIResources {
 				if len(kinds) > 0 && !strings.Contains(kinds, strings.ToLower(res.Kind)) {
+					continue
+				}
+
+				if len(categories) > 0 && !sliceContains(splitParamList(categories), res.Categories...) {
 					continue
 				}
 
@@ -164,7 +172,7 @@ func (k8sc *Client) _search(groups, kinds, namespaces, versions, names, labels, 
 				if res.Namespaced {
 					for _, ns := range splitParamList(namespaces) {
 						logrus.Debugf("Searching for %s in namespace %s [GroupRes: %v]", res.Name, ns, gvr)
-						list, err := k8sc.Client.Resource(gvr).Namespace(ns).List(listOptions)
+						list, err := k8sc.Client.Resource(gvr).Namespace(ns).List(ctx, listOptions)
 						if err != nil {
 							logrus.Debugf(
 								"WARN: K8s.Search failed to get %s in %s [GroupRes: %s][labels: %v]: %s",
@@ -186,7 +194,7 @@ func (k8sc *Client) _search(groups, kinds, namespaces, versions, names, labels, 
 					}
 				} else {
 					logrus.Debugf("Searching for resource %s (non-namespaced)", res.Name)
-					list, err := k8sc.Client.Resource(gvr).List(listOptions)
+					list, err := k8sc.Client.Resource(gvr).List(ctx, listOptions)
 					if err != nil {
 						logrus.Debugf(
 							"WARN: K8s.Search failed to get %s: [GroupRes: %s] [labels: %v]: %s",
@@ -330,13 +338,13 @@ func getPodContainers(podItem unstructured.Unstructured) []interface{} {
 }
 
 // getNamespaces collect all available namespaces in cluster
-func getNamespaces(k8sc *Client) ([]string, error) {
+func getNamespaces(ctx context.Context, k8sc *Client) ([]string, error) {
 	gvr := schema.GroupVersionResource{
 		Group:    "",
 		Version:  "v1",
 		Resource: "namespaces",
 	}
-	objList, err := k8sc.Client.Resource(gvr).List(metav1.ListOptions{})
+	objList, err := k8sc.Client.Resource(gvr).List(ctx, metav1.ListOptions{})
 
 	if err != nil {
 		return nil, err
@@ -348,4 +356,17 @@ func getNamespaces(k8sc *Client) ([]string, error) {
 	}
 
 	return names, nil
+}
+
+// sliceContains check if atleast one of the values is present in the slice
+func sliceContains(slice []string, values ...string) bool {
+	for _, s := range slice {
+		for _, v := range values {
+			if strings.EqualFold(strings.TrimSpace(s), strings.TrimSpace(v)) {
+				return true
+			}
+		}
+	}
+
+	return false
 }

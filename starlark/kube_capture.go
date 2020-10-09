@@ -4,6 +4,9 @@
 package starlark
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/vmware-tanzu/crash-diagnostics/k8s"
@@ -16,7 +19,7 @@ import (
 // Starlark format: kube_capture(what="logs" [, groups="core", namespaces=["default"], kube_config=kube_config()])
 func KubeCaptureFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 
-	var groups, kinds, namespaces, versions, names, labels, containers *starlark.List
+	var groups, categories, kinds, namespaces, versions, names, labels, containers *starlark.List
 	var kubeConfig *starlarkstruct.Struct
 	var what string
 
@@ -24,6 +27,7 @@ func KubeCaptureFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.T
 		identifiers.kubeCapture, args, kwargs,
 		"what", &what,
 		"groups?", &groups,
+		"categories?", &categories,
 		"kinds?", &kinds,
 		"namespaces?", &namespaces,
 		"versions?", &versions,
@@ -33,6 +37,11 @@ func KubeCaptureFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.T
 		"kube_config?", &kubeConfig,
 	); err != nil {
 		return starlark.None, errors.Wrap(err, "failed to read args")
+	}
+
+	ctx, ok := thread.Local(identifiers.scriptCtx).(context.Context)
+	if !ok || ctx == nil {
+		return starlark.None, fmt.Errorf("script context not found")
 	}
 
 	if kubeConfig == nil {
@@ -50,8 +59,9 @@ func KubeCaptureFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.T
 	data := thread.Local(identifiers.crashdCfg)
 	cfg, _ := data.(*starlarkstruct.Struct)
 	workDirVal, _ := cfg.Attr("workdir")
-	resultDir, err := write(trimQuotes(workDirVal.String()), what, client, k8s.SearchParams{
+	resultDir, err := write(ctx, trimQuotes(workDirVal.String()), what, client, k8s.SearchParams{
 		Groups:     toSlice(groups),
+		Categories: toSlice(categories),
 		Kinds:      toSlice(kinds),
 		Namespaces: toSlice(namespaces),
 		Versions:   toSlice(versions),
@@ -73,7 +83,7 @@ func KubeCaptureFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.T
 		}), nil
 }
 
-func write(workdir, what string, client *k8s.Client, params k8s.SearchParams) (string, error) {
+func write(ctx context.Context, workdir, what string, client *k8s.Client, params k8s.SearchParams) (string, error) {
 
 	logrus.Debugf("kube_capture(what=%s)", what)
 	switch what {
@@ -86,7 +96,7 @@ func write(workdir, what string, client *k8s.Client, params k8s.SearchParams) (s
 		return "", errors.Errorf("don't know how to get: %s", what)
 	}
 
-	searchResults, err := client.Search(params)
+	searchResults, err := client.Search(ctx, params)
 	if err != nil {
 		return "", err
 	}
@@ -95,7 +105,7 @@ func write(workdir, what string, client *k8s.Client, params k8s.SearchParams) (s
 	if err != nil {
 		return "", errors.Wrap(err, "failed to initialize writer")
 	}
-	err = resultWriter.Write(searchResults)
+	err = resultWriter.Write(ctx, searchResults)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to write search results")
 	}
