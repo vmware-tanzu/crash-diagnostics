@@ -4,6 +4,9 @@
 package starlark
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/vmware-tanzu/crash-diagnostics/k8s"
 	"github.com/vmware-tanzu/crash-diagnostics/provider"
@@ -32,6 +35,11 @@ func CapvProviderFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.
 		return starlark.None, errors.Wrap(err, "failed to unpack input arguments")
 	}
 
+	ctx, ok := thread.Local(identifiers.scriptCtx).(context.Context)
+	if !ok || ctx == nil {
+		return starlark.None, fmt.Errorf("script context not found")
+	}
+
 	if sshConfig == nil || mgmtKubeConfig == nil {
 		return starlark.None, errors.New("capv_provider requires the name of the management cluster, the ssh configuration and the management cluster kubeconfig")
 	}
@@ -49,7 +57,7 @@ func CapvProviderFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.
 		return starlark.None, err
 	}
 
-	nodeAddresses, err := k8s.GetNodeAddresses(providerConfigPath, toSlice(names), toSlice(labels))
+	nodeAddresses, err := k8s.GetNodeAddresses(ctx, providerConfigPath, toSlice(names), toSlice(labels))
 	if err != nil {
 		return starlark.None, errors.Wrap(err, "could not fetch host addresses")
 	}

@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -33,7 +34,7 @@ func (w *ResultWriter) GetResultDir() string {
 	return w.workdir
 }
 
-func (w *ResultWriter) Write(searchResults []SearchResult) error {
+func (w *ResultWriter) Write(ctx context.Context, searchResults []SearchResult) error {
 	if len(searchResults) == 0 {
 		return fmt.Errorf("cannot write empty (or nil) search result")
 	}
@@ -64,7 +65,7 @@ func (w *ResultWriter) Write(searchResults []SearchResult) error {
 					return err
 				}
 				for _, containerLogger := range containers {
-					reader, err := containerLogger.Fetch(w.restApi)
+					reader, err := containerLogger.Fetch(ctx, w.restApi)
 					if err != nil {
 						return err
 					}

@@ -92,6 +92,27 @@ kube_get_data = kube_get(namespaces=["kube-system"], containers=["etcd"], kube_c
 		Expect(getDataList.Len()).To(BeNumerically(">=", 1))
 	})
 
+	It("returns a list of objects under different namespaces using categories as starlark objects", func() {
+		crashdScript := fmt.Sprintf(`
+kube_get_data = kube_get(categories=["all"], kube_config = kube_config(path="%s"))
+			`, k8sconfig)
+		execSetup(crashdScript)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(executor.result.Has("kube_get_data")).NotTo(BeNil())
+
+		data := executor.result["kube_get_data"]
+		Expect(data).NotTo(BeNil())
+
+		dataStruct, ok := data.(*starlarkstruct.Struct)
+		Expect(ok).To(BeTrue())
+
+		objects, err := dataStruct.Attr("objs")
+		Expect(err).NotTo(HaveOccurred())
+
+		getDataList, _ := objects.(*starlark.List)
+		Expect(getDataList.Len()).To(BeNumerically(">=", 1))
+	})
+
 	DescribeTable("Incorrect kubeconfig", func(crashdScript string) {
 		execSetup(crashdScript)
 		Expect(err).To(HaveOccurred())

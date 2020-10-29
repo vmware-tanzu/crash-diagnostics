@@ -19,6 +19,8 @@ var (
 	strSanitization = regexp.MustCompile(`[^a-zA-Z0-9]`)
 
 	identifiers = struct {
+		scriptCtx string
+
 		crashdCfg string
 		kubeCfg   string
 
@@ -50,6 +52,8 @@ var (
 
 		sshAgent string
 	}{
+		scriptCtx: "script_context",
+
 		crashdCfg: "crashd_config",
 		kubeCfg:   "kube_config",
 		sshCfg:    "ssh_config",

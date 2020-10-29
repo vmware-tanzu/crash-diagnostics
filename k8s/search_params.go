@@ -11,6 +11,7 @@ import (
 
 type SearchParams struct {
 	Groups     []string
+	Categories []string
 	Kinds      []string
 	Namespaces []string
 	Versions   []string

@@ -86,6 +86,36 @@ kube_data = kube_capture(what="objects", groups=["core"], kinds=["nodes"], kube_
 		Expect(filepath.Join(kubeCaptureDir, "nodes.json")).To(BeARegularFile())
 	})
 
+	It("creates a directories and files for objects in a category", func() {
+		crashdScript := fmt.Sprintf(`
+crashd_config(workdir="%s")
+kube_data = kube_capture(what="objects", categories=["all"], kube_config = kube_config(path="%s"))
+		`, workdir, k8sconfig)
+		execSetup(crashdScript)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(executor.result.Has("kube_data")).NotTo(BeNil())
+
+		data := executor.result["kube_data"]
+		Expect(data).NotTo(BeNil())
+
+		dataStruct, ok := data.(*starlarkstruct.Struct)
+		Expect(ok).To(BeTrue())
+
+		fileVal, err := dataStruct.Attr("file")
+		Expect(err).NotTo(HaveOccurred())
+
+		fileValStr, ok := fileVal.(starlark.String)
+		Expect(ok).To(BeTrue())
+
+		kubeCaptureDir := fileValStr.GoString()
+		Expect(kubeCaptureDir).To(BeADirectory())
+		Expect(filepath.Join(kubeCaptureDir, "kube-system")).To(BeADirectory())
+		Expect(filepath.Join(kubeCaptureDir, "default")).To(BeADirectory())
+
+		Expect(filepath.Join(kubeCaptureDir, "kube-system", "pods.json")).To(BeARegularFile())
+		Expect(filepath.Join(kubeCaptureDir, "default", "pods.json")).To(BeARegularFile())
+	})
+
 	It("creates a directory and log files for all objects in a namespace", func() {
 		crashdScript := fmt.Sprintf(`
 crashd_config(workdir="%s")

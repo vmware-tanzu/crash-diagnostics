@@ -148,7 +148,7 @@ func RemoveKeyFromAgent(keyPath string) error {
 
 func WriteKeys(rootPath string) error {
 	pkPath := filepath.Join(rootPath, "id_rsa")
-	pkFile, err := os.Create(pkPath)
+	pkFile, err := os.OpenFile(pkPath, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
@@ -159,7 +159,7 @@ func WriteKeys(rootPath string) error {
 	}
 
 	pubPath := filepath.Join(rootPath, "id_rsa.pub")
-	pubFile, err := os.Create(pubPath)
+	pubFile, err := os.OpenFile(pubPath, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}

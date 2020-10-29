@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -10,7 +11,7 @@ import (
 const BaseDirname = "kubecapture"
 
 type Container interface {
-	Fetch(rest.Interface) (io.ReadCloser, error)
+	Fetch(context.Context, rest.Interface) (io.ReadCloser, error)
 	Write(io.ReadCloser, string) error
 }
 

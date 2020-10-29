@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -27,10 +28,10 @@ func NewContainerLogger(namespace, podName string, container corev1.Container) C
 	}
 }
 
-func (c ContainerLogsImpl) Fetch(restApi rest.Interface) (io.ReadCloser, error) {
+func (c ContainerLogsImpl) Fetch(ctx context.Context, restApi rest.Interface) (io.ReadCloser, error) {
 	opts := &corev1.PodLogOptions{Container: c.container.Name}
 	req := restApi.Get().Namespace(c.namespace).Name(c.podName).Resource("pods").SubResource("log").VersionedParams(opts, scheme.ParameterCodec)
-	stream, err := req.Stream()
+	stream, err := req.Stream(ctx)
 	if err != nil {
 		err = errors.Wrap(err, "failed to create container log stream")
 	}
