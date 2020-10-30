@@ -102,6 +102,7 @@ func newPredeclareds() starlark.StringDict {
 		identifiers.archive:           starlark.NewBuiltin(identifiers.archive, archiveFunc),
 		identifiers.run:               starlark.NewBuiltin(identifiers.run, runFunc),
 		identifiers.runLocal:          starlark.NewBuiltin(identifiers.runLocal, runLocalFunc),
+		identifiers.progAvailLocal:    starlark.NewBuiltin(identifiers.progAvailLocal, progAvailLocalFunc),
 		identifiers.capture:           starlark.NewBuiltin(identifiers.capture, captureFunc),
 		identifiers.captureLocal:      starlark.NewBuiltin(identifiers.capture, captureLocalFunc),
 		identifiers.copyFrom:          starlark.NewBuiltin(identifiers.copyFrom, copyFromFunc),
