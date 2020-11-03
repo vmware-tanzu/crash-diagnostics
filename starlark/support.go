@@ -37,6 +37,7 @@ var (
 		resources        string
 		run              string
 		runLocal         string
+		progAvailLocal   string
 		capture          string
 		captureLocal     string
 		copyFrom         string
@@ -70,6 +71,7 @@ var (
 		resources:        "resources",
 		run:              "run",
 		runLocal:         "run_local",
+		progAvailLocal:   "prog_avail_local",
 		capture:          "capture",
 		captureLocal:     "capture_local",
 		copyFrom:         "copy_from",
