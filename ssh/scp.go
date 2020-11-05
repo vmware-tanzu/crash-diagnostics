@@ -36,16 +36,16 @@ func CopyFrom(args SSHArgs, agent Agent, rootDir string, sourcePath string) erro
 		return err
 	}
 
-	sshCmd, err := makeSCPCmdStr(prog, args, sourcePath)
+	sshCmd, err := makeSCPCmdStr(prog, args)
 	if err != nil {
-		return fmt.Errorf("scp: failed to build command string: %s", err)
+		return fmt.Errorf("scp: copyFrom: failed to build command string: %s", err)
 	}
 
-	effectiveCmd := fmt.Sprintf(`%s %s`, sshCmd, targetPath)
-	logrus.Debug("scp: ", effectiveCmd)
+	effectiveCmd := fmt.Sprintf(`%s %s`, sshCmd, getCopyFromSourceTarget(args, sourcePath, targetPath))
+	logrus.Debugf("scp: copFrom: cmd: [%s]", effectiveCmd)
 
 	if agent != nil {
-		logrus.Debugf("Adding agent info: %s", agent.GetEnvVariables())
+		logrus.Debugf("scp: copyFrom: adding agent info: %s", agent.GetEnvVariables())
 		e = e.Env(agent.GetEnvVariables())
 	}
 
@@ -57,20 +57,69 @@ func CopyFrom(args SSHArgs, agent Agent, rootDir string, sourcePath string) erro
 	if err := wait.ExponentialBackoff(retries, func() (bool, error) {
 		p := e.RunProc(effectiveCmd)
 		if p.Err() != nil {
-			logrus.Warn(fmt.Sprintf("scp: failed to connect to %s: error '%s %s': retrying connection", args.Host, p.Err(), p.Result()))
+			logrus.Warn(fmt.Sprintf("scp: copyFrom: failed to connect to %s: '%s %s': retrying connection", args.Host, p.Err(), p.Result()))
 			return false, nil
 		}
 		return true, nil // worked
 	}); err != nil {
-		logrus.Debugf("scp failed after %d tries", maxRetries)
-		return fmt.Errorf("scp: failed after %d attempt(s): %s", maxRetries, err)
+		return fmt.Errorf("scp: copyFrom: failed after %d attempt(s): %s", maxRetries, err)
 	}
 
-	logrus.Debugf("scp: copied %s", sourcePath)
+	logrus.Debugf("scp: copyFrom: copied %s", sourcePath)
 	return nil
 }
 
-func makeSCPCmdStr(progName string, args SSHArgs, sourcePath string) (string, error) {
+// CopyTo copies one or more files using SCP from local machine to
+// remote host.
+func CopyTo(args SSHArgs, agent Agent, sourcePath, targetPath string) error {
+	e := echo.New()
+	prog := e.Prog.Avail("scp")
+	if len(prog) == 0 {
+		return fmt.Errorf("scp program not found")
+	}
+
+	if len(sourcePath) == 0 {
+		return fmt.Errorf("scp: copyTo: missing source path")
+	}
+
+	if len(targetPath) == 0 {
+		return fmt.Errorf("scp: copyTo: missing target path")
+	}
+
+	sshCmd, err := makeSCPCmdStr(prog, args)
+	if err != nil {
+		return fmt.Errorf("scp: copyTo: failed to build command string: %s", err)
+	}
+
+	effectiveCmd := fmt.Sprintf(`%s %s`, sshCmd, getCopyToSourceTarget(args, sourcePath, targetPath))
+	logrus.Debugf("scp: copyTo: cmd: [%s]", effectiveCmd)
+
+	if agent != nil {
+		logrus.Debugf("scp: adding agent info: %s", agent.GetEnvVariables())
+		e = e.Env(agent.GetEnvVariables())
+	}
+
+	maxRetries := args.MaxRetries
+	if maxRetries == 0 {
+		maxRetries = 10
+	}
+	retries := wait.Backoff{Steps: maxRetries, Duration: time.Millisecond * 80, Jitter: 0.1}
+	if err := wait.ExponentialBackoff(retries, func() (bool, error) {
+		p := e.RunProc(effectiveCmd)
+		if p.Err() != nil {
+			logrus.Warn(fmt.Sprintf("scp: failed to connect to %s: '%s %s': retrying connection", args.Host, p.Err(), p.Result()))
+			return false, nil
+		}
+		return true, nil // worked
+	}); err != nil {
+		return fmt.Errorf("scp: copyTo: failed after %d attempt(s): %s", maxRetries, err)
+	}
+
+	logrus.Debugf("scp: copyTo: copied %s -> %s", sourcePath, targetPath)
+	return nil
+}
+
+func makeSCPCmdStr(progName string, args SSHArgs) (string, error) {
 	if args.User == "" {
 		return "", fmt.Errorf("scp: user is required")
 	}
@@ -111,8 +160,16 @@ func makeSCPCmdStr(progName string, args SSHArgs, sourcePath string) (string, er
 	// build command as
 	// scp -i <pkpath> -P <port> -J <proxyjump> user@host:path
 	cmd := fmt.Sprintf(
-		`%s %s %s %s %s@%s:%s`,
-		scpCmdPrefix(), pkPath(), port(), proxyJump(), args.User, args.Host, sourcePath,
+		`%s %s %s %s`,
+		scpCmdPrefix(), pkPath(), port(), proxyJump(),
 	)
 	return cmd, nil
+}
+
+func getCopyFromSourceTarget(args SSHArgs, sourcePath, targetPath string) string {
+	return fmt.Sprintf("%s@%s:%s %s", args.User, args.Host, sourcePath, targetPath)
+}
+
+func getCopyToSourceTarget(args SSHArgs, sourcePath, targetPath string) string {
+	return fmt.Sprintf("%s %s@%s:%s", sourcePath, args.User, args.Host, targetPath)
 }

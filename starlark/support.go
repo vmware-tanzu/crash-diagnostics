@@ -41,6 +41,7 @@ var (
 		capture          string
 		captureLocal     string
 		copyFrom         string
+		copyTo           string
 		archive          string
 		os               string
 		setDefaults      string
@@ -75,6 +76,7 @@ var (
 		capture:          "capture",
 		captureLocal:     "capture_local",
 		copyFrom:         "copy_from",
+		copyTo:           "copy_to",
 		archive:          "archive",
 		os:               "os",
 		setDefaults:      "set_defaults",

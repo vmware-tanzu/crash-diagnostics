@@ -106,6 +106,7 @@ func newPredeclareds() starlark.StringDict {
 		identifiers.capture:           starlark.NewBuiltin(identifiers.capture, captureFunc),
 		identifiers.captureLocal:      starlark.NewBuiltin(identifiers.capture, captureLocalFunc),
 		identifiers.copyFrom:          starlark.NewBuiltin(identifiers.copyFrom, copyFromFunc),
+		identifiers.copyTo:            starlark.NewBuiltin(identifiers.copyTo, copyToFunc),
 		identifiers.kubeCfg:           starlark.NewBuiltin(identifiers.kubeCfg, KubeConfigFn),
 		identifiers.kubeCapture:       starlark.NewBuiltin(identifiers.kubeGet, KubeCaptureFn),
 		identifiers.kubeGet:           starlark.NewBuiltin(identifiers.kubeGet, KubeGetFn),
