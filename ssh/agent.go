@@ -89,6 +89,7 @@ func (agent *agent) Stop() error {
 
 	logrus.Debugf("stopping the ssh-agent with Pid: %s", agent.Pid)
 	p := echo.New().Env(agent.GetEnvVariables()).RunProc("ssh-agent -k")
+	logrus.Debugf("ssh-agent stopped: %s", p.Result())
 
 	return p.Err()
 }
@@ -106,6 +107,7 @@ func StartAgent() (Agent, error) {
 		return nil, fmt.Errorf("ssh-agent not found")
 	}
 
+	logrus.Debugf("starting %s", sshAgentCmd)
 	p := e.RunProc(fmt.Sprintf("%s -s", sshAgentCmd))
 	if p.Err() != nil {
 		return nil, errors.Wrap(p.Err(), "failed to start ssh agent")
@@ -119,6 +121,7 @@ func StartAgent() (Agent, error) {
 		return nil, err
 	}
 
+	logrus.Debugf("ssh-agent started %v", agentInfo)
 	return agentFromInfo(agentInfo), nil
 }
 

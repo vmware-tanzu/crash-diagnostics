@@ -4,55 +4,48 @@
 package starlark
 
 import (
+	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
+
+	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 )
 
-// copyFromFunc is a built-in starlark function that copies file resources from
-// specified compute resources and saves them on the local machine
-// in subdirectory under workdir.
+// copyToFunc is a built-in starlark function that copies file resources from
+// the local machine to a specified location on remote compute resources.
 //
-// If resources and workdir are not provided, copyFromFunc uses defaults from starlark thread generated
-// by previous calls to resources(), ssh_config, and crashd_config().
+// If only one argument is provided, it is assumed to be the <path> of files to copy.
+// If resources are not provded, copy_to will search the starlark context for one.
 //
-// Starlark format: copy_from([<path>] [,path=<list>, resources=resources, workdir=path])
-func copyFromFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	var sourcePath, workdir string
+// Starlark format: copy_to([<path>] [,path=<file path>, resources=resources])
+
+func copyToFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+	var sourcePath, targetPath string
 	var resources *starlark.List
 
 	if err := starlark.UnpackArgs(
-		identifiers.capture, args, kwargs,
-		"path", &sourcePath,
+		identifiers.copyTo, args, kwargs,
+		"source_path", &sourcePath,
+		"target_path?", &targetPath,
 		"resources?", &resources,
-		"workdir?", &workdir,
 	); err != nil {
-		return starlark.None, fmt.Errorf("%s: %s", identifiers.capture, err)
+		return starlark.None, fmt.Errorf("%s: %s", identifiers.copyTo, err)
 	}
 
 	if len(sourcePath) == 0 {
-		return starlark.None, fmt.Errorf("%s: path arg not set", identifiers.copyFrom)
+		return starlark.None, fmt.Errorf("%s: path arg not set", identifiers.copyTo)
 	}
-
-	if len(workdir) == 0 {
-		if dir, err := getWorkdirFromThread(thread); err == nil {
-			workdir = dir
-		}
-	}
-	if len(workdir) == 0 {
-		workdir = defaults.workdir
+	if len(targetPath) == 0 {
+		targetPath = sourcePath
 	}
 
 	if resources == nil {
 		res, err := getResourcesFromThread(thread)
 		if err != nil {
-			return starlark.None, fmt.Errorf("%s: %s", identifiers.copyFrom, err)
+			return starlark.None, fmt.Errorf("%s: %s", identifiers.copyTo, err)
 		}
 		resources = res
 	}
@@ -66,9 +59,9 @@ func copyFromFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tu
 		}
 	}
 
-	results, err := execCopyFrom(workdir, sourcePath, agent, resources)
+	results, err := execCopyTo(sourcePath, targetPath, agent, resources)
 	if err != nil {
-		return starlark.None, fmt.Errorf("%s: %s", identifiers.copyFrom, err)
+		return starlark.None, fmt.Errorf("%s: %s", identifiers.copyTo, err)
 	}
 
 	// build list of struct as result
@@ -83,7 +76,7 @@ func copyFromFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tu
 	return starlark.NewList(resultList), nil
 }
 
-func execCopyFrom(rootPath string, path string, agent ssh.Agent, resources *starlark.List) ([]commandResult, error) {
+func execCopyTo(sourcePath, targetPath string, agent ssh.Agent, resources *starlark.List) ([]commandResult, error) {
 	if resources == nil {
 		return nil, fmt.Errorf("%s: missing resources", identifiers.copyFrom)
 	}
@@ -113,13 +106,12 @@ func execCopyFrom(rootPath string, path string, agent ssh.Agent, resources *star
 			return nil, fmt.Errorf("%s: resource.host: %s", identifiers.copyFrom, err)
 		}
 		host := string(val.(starlark.String))
-		rootDir := filepath.Join(rootPath, sanitizeStr(host))
 
 		switch {
 		case string(kind) == identifiers.hostResource && string(transport) == "ssh":
-			result, err := execSCPCopyFrom(host, rootDir, path, agent, res)
+			result, err := execSCPCopyTo(host, sourcePath, targetPath, agent, res)
 			if err != nil {
-				logrus.Errorf("%s: failed to copyFrom %s: %s", identifiers.copyFrom, path, err)
+				logrus.Errorf("%s: failed to copy to : %s: %s", identifiers.copyTo, sourcePath, err)
 			}
 			results = append(results, result)
 		default:
@@ -131,7 +123,7 @@ func execCopyFrom(rootPath string, path string, agent ssh.Agent, resources *star
 	return results, nil
 }
 
-func execSCPCopyFrom(host, rootDir, path string, agent ssh.Agent, res *starlarkstruct.Struct) (commandResult, error) {
+func execSCPCopyTo(host, sourcePath, targetPath string, agent ssh.Agent, res *starlarkstruct.Struct) (commandResult, error) {
 	sshCfg := starlarkstruct.FromKeywords(starlarkstruct.Default, makeDefaultSSHConfig())
 	if val, err := res.Attr(identifiers.sshCfg); err == nil {
 		if cfg, ok := val.(*starlarkstruct.Struct); ok {
@@ -144,12 +136,6 @@ func execSCPCopyFrom(host, rootDir, path string, agent ssh.Agent, res *starlarks
 		return commandResult{}, err
 	}
 	args.Host = host
-
-	// create dir for the host
-	if err := os.MkdirAll(rootDir, 0744); err != nil && !os.IsExist(err) {
-		return commandResult{}, err
-	}
-
-	err = ssh.CopyFrom(args, agent, rootDir, path)
-	return commandResult{resource: args.Host, result: filepath.Join(rootDir, path), err: err}, err
+	err = ssh.CopyTo(args, agent, sourcePath, targetPath)
+	return commandResult{resource: args.Host, result: targetPath, err: err}, err
 }
