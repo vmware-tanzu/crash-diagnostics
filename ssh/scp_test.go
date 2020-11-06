@@ -7,10 +7,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
-func TestCopy(t *testing.T) {
+func TestCopyFrom(t *testing.T) {
 	tests := []struct {
 		name        string
 		sshArgs     SSHArgs
@@ -45,13 +46,13 @@ func TestCopy(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			defer func() {
 				for file := range test.remoteFiles {
-					RemoveTestSSHFile(t, test.sshArgs, file)
+					RemoveRemoteTestSSHFile(t, test.sshArgs, file)
 				}
 			}()
 
-			// setup fake remote files
+			// setup fake files
 			for file, content := range test.remoteFiles {
-				MakeTestSSHFile(t, test.sshArgs, file, content)
+				MakeRemoteTestSSHFile(t, test.sshArgs, file, content)
 			}
 
 			if err := CopyFrom(test.sshArgs, nil, support.TmpDirRoot(), test.srcFile); err != nil {
@@ -82,54 +83,114 @@ func TestCopy(t *testing.T) {
 	}
 }
 
-//
-//func TestMakeSCPCmdStr(t *testing.T) {
-//	tests := []struct {
-//		name       string
-//		args       SSHArgs
-//		cmdStr     string
-//		source     string
-//		shouldFail bool
-//	}{
-//		{
-//			name:   "user and host",
-//			args:   SSHArgs{User: "sshuser", Host: "local.host"},
-//			source: "/tmp/any",
-//			cmdStr: "scp -rpq -o StrictHostKeyChecking=no -P 22 sshuser@local.host:/tmp/any",
-//		},
-//		{
-//			name:   "user host and pkpath",
-//			args:   SSHArgs{User: "sshuser", Host: "local.host", PrivateKeyPath: "/pk/path"},
-//			source: "/foo/bar",
-//			cmdStr: "scp -rpq -o StrictHostKeyChecking=no -i /pk/path -P 22 sshuser@local.host:/foo/bar",
-//		},
-//		{
-//			name:   "user host pkpath and proxy",
-//			args:   SSHArgs{User: "sshuser", Host: "local.host", PrivateKeyPath: "/pk/path", ProxyJump: &ProxyJumpArgs{User: "juser", Host: "jhost"}},
-//			source: "userFile",
-//			cmdStr: "scp -rpq -o StrictHostKeyChecking=no -i /pk/path -P 22 -J juser@jhost sshuser@local.host:userFile",
-//		},
-//		{
-//			name:       "missing host",
-//			args:       SSHArgs{User: "sshuser"},
-//			shouldFail: true,
-//		},
-//	}
-//
-//	for _, test := range tests {
-//		t.Run(test.name, func(t *testing.T) {
-//			result, err := makeSCPCmdStr("scp", test.args, test.source)
-//			if err != nil && !test.shouldFail {
-//				t.Fatal(err)
-//			}
-//			cmdFields := strings.Fields(test.cmdStr)
-//			resultFields := strings.Fields(result)
-//
-//			for i := range cmdFields {
-//				if cmdFields[i] != resultFields[i] {
-//					t.Fatalf("unexpected command string element: %s vs. %s", cmdFields, resultFields)
-//				}
-//			}
-//		})
-//	}
-//}
+func TestCopyTo(t *testing.T) {
+	tests := []struct {
+		name        string
+		sshArgs     SSHArgs
+		localFiles  map[string]string
+		file        string
+		fileContent string
+	}{
+		{
+			name:        "copy single file to remote",
+			sshArgs:     testSSHArgs,
+			localFiles:  map[string]string{"local-foo.txt": "FooBar"},
+			file:        "local-foo.txt",
+			fileContent: "FooBar",
+		},
+		{
+			name:        "copy single file in dir to remote",
+			sshArgs:     testSSHArgs,
+			localFiles:  map[string]string{"local-foo/local-bar.txt": "FooBar"},
+			file:        "local-foo/local-bar.txt",
+			fileContent: "FooBar",
+		},
+		{
+			name:        "copy dir entire dir to remote",
+			sshArgs:     testSSHArgs,
+			localFiles:  map[string]string{"local-bar/local-foo.csv": "FooBar", "local-bar/local-bar.txt": "BarBar"},
+			file:        "local-bar/",
+			fileContent: "FooBar",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			defer func() {
+				for file := range test.localFiles {
+					RemoveLocalTestFile(t, filepath.Join(support.TmpDirRoot(), file))
+					RemoveRemoteTestSSHFile(t, test.sshArgs, file)
+				}
+			}()
+
+			// setup fake local files
+			for file, content := range test.localFiles {
+				MakeLocalTestFile(t, filepath.Join(support.TmpDirRoot(), file), content)
+			}
+
+			// create remote dir if needed
+			// setup remote dir if needed
+			MakeRemoteTestSSHDir(t, test.sshArgs, test.file)
+
+			sourceFile := filepath.Join(support.TmpDirRoot(), test.file)
+			if err := CopyTo(test.sshArgs, nil, sourceFile, test.file); err != nil {
+				t.Fatal(err)
+			}
+
+			// validate copied files/dir
+			AssertRemoteTestSSHFile(t, test.sshArgs, test.file)
+
+		})
+	}
+}
+
+func TestMakeSCPCmdStr(t *testing.T) {
+	tests := []struct {
+		name       string
+		args       SSHArgs
+		cmdStr     string
+		source     string
+		shouldFail bool
+	}{
+		{
+			name:   "default",
+			args:   SSHArgs{User: "sshuser", Host: "local.host"},
+			source: "/tmp/any",
+			cmdStr: "scp -rpq -o StrictHostKeyChecking=no -P 22",
+		},
+		{
+			name:   "pkpath",
+			args:   SSHArgs{User: "sshuser", Host: "local.host", PrivateKeyPath: "/pk/path"},
+			source: "/foo/bar",
+			cmdStr: "scp -rpq -o StrictHostKeyChecking=no -i /pk/path -P 22",
+		},
+		{
+			name:   "pkpath and proxy",
+			args:   SSHArgs{User: "sshuser", Host: "local.host", PrivateKeyPath: "/pk/path", ProxyJump: &ProxyJumpArgs{User: "juser", Host: "jhost"}},
+			source: "userFile",
+			cmdStr: "scp -rpq -o StrictHostKeyChecking=no -i /pk/path -P 22 -J juser@jhost",
+		},
+		{
+			name:       "missing host",
+			args:       SSHArgs{User: "sshuser"},
+			shouldFail: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := makeSCPCmdStr("scp", test.args)
+			if err != nil && !test.shouldFail {
+				t.Fatal(err)
+			}
+			cmdFields := strings.Fields(test.cmdStr)
+			resultFields := strings.Fields(result)
+
+			for i := range cmdFields {
+				if cmdFields[i] != resultFields[i] {
+					t.Fatalf("unexpected command string element: %s vs. %s", cmdFields, resultFields)
+				}
+			}
+		})
+	}
+}

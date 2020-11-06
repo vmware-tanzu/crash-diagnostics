@@ -42,7 +42,7 @@ func testRunFuncHostResources(t *testing.T, port, privateKey, username string) {
 					}
 				}
 				if expected != result {
-					t.Fatalf("runFunc returned unexpected value: %s", string(val.(starlark.String)))
+					t.Fatalf("runFunc returned unexpected value: %s", result)
 				}
 			},
 		},
@@ -73,7 +73,7 @@ func testRunFuncHostResources(t *testing.T, port, privateKey, username string) {
 					}
 				}
 				if expected != result {
-					t.Fatalf("runFunc returned unexpected value: %s", string(val.(starlark.String)))
+					t.Fatalf("runFunc returned unexpected value: %s", result)
 				}
 			},
 		},
@@ -114,7 +114,7 @@ func testRunFuncHostResources(t *testing.T, port, privateKey, username string) {
 						}
 					}
 					if expected != result {
-						t.Fatalf("runFunc returned unexpected value: %s", string(val.(starlark.String)))
+						t.Fatalf("runFunc returned unexpected value: %s", result)
 					}
 				}
 			},

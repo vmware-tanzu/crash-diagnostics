@@ -12,63 +12,86 @@ import (
 	"testing"
 )
 
-//////func mountTestSSHFile(t *testing.T, mountDir, fileName, content string) {
-//////	srcDir := filepath.Dir(fileName)
-//////	if len(srcDir) > 0 && srcDir != "." {
-//////		mountTestSSHDir(t, mountDir, srcDir)
-//////	}
-//////
-//////	filePath := filepath.Join(mountDir, fileName)
-//////	t.Logf("mounting test file in SSH: %s", filePath)
-//////	if err := ioutil.WriteFile(filePath, []byte(content), 0644); err != nil {
-//////		t.Fatal(err)
-//////	}
-//////}
-////
-////func mountTestSSHDir(t *testing.T, mountDir, dir string) {
-////	t.Logf("mounting dir in SSH: %s", dir)
-////	mountPath := filepath.Join(mountDir, dir)
-////	if err := os.MkdirAll(mountPath, 0754); err != nil && !os.IsExist(err) {
-////		t.Fatal(err)
-////	}
-////}
-//
-//func removeTestSSHFile(t *testing.T, mountDir, fileName string) {
-//	t.Logf("removing file mounted in SSH: %s", fileName)
-//	filePath := filepath.Join(mountDir, fileName)
-//	if err := os.RemoveAll(filePath); err != nil && !os.IsNotExist(err) {
-//		t.Fatal(err)
-//	}
-//}
+func makeLocalTestDir(t *testing.T, dir string) {
+	t.Logf("creating local test dir: %s", dir)
+	if err := os.MkdirAll(dir, 0744); err != nil && !os.IsExist(err) {
+		t.Fatalf("makeLocalTestDir: failed to create dir: %s", err)
+	}
+	t.Logf("dir created: %s", dir)
+}
 
-func makeTestSSHDir(t *testing.T, args SSHArgs, dir string) {
-	t.Logf("creating test dir over SSH: %s", dir)
-	_, err := Run(args, nil, fmt.Sprintf(`mkdir -p %s`, dir))
+func MakeLocalTestFile(t *testing.T, filePath, content string) {
+	srcDir := filepath.Dir(filePath)
+	if len(srcDir) > 0 && srcDir != "." {
+		makeLocalTestDir(t, srcDir)
+	}
+
+	t.Logf("creating test file: %s", filePath)
+	file, err := os.Create(filePath)
 	if err != nil {
+		t.Fatalf("MakeLocalTestFile: failed to create file: %s", err)
+	}
+	defer file.Close()
+	buf := bytes.NewBufferString(content)
+	if _, err := buf.WriteTo(file); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func RemoveLocalTestFile(t *testing.T, fileName string) {
+	t.Logf("removing local test path: %s", fileName)
+	if err := os.RemoveAll(fileName); err != nil && !os.IsNotExist(err) {
+		t.Fatalf("RemoveLocalTestFile: failed: %s", err)
+	}
+}
+
+func makeRemoteTestSSHDir(t *testing.T, args SSHArgs, dir string) {
+	t.Logf("creating test dir over SSH: %s", dir)
+	if result, err := Run(args, nil, fmt.Sprintf("stat %s", dir)); err == nil {
+		t.Logf("remote dir already exist: %s", result)
+		return // already there
+	}
+	_, err := Run(args, nil, fmt.Sprintf(`mkdir -p %s`, dir))
+	if err != nil {
+		t.Fatalf("makeRemoteTestSSHDir: failed: %s", err)
+	}
 	// validate
-	result, _ := Run(args, nil, fmt.Sprintf(`ls %s`, dir))
+	result, err := Run(args, nil, fmt.Sprintf(`ls %s`, dir))
+	if err != nil {
+		t.Fatalf("makeRemoteTestSSHDir %s", err)
+	}
 	t.Logf("dir created: %s", result)
 }
 
-func MakeTestSSHFile(t *testing.T, args SSHArgs, filePath, content string) {
-	srcDir := filepath.Dir(filePath)
-	if len(srcDir) > 0 && srcDir != "." {
-		makeTestSSHDir(t, args, srcDir)
-	}
+func MakeRemoteTestSSHFile(t *testing.T, args SSHArgs, filePath, content string) {
+	MakeRemoteTestSSHDir(t, args, filePath)
 
 	t.Logf("creating test file over SSH: %s", filePath)
 	_, err := Run(args, nil, fmt.Sprintf(`echo '%s' > %s`, content, filePath))
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("MakeRemoteTestSSHFile: failed: %s", err)
 	}
 
 	result, _ := Run(args, nil, fmt.Sprintf(`ls %s`, filePath))
 	t.Logf("file created: %s", result)
 }
 
-func RemoveTestSSHFile(t *testing.T, args SSHArgs, fileName string) {
+func MakeRemoteTestSSHDir(t *testing.T, args SSHArgs, filePath string) {
+	dir := filepath.Dir(filePath)
+	if len(dir) > 0 && dir != "." {
+		makeRemoteTestSSHDir(t, args, dir)
+	}
+}
+
+func AssertRemoteTestSSHFile(t *testing.T, args SSHArgs, filePath string) {
+	t.Logf("stat remote SSH test file: %s", filePath)
+	_, err := Run(args, nil, fmt.Sprintf(`stat %s`, filePath))
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func RemoveRemoteTestSSHFile(t *testing.T, args SSHArgs, fileName string) {
 	t.Logf("removing test file over SSH: %s", fileName)
 	_, err := Run(args, nil, fmt.Sprintf(`rm -rf %s`, fileName))
 	if err != nil {
