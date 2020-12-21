@@ -163,13 +163,13 @@ func execCaptureSSH(host, cmdStr, rootDir, fileName, desc string, agent ssh.Agen
 	reader, err := ssh.RunRead(args, agent, cmdStr)
 	if err != nil {
 		logrus.Errorf("%s failed: %s", identifiers.capture, err)
-		if err := captureOutput(strings.NewReader(err.Error()), filePath, fmt.Sprintf("%s: failed", cmdStr)); err != nil {
+		if err := captureOutput(strings.NewReader(err.Error()), filePath, fmt.Sprintf("%s: failed", cmdStr), false); err != nil {
 			logrus.Errorf("%s output failed: %s", identifiers.capture, err)
 			return commandResult{resource: args.Host, result: filePath, err: err}, err
 		}
 	}
 
-	if err := captureOutput(reader, filePath, desc); err != nil {
+	if err := captureOutput(reader, filePath, desc, false); err != nil {
 		logrus.Errorf("%s output failed: %s", identifiers.capture, err)
 		return commandResult{resource: args.Host, result: filePath, err: err}, err
 	}
@@ -177,12 +177,19 @@ func execCaptureSSH(host, cmdStr, rootDir, fileName, desc string, agent ssh.Agen
 	return commandResult{resource: args.Host, result: filePath, err: err}, nil
 }
 
-func captureOutput(source io.Reader, filePath, desc string) error {
+func captureOutput(source io.Reader, filePath, desc string, append bool) error {
 	if source == nil {
 		return fmt.Errorf("source reader is nill")
 	}
 
-	file, err := os.Create(filePath)
+	flag := os.O_CREATE | os.O_WRONLY
+	if append {
+		flag |= os.O_APPEND
+	} else {
+		flag |= os.O_TRUNC
+	}
+
+	file, err := os.OpenFile(filePath, flag, 0644)
 	if err != nil {
 		return err
 	}

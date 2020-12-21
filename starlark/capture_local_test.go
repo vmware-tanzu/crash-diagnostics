@@ -70,14 +70,29 @@ func TestCaptureLocalFunc(t *testing.T) {
 					{starlark.String("workdir"), starlark.String("/tmp/capturecrashd")},
 					{starlark.String("file_name"), starlark.String("echo.txt")},
 					{starlark.String("desc"), starlark.String("echo command")},
+					{starlark.String("append"), starlark.True},
 				}
 			},
 			eval: func(t *testing.T, kwargs []starlark.Tuple) {
+				expected := filepath.Join("/tmp/capturecrashd", "echo.txt")
+				err := os.MkdirAll("/tmp/capturecrashd", 0777)
+				if err != nil {
+					t.Fatal(err)
+				}
+				f, err := os.OpenFile(expected, os.O_RDWR|os.O_CREATE, 0644)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if _, err := f.Write([]byte("Hello World!\n")); err != nil {
+					t.Fatal(err)
+				}
+				if err := f.Close(); err != nil {
+					t.Fatal(err)
+				}
 				val, err := captureLocalFunc(newTestThreadLocal(t), nil, nil, kwargs)
 				if err != nil {
 					t.Fatal(err)
 				}
-				expected := filepath.Join("/tmp/capturecrashd", "echo.txt")
 				result := ""
 				if r, ok := val.(starlark.String); ok {
 					result = string(r)
@@ -100,7 +115,7 @@ func TestCaptureLocalFunc(t *testing.T) {
 					t.Fatal(err)
 				}
 				expected = strings.TrimSpace(buf.String())
-				if expected != "echo command\nHello World!" {
+				if expected != "Hello World!\necho command\nHello World!" {
 					t.Errorf("unexpected content captured: %s", expected)
 				}
 				if err := file.Close(); err != nil {
@@ -174,15 +189,29 @@ result = capture_local("echo 'Hello World!'")
 		{
 			name: "capture local with args",
 			script: `
-result = capture_local(cmd="echo 'Hello World!'", workdir="/tmp/capturecrash", file_name="echo_out.txt", desc="output command")
+result = capture_local(cmd="echo 'Hello World!'", workdir="/tmp/capturecrash", file_name="echo_out.txt", desc="output command", append=True)
 `,
 			eval: func(t *testing.T, script string) {
+				expected := filepath.Join("/tmp/capturecrash", "echo_out.txt")
+				err := os.MkdirAll("/tmp/capturecrash", 0777)
+				if err != nil {
+					t.Fatal(err)
+				}
+				f, err := os.OpenFile(expected, os.O_RDWR|os.O_CREATE, 0644)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if _, err := f.Write([]byte("Hello World!\n")); err != nil {
+					t.Fatal(err)
+				}
+				if err := f.Close(); err != nil {
+					t.Fatal(err)
+				}
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
 					t.Fatal(err)
 				}
 
-				expected := filepath.Join("/tmp/capturecrash", "echo_out.txt")
 				var result string
 				resultVal := exe.result["result"]
 				if resultVal == nil {
@@ -211,7 +240,7 @@ result = capture_local(cmd="echo 'Hello World!'", workdir="/tmp/capturecrash", f
 					t.Fatal(err)
 				}
 				expected = strings.TrimSpace(buf.String())
-				if expected != "output command\nHello World!" {
+				if expected != "Hello World!\noutput command\nHello World!" {
 					t.Errorf("unexpected content captured: %s", expected)
 				}
 				if err := file.Close(); err != nil {
