@@ -480,6 +480,7 @@ This function runs a command locally on the machine running the script.  It then
 | `workdir`|A parent directory where captured files will be saved|No, defaults to `crashd_config.workdir`|
 | `file_name`|The path/name of the generated file|No, auto-generated based on command string, if omitted|
 | `desc`|A short description added at the start of the file|No|
+| `append` | boolean indicator to append to a file if it already exists or not |No, defaults to `False`|
 
 #### Output
 `capture_local()` returns the full path of the capured output file.

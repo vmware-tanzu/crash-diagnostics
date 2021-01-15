@@ -14,15 +14,17 @@ import (
 
 // captureLocalFunc is a built-in starlark function that runs a provided command on the local machine.
 // The output of the command is stored in a file at a specified location under the workdir directory.
-// Starlark format: run_local(cmd=<command> [,workdir=path][,file_name=name][,desc=description])
+// Starlark format: run_local(cmd=<command> [,workdir=path][,file_name=name][,desc=description][,append=append])
 func captureLocalFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var cmdStr, workdir, fileName, desc string
+	var append bool
 	if err := starlark.UnpackArgs(
 		identifiers.captureLocal, args, kwargs,
 		"cmd", &cmdStr,
 		"workdir?", &workdir,
 		"file_name?", &fileName,
 		"desc?", &desc,
+		"append?", &append,
 	); err != nil {
 		return starlark.None, fmt.Errorf("%s: %s", identifiers.captureLocal, err)
 	}
@@ -48,7 +50,7 @@ func captureLocalFunc(thread *starlark.Thread, b *starlark.Builtin, args starlar
 		return starlark.None, fmt.Errorf("%s: %s", identifiers.captureLocal, p.Err())
 	}
 
-	if err := captureOutput(p.Out(), filePath, desc); err != nil {
+	if err := captureOutput(p.Out(), filePath, desc, append); err != nil {
 		return starlark.None, fmt.Errorf("%s: %s", identifiers.captureLocal, err)
 	}
 
