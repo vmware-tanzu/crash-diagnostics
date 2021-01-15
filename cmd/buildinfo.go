@@ -14,10 +14,10 @@ func newBuildinfoCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "version",
-		Short: "prints the crash-diagnostics version",
-		Long:  "prints the crash-diagnostics version and other build info",
+		Short: "prints version",
+		Long:  "Prints version information for the program",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Printf("Version:%s\nGitSHA: %s\n", buildinfo.Version, buildinfo.GitSHA)
+			fmt.Printf("Version: %s\nGitSHA: %s\n", buildinfo.Version, buildinfo.GitSHA)
 			return nil
 		},
 	}

@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -31,21 +32,21 @@ func newRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.ExactArgs(1),
 		Use:   "run <file-name>",
-		Short: "Executes a diagnostics script file",
-		Long:  "Executes a diagnostics script and collects its output as an archive bundle",
+		Short: "runs a script file",
+		Long:  "Parses and executes the specified script file",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return run(flags, args[0])
 		},
 	}
-	cmd.Flags().StringToStringVar(&flags.args, "args", flags.args, "comma-separated key=value arguments to pass to the diagnostics file")
-	cmd.Flags().StringVar(&flags.argsFile, "args-file", flags.argsFile, "path to the file having key=value arguments to pass to the diagnostics file")
+	cmd.Flags().StringToStringVar(&flags.args, "args", flags.args, "comma-separated key=value pairs passed to the script (i.e. --args 'key0=val0,key1=val1')")
+	cmd.Flags().StringVar(&flags.argsFile, "args-file", flags.argsFile, "path to a file containing key=value argument pairs that are passed to the script file")
 	return cmd
 }
 
 func run(flags *runFlags, path string) error {
 	file, err := os.Open(path)
 	if err != nil {
-		return errors.Wrapf(err, "script file not found: %s", path)
+		return errors.Wrapf(err, "failed to open script file: %s", path)
 	}
 	defer file.Close()
 
@@ -65,18 +66,18 @@ func run(flags *runFlags, path string) error {
 // It builds the map from the args-file as well as the args flag passed to
 // the run command.
 func processScriptArguments(flags *runFlags) (map[string]string, error) {
-	// initialize the script arguments map
 	scriptArgs := map[string]string{}
 
-	// populates the scriptArgs map from the scriptArgs-file
+	// get args from script args file
 	err := util.ReadArgsFile(flags.argsFile, scriptArgs)
 	if err != nil && flags.argsFile != ArgsFile {
 		return nil, errors.Wrapf(err, "failed to parse scriptArgs file: %s", flags.argsFile)
 	}
 
-	// values specified by the args flag override the values from the args-file flag
+	// any value specified by the args flag overrides
+	// value with same key in the args-file
 	for k, v := range flags.args {
-		scriptArgs[k] = v
+		scriptArgs[strings.TrimSpace(k)] = strings.TrimSpace(v)
 	}
 
 	return scriptArgs, nil

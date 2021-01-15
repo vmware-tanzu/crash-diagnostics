@@ -4,11 +4,11 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
 	"github.com/vmware-tanzu/crash-diagnostics/buildinfo"
 )
 
@@ -28,8 +28,8 @@ func crashDiagnosticsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   CliName,
-		Short: fmt.Sprintf("%s helps to troubleshoot kubernetes cluster", CliName),
-		Long:  fmt.Sprintf("%s collects diagnostics from an unresponsive Kubernetes cluster", CliName),
+		Short: "runs the crashd program",
+		Long:  "Runs the crashd program to execute script that interacts with Kubernetes clusters",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return preRun(flags)
 		},
