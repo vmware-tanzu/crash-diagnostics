@@ -151,6 +151,13 @@ func makeSCPCmdStr(progName string, args SSHArgs) (string, error) {
 		return fmt.Sprintf("-P %s", args.Port)
 	}
 
+	compress := func() string {
+		if args.Compress {
+			return "-C"
+		}
+		return ""
+	}
+
 	proxyJump := func() string {
 		if args.ProxyJump != nil {
 			return fmt.Sprintf("-J %s@%s", args.ProxyJump.User, args.ProxyJump.Host)
@@ -160,8 +167,8 @@ func makeSCPCmdStr(progName string, args SSHArgs) (string, error) {
 	// build command as
 	// scp -i <pkpath> -P <port> -J <proxyjump> user@host:path
 	cmd := fmt.Sprintf(
-		`%s %s %s %s`,
-		scpCmdPrefix(), pkPath(), port(), proxyJump(),
+		`%s %s %s %s %s`,
+		scpCmdPrefix(), pkPath(), port(), compress(), proxyJump(),
 	)
 	return cmd, nil
 }

@@ -26,6 +26,7 @@ type SSHArgs struct {
 	PrivateKeyPath string
 	Port           string
 	MaxRetries     int
+	Compress       bool
 	ProxyJump      *ProxyJumpArgs
 }
 

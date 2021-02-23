@@ -27,6 +27,20 @@ func TestCopyFrom(t *testing.T) {
 			fileContent: "FooBar",
 		},
 		{
+			name: "copy single compress",
+			sshArgs: SSHArgs{
+				User:           support.CurrentUsername(),
+				PrivateKeyPath: support.PrivateKeyPath(),
+				Host:           "127.0.0.1",
+				Compress:       true,
+				Port:           support.PortValue(),
+				MaxRetries:     support.MaxConnectionRetries(),
+			},
+			remoteFiles: map[string]string{"foo.txt": "FooBar"},
+			srcFile:     "foo.txt",
+			fileContent: "FooBar",
+		},
+		{
 			name:        "copy single file in dir",
 			sshArgs:     testSSHArgs,
 			remoteFiles: map[string]string{"foo/bar.txt": "FooBar"},

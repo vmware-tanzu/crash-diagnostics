@@ -74,7 +74,58 @@ func testCopyFromFuncForHostResources(t *testing.T, port, privateKey, username s
 				defer os.RemoveAll(expected)
 			},
 		},
+		{
+			name:        "single machine compress",
+			remoteFiles: map[string]string{"foo.txt": "FooBar"},
+			args:        func(t *testing.T) starlark.Tuple { return starlark.Tuple{starlark.String("foo.txt")} },
+			kwargs: func(t *testing.T) []starlark.Tuple {
+				sshCfg := makeTestSSHConfig(privateKey, port, username)
+				resources := starlark.NewList([]starlark.Value{makeTestSSHHostResource("127.0.0.1", sshCfg)})
+				return []starlark.Tuple{
+					[]starlark.Value{starlark.String("resources"), resources},
+					[]starlark.Value{starlark.String("compress"), starlark.Bool(true)},
+				}
+			},
 
+			eval: func(t *testing.T, args starlark.Tuple, kwargs []starlark.Tuple) {
+
+				val, err := copyFromFunc(newTestThreadLocal(t), nil, args, kwargs)
+				if err != nil {
+					t.Fatal(err)
+				}
+				resource := ""
+				cpErr := ""
+				result := ""
+				if strct, ok := val.(*starlarkstruct.Struct); ok {
+					if val, err := strct.Attr("resource"); err == nil {
+						if r, ok := val.(starlark.String); ok {
+							resource = string(r)
+						}
+					}
+					if val, err := strct.Attr("err"); err == nil {
+						if r, ok := val.(starlark.String); ok {
+							cpErr = string(r)
+						}
+					}
+					if val, err := strct.Attr("result"); err == nil {
+						if r, ok := val.(starlark.String); ok {
+							result = string(r)
+						}
+					}
+				}
+
+				if cpErr != "" {
+					t.Fatal(cpErr)
+				}
+
+				expected := filepath.Join(defaults.workdir, sanitizeStr(resource), "foo.txt")
+				if result != expected {
+					t.Errorf("unexpected file name copied: %s", result)
+				}
+
+				defer os.RemoveAll(expected)
+			},
+		},
 		{
 			name:        "multiple machines single files",
 			remoteFiles: map[string]string{"bar/bar.txt": "BarBar", "bar/foo.txt": "FooBar", "baz.txt": "BazBuz"},
@@ -203,7 +254,13 @@ func testCopyFromFuncForHostResources(t *testing.T, port, privateKey, username s
 		},
 	}
 
-	sshArgs := ssh.SSHArgs{User: username, Host: "127.0.0.1", Port: port, PrivateKeyPath: privateKey}
+	sshArgs := ssh.SSHArgs{
+		User:           username,
+		Host:           "127.0.0.1",
+		Port:           port,
+		PrivateKeyPath: privateKey,
+		MaxRetries:     testSupport.MaxConnectionRetries(),
+	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			for file, content := range test.remoteFiles {
