@@ -10,9 +10,13 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"testing"
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"go.starlark.net/starlark"
+
+	crashlark "github.com/vmware-tanzu/crash-diagnostics/starlark"
 )
 
 var (
@@ -259,4 +263,12 @@ func Username() (string, error) {
 		return "", err
 	}
 	return usr.Username, nil
+}
+
+func NewStarlarkThreadLocal(t *testing.T) *starlark.Thread {
+	thread := &starlark.Thread{Name: "test-crashd"}
+	if err := crashlark.SetupThreadDefaults(thread); err != nil {
+		t.Fatalf("failed to setup new thread local: %s", err)
+	}
+	return thread
 }
