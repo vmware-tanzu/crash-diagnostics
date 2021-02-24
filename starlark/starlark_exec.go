@@ -85,6 +85,14 @@ func (e *Executor) Exec(name string, source io.Reader) error {
 	return nil
 }
 
+func (e *Executor) Result() starlark.StringDict {
+	return e.result
+}
+
+func SetupThreadDefaults(thread *starlark.Thread) error {
+	return setupLocalDefaults(thread)
+}
+
 // setupLocalDefaults populates the provided execution thread
 // with default configuration values.
 func setupLocalDefaults(thread *starlark.Thread) error {
