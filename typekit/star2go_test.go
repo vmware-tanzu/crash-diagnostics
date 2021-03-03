@@ -274,3 +274,92 @@ func TestStarlarkToGo(t *testing.T) {
 		})
 	}
 }
+
+func TestStarGo(t *testing.T) {
+	tests := []struct {
+		name    string
+		starVal starlark.Value
+		eval    func(*testing.T, starlark.Value)
+	}{
+		{
+			name:    "bool",
+			starVal: starlark.Bool(true),
+			eval: func(t *testing.T, val starlark.Value) {
+				var boolVar bool
+				if err := Starlark(val).Go(&boolVar); err != nil {
+					t.Fatalf("failed to convert starlark to go value: %s", err)
+				}
+				if !boolVar {
+					t.Fatalf("unexpected bool value: %t", boolVar)
+				}
+			},
+		},
+
+		{
+			name:    "int64",
+			starVal: starlark.MakeInt64(math.MaxInt64),
+			eval: func(t *testing.T, val starlark.Value) {
+				var intVar int64
+				if err := Starlark(val).Go(&intVar); err != nil {
+					t.Fatalf("failed to convert starlark to go value: %s", err)
+				}
+				if intVar != math.MaxInt64 {
+					t.Fatalf("unexpected int32 value: %d", intVar)
+				}
+			},
+		},
+		{
+			name:    "float64",
+			starVal: starlark.Float(math.MaxFloat64),
+			eval: func(t *testing.T, val starlark.Value) {
+				var floatVar float64
+				if err := Starlark(val).Go(&floatVar); err != nil {
+					t.Fatalf("failed to convert starlark to go value: %s", err)
+				}
+				if floatVar != math.MaxFloat64 {
+					t.Fatalf("unexpected float64 value: %f", floatVar)
+				}
+			},
+		},
+		{
+			name:    "list-string",
+			starVal: starlark.NewList([]starlark.Value{starlark.String("Hello"), starlark.String("World!")}),
+			eval: func(t *testing.T, val starlark.Value) {
+				slice := make([]string, 0)
+				if err := Starlark(val).Go(&slice); err != nil {
+					t.Fatalf("failed to convert starlark to go value: %s", err)
+				}
+				if "Hello World!" != strings.Join(slice, " ") {
+					t.Fatalf("unexpected string value: %v", slice)
+				}
+			},
+		},
+		{
+			name: "dict[string]string",
+			starVal: func() *starlark.Dict {
+				dict := starlark.NewDict(2)
+				dict.SetKey(starlark.String("msg0"), starlark.String("Hello"))
+				dict.SetKey(starlark.String("msg1"), starlark.String("World!"))
+				return dict
+			}(),
+			eval: func(t *testing.T, val starlark.Value) {
+				gomap := make(map[string]string)
+				if err := Starlark(val).Go(&gomap); err != nil {
+					t.Fatalf("failed to convert starlark to go value: %s", err)
+				}
+				if gomap["msg0"] != "Hello" {
+					t.Fatalf("unexpected map[msg] value: %v", gomap["msg"])
+				}
+				if gomap["msg1"] != "World!" {
+					t.Fatalf("unexpected map[msg] value: %v", gomap["msg"])
+				}
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.eval(t, test.starVal)
+		})
+	}
+}

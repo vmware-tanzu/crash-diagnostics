@@ -1,371 +1,299 @@
-// Copyright (c) 2021 VMware, Inc. All Rights Reserved.
-// SPDX-License-Identifier: Apache-2.0
+//// Copyright (c) 2021 VMware, Inc. All Rights Reserved.
+//// SPDX-License-Identifier: Apache-2.0
 
 package typekit
 
 import (
+	"math"
 	"testing"
 
 	"go.starlark.net/starlark"
+	"go.starlark.net/starlarkstruct"
 )
 
-func TestGoValue_ToStringDict(t *testing.T) {
+func TestGoToStarlark(t *testing.T) {
 	tests := []struct {
 		name  string
-		goVal *GoValue
-		eval  func(t *testing.T, goval *GoValue)
+		goVal interface{}
+		eval  func(*testing.T, interface{})
 	}{
 		{
-			name:  "map[string]string",
-			goVal: Goval(map[string]string{"key0": "val0", "key1": "val1"}),
-			eval: func(t *testing.T, goval *GoValue) {
-				actual := goval.Value().(map[string]string)
-				starVal, err := goval.ToStringDict()
-				if err != nil {
+			name:  "Bool",
+			goVal: true,
+			eval: func(t *testing.T, goVal interface{}) {
+				var starval starlark.Bool
+				if err := goToStarlark(true, &starval); err != nil {
 					t.Fatal(err)
 				}
-				for k, v := range actual {
-					var expected string
-					if val, ok := starVal[k].(starlark.String); ok {
-						expected = string(val)
-					}
-					if v != expected {
-						t.Errorf("unexpected value not in starlark value: %s", k)
-					}
+				if starval != true {
+					t.Errorf("unexpected bool value: %t", starval)
 				}
 			},
 		},
 		{
-			name:  "map[string]int",
-			goVal: Goval(map[string]int{"key0": 12, "key1": 14}),
-			eval: func(t *testing.T, goval *GoValue) {
-				actual := goval.Value().(map[string]int)
-				starVal, err := goval.ToStringDict()
-				if err != nil {
+			name:  "Bool-Value",
+			goVal: true,
+			eval: func(t *testing.T, goVal interface{}) {
+				var starval starlark.Value
+				if err := goToStarlark(true, &starval); err != nil {
 					t.Fatal(err)
 				}
-				for k, v := range actual {
-					var expected int64
-					if val, ok := starVal[k].(starlark.Int); ok {
-						expected = val.BigInt().Int64()
-					}
-					if int64(v) != expected {
-						t.Errorf("unexpected value not in starlark value: %s", k)
-					}
+				if starval.Truth() != true {
+					t.Errorf("unexpected bool value: %t", starval)
 				}
 			},
 		},
 		{
-			name:  "map[string]bool",
-			goVal: Goval(map[string]bool{"key0": false, "key1": true}),
-			eval: func(t *testing.T, goval *GoValue) {
-				actual := goval.Value().(map[string]bool)
-				starVal, err := goval.ToStringDict()
-				if err != nil {
+			name:  "Int(Int64)",
+			goVal: math.MaxInt32,
+			eval: func(t *testing.T, goVal interface{}) {
+				var starval starlark.Int
+				if err := goToStarlark(math.MaxInt32, &starval); err != nil {
 					t.Fatal(err)
 				}
-				for k, v := range actual {
-					var expected bool
-					if val, ok := starVal[k].(starlark.Bool); ok {
-						expected = bool(val)
-					}
-					if v != expected {
-						t.Errorf("unexpected value not in starlark value: %s", k)
-					}
+				val, ok := starval.Int64()
+				if !ok {
+					t.Errorf("starlark.Int.Int64 failed")
+				}
+				if val != math.MaxInt32 {
+					t.Errorf("unexpected Int64 value: %d", val)
 				}
 			},
 		},
 		{
-			name:  "map[string][]string",
-			goVal: Goval(map[string][]string{"key0": {"hello", "goodbye"}, "key1": {"hi", "bye"}}),
-			eval: func(t *testing.T, goval *GoValue) {
-				actual := goval.Value().(map[string][]string)
-				starVal, err := goval.ToStringDict()
-				if err != nil {
+			name:  "Int(Uint64)",
+			goVal: uint64(math.MaxUint64),
+			eval: func(t *testing.T, goVal interface{}) {
+				var starval starlark.Int
+				if err := goToStarlark(uint64(math.MaxUint64), &starval); err != nil {
 					t.Fatal(err)
 				}
-				for k, v := range actual {
-					var expected starlark.Tuple
-					if val, ok := starVal[k].(starlark.Tuple); ok {
-						expected = val
-					}
-					for i := range v {
-						if v[i] != string(expected.Index(i).(starlark.String)) {
-							t.Errorf("unexpected value not in starlark value: %s", expected.Index(i))
-						}
-					}
+				val, ok := starval.Uint64()
+				if !ok {
+					t.Errorf("starlark.Int.Int64 failed")
+				}
+				if val != math.MaxUint64 {
+					t.Errorf("unexpected Uint64 value: %d", val)
+				}
+			},
+		},
+		{
+			name:  "String",
+			goVal: "Hello World!",
+			eval: func(t *testing.T, goVal interface{}) {
+				var starval starlark.String
+				if err := goToStarlark(goVal, &starval); err != nil {
+					t.Fatal(err)
+				}
+				if string(starval) != `Hello World!` {
+					t.Errorf("unexpected string value: %s", starval)
+				}
+			},
+		},
+		{
+			name:  "String-Value",
+			goVal: "Hello World!",
+			eval: func(t *testing.T, goVal interface{}) {
+				var starval starlark.Value
+				if err := goToStarlark(goVal, &starval); err != nil {
+					t.Fatal(err)
+				}
+				if starval.String() != `"Hello World!"` {
+					t.Errorf("unexpected string value: %s", starval)
+				}
+			},
+		},
+		{
+			name:  "Tuple[string]",
+			goVal: []string{"Hello", "World!"},
+			eval: func(t *testing.T, goVal interface{}) {
+				starval := make(starlark.Tuple, 2)
+				if err := goToStarlark(goVal, &starval); err != nil {
+					t.Fatal(err)
+				}
+				if starval.Len() != 2 {
+					t.Errorf("unexpected tuple length %d", starval.Len())
+				}
+				if starval.Index(1).String() != `"World!"` {
+					t.Errorf("unexpected value: %s", starval.Index(1).String())
+				}
+			},
+		},
+		{
+			name:  "Tuple[numeric]",
+			goVal: []int{1, 2, math.MaxInt8},
+			eval: func(t *testing.T, goVal interface{}) {
+				starval := make(starlark.Tuple, 3)
+				if err := goToStarlark(goVal, &starval); err != nil {
+					t.Fatal(err)
+				}
+				if starval.Len() != 3 {
+					t.Errorf("unexpected tuple length %d", starval.Len())
+				}
+
+				intVal, _ := starval.Index(2).(starlark.Int).Int64()
+				if intVal != math.MaxInt8 {
+					t.Errorf("unexpected int value: %d", intVal)
+				}
+			},
+		},
+		{
+			name:  "Tuple[mix]",
+			goVal: []interface{}{1, 2, 3, "Go!"},
+			eval: func(t *testing.T, goVal interface{}) {
+				starval := make(starlark.Tuple, 4)
+				if err := goToStarlark(goVal, &starval); err != nil {
+					t.Fatal(err)
+				}
+				if starval.Len() != 4 {
+					t.Errorf("unexpected tuple length %d", starval.Len())
+				}
+				strVal := starval.Index(3).String()
+				if strVal != `"Go!"` {
+					t.Errorf("Unexpected string element: %s", strVal)
+				}
+			},
+		},
+		{
+			name:  "Tuple-Value",
+			goVal: []int{1, 2, math.MaxInt8},
+			eval: func(t *testing.T, goVal interface{}) {
+				var starval starlark.Value
+				if err := goToStarlark(goVal, &starval); err != nil {
+					t.Fatal(err)
+				}
+				tuple := starval.(starlark.Tuple)
+				if tuple.Len() != 3 {
+					t.Errorf("unexpected tuple length %d", tuple.Len())
+				}
+
+				intVal, _ := tuple.Index(2).(starlark.Int).Int64()
+				if intVal != math.MaxInt8 {
+					t.Errorf("unexpected int value: %d", intVal)
+				}
+			},
+		},
+		{
+			name:  "Dict[string]string",
+			goVal: map[string]string{"msg": "hello", "target": "world"},
+			eval: func(t *testing.T, goVal interface{}) {
+				var starval starlark.Dict
+				if err := goToStarlark(goVal, &starval); err != nil {
+					t.Fatal(err)
+				}
+				if starval.Len() != 2 {
+					t.Errorf("unexpected dict length %d", starval.Len())
+				}
+				val, _, err := starval.Get(starlark.String("target"))
+				if err != nil {
+					t.Errorf("failed to get value from starlark.Dict: %s", err)
+				}
+
+				if val.String() != `"world"` {
+					t.Errorf("unexpected value for starlark.Dict value: %s", val.String())
+				}
+
+			},
+		},
+		{
+			name:  "Dict[string]int",
+			goVal: map[string]int{"one": 12, "two": math.MaxInt8, "three": math.MaxInt64},
+			eval: func(t *testing.T, goVal interface{}) {
+				var starval starlark.Dict
+				if err := goToStarlark(goVal, &starval); err != nil {
+					t.Fatal(err)
+				}
+				if starval.Len() != 3 {
+					t.Errorf("unexpected dict length %d", starval.Len())
+				}
+				val, _, err := starval.Get(starlark.String("three"))
+				if err != nil {
+					t.Errorf("failed to get value from starlark.Dict: %s", err)
+				}
+				if intVal, _ := val.(starlark.Int).Int64(); intVal != math.MaxInt64 {
+					t.Errorf("unexpected value for starlark.Dict value: %s", val.String())
+				}
+
+			},
+		},
+		{
+			name:  "Dict-Value",
+			goVal: map[string]int{"one": 12, "two": math.MaxInt8, "three": math.MaxInt64},
+			eval: func(t *testing.T, goVal interface{}) {
+				var starval starlark.Value
+				if err := goToStarlark(goVal, &starval); err != nil {
+					t.Fatal(err)
+				}
+				dictVal := starval.(*starlark.Dict)
+				if dictVal.Len() != 3 {
+					t.Errorf("unexpected dict length %d", dictVal.Len())
+				}
+				val, _, err := dictVal.Get(starlark.String("three"))
+				if err != nil {
+					t.Errorf("failed to get value from starlark.Dict: %s", err)
+				}
+				if intVal, _ := val.(starlark.Int).Int64(); intVal != math.MaxInt64 {
+					t.Errorf("unexpected value for starlark.Dict value: %s", val.String())
+				}
+
+			},
+		},
+		{
+			name:  "Struct[string]string",
+			goVal: struct{ Msg, Target string }{Msg: "hello", Target: "world"},
+			eval: func(t *testing.T, goVal interface{}) {
+				var starval starlarkstruct.Struct
+				if err := goToStarlark(goVal, &starval); err != nil {
+					t.Fatal(err)
+				}
+				val, err := starval.Attr("Msg")
+				if err != nil {
+					t.Errorf("failed to get value from starlarkstruct.Struct: %s", err)
+				}
+
+				if val.String() != `"hello"` {
+					t.Errorf("unexpected value for starlark.Dict value: %s", val.String())
+				}
+
+			},
+		},
+		{
+			name:  "Struct-Value",
+			goVal: struct{ Msg, Target string }{Msg: "hello", Target: "world"},
+			eval: func(t *testing.T, goVal interface{}) {
+				var starval starlark.Value
+				if err := goToStarlark(goVal, &starval); err != nil {
+					t.Fatal(err)
+				}
+				structVal := starval.(*starlarkstruct.Struct)
+				val, err := structVal.Attr("Msg")
+				if err != nil {
+					t.Errorf("failed to get value from starlarkstruct.Struct: %s", err)
+				}
+
+				if val.String() != `"hello"` {
+					t.Errorf("unexpected value for starlark.Dict value: %s", val.String())
+				}
+
+			},
+		},
+		{
+			name:  "List[string]",
+			goVal: []string{"Hello", "World!"},
+			eval: func(t *testing.T, goVal interface{}) {
+				var starval starlark.List
+				if err := Go(goVal).List(&starval); err != nil {
+					t.Fatal(err)
+				}
+				if starval.Len() != 2 {
+					t.Errorf("unexpected tuple length %d", starval.Len())
+				}
+				if starval.Index(1).String() != `"World!"` {
+					t.Errorf("unexpected value: %s", starval.Index(1).String())
 				}
 			},
 		},
 	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			test.eval(t, test.goVal)
-		})
-	}
-}
-
-func TestGoValue_ToDict(t *testing.T) {
-	tests := []struct {
-		name  string
-		goVal *GoValue
-		eval  func(t *testing.T, goval *GoValue)
-	}{
-		{
-			name:  "map[string]string",
-			goVal: Goval(map[string]string{"key0": "val0", "key1": "val1"}),
-			eval: func(t *testing.T, goval *GoValue) {
-				actual := goval.Value().(map[string]string)
-				dict, err := goval.ToDict()
-				if err != nil {
-					t.Fatal(err)
-				}
-				for k, v := range actual {
-					var expected string
-
-					if val, ok, err := dict.Get(starlark.String(k)); ok && err == nil {
-						expected = string(val.(starlark.String))
-					}
-					if v != expected {
-						t.Errorf("unexpected value not in starlark value: %s", v)
-					}
-				}
-			},
-		},
-		{
-			name:  "map[int]int",
-			goVal: Goval(map[int]int{0: 12, 10: 14}),
-			eval: func(t *testing.T, goval *GoValue) {
-				actual := goval.Value().(map[int]int)
-				dict, err := goval.ToDict()
-				if err != nil {
-					t.Fatal(err)
-				}
-				for k, v := range actual {
-					var expected int64
-					if val, ok, err := dict.Get(starlark.MakeInt(k)); ok && err == nil {
-						expected = val.(starlark.Int).BigInt().Int64()
-					}
-					if int64(v) != expected {
-						t.Errorf("unexpected value not in starlark value: %v", v)
-					}
-				}
-			},
-		},
-		{
-			name:  "map[bool][]string",
-			goVal: Goval(map[bool][]string{true: {"hello", "goodbye"}, false: {"hi", "bye"}}),
-			eval: func(t *testing.T, goval *GoValue) {
-				actual := goval.Value().(map[bool][]string)
-				dict, err := goval.ToDict()
-				if err != nil {
-					t.Fatal(err)
-				}
-				for k, v := range actual {
-					var expected starlark.Tuple
-					if val, ok, err := dict.Get(starlark.Bool(k)); ok && err == nil {
-						expected = val.(starlark.Tuple)
-					}
-					for i := range v {
-						if v[i] != string(expected.Index(i).(starlark.String)) {
-							t.Errorf("unexpected value not in starlark value: %s", expected.Index(i))
-						}
-					}
-				}
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			test.eval(t, test.goVal)
-		})
-	}
-}
-
-func TestGoValue_ToStruct(t *testing.T) {
-	tests := []struct {
-		name  string
-		goVal *GoValue
-		eval  func(t *testing.T, goval *GoValue)
-	}{
-		{
-			name:  "map[string]string",
-			goVal: Goval(map[string]string{"key0": "val0", "key1": "val1"}),
-			eval: func(t *testing.T, goval *GoValue) {
-				actual := goval.Value().(map[string]string)
-				starStruct, err := goval.ToStarlarkStruct()
-				if err != nil {
-					t.Fatal(err)
-				}
-				for k, v := range actual {
-					var expected string
-
-					if val, err := starStruct.Attr(k); err == nil {
-						expected = string(val.(starlark.String))
-					}
-					if v != expected {
-						t.Errorf("unexpected value not in starlark value: %s", v)
-					}
-				}
-			},
-		},
-		{
-			name: "struct{string;int;bool}",
-			goVal: Goval(struct {
-				Name  string
-				Num   int
-				Avail bool
-			}{Name: "foo", Num: 10, Avail: true}),
-			eval: func(t *testing.T, goval *GoValue) {
-				actual := goval.Value().(struct {
-					Name  string
-					Num   int
-					Avail bool
-				})
-				starStruct, err := goval.ToStarlarkStruct()
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				var attrName string
-				if val, err := starStruct.Attr("Name"); err == nil {
-					attrName = string(val.(starlark.String))
-				}
-				if actual.Name != attrName {
-					t.Errorf("unexpected field value for 'name' starlark Struct : %s", attrName)
-				}
-
-				var attrNum int64
-				if val, err := starStruct.Attr("Num"); err == nil {
-					attrNum = val.(starlark.Int).BigInt().Int64()
-				}
-				if int64(actual.Num) != attrNum {
-					t.Errorf("unexpected field value for 'num' starlark Struct : %d", attrNum)
-				}
-
-				var attrAvail bool
-				if val, err := starStruct.Attr("Avail"); err == nil {
-					attrAvail = bool(val.(starlark.Bool))
-				}
-				if actual.Avail != attrAvail {
-					t.Errorf("unexpected field value for 'avail' starlark Struct : %t", attrAvail)
-				}
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			test.eval(t, test.goVal)
-		})
-	}
-}
-
-func TestGoValue_ToTuple(t *testing.T) {
-	tests := []struct {
-		name  string
-		goVal *GoValue
-		eval  func(t *testing.T, goval *GoValue)
-	}{
-		{
-			name:  "[]string",
-			goVal: Goval([]string{"Hello", "World", "!"}),
-			eval: func(t *testing.T, goval *GoValue) {
-				actual := goval.Value().([]string)
-				tuple, err := goval.ToTuple()
-				if err != nil {
-					t.Fatal(err)
-				}
-				for i := range actual {
-					var expected string
-					if val, ok := tuple.Index(i).(starlark.String); ok {
-						expected = string(val)
-					}
-					if actual[i] != expected {
-						t.Errorf("unexpected value in starlark value: %s", actual[i])
-					}
-				}
-			},
-		},
-		{
-			name:  "[]bool",
-			goVal: Goval([]bool{true, true, false}),
-			eval: func(t *testing.T, goval *GoValue) {
-				actual := goval.Value().([]bool)
-				tuple, err := goval.ToTuple()
-				if err != nil {
-					t.Fatal(err)
-				}
-				for i := range actual {
-					var expected bool
-					if val, ok := tuple.Index(i).(starlark.Bool); ok {
-						expected = bool(val)
-					}
-					if actual[i] != expected {
-						t.Errorf("unexpected value in starlark value: %t", actual[i])
-					}
-				}
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			test.eval(t, test.goVal)
-		})
-	}
-}
-
-func TestGoValue_ToList(t *testing.T) {
-	tests := []struct {
-		name  string
-		goVal *GoValue
-		eval  func(t *testing.T, goval *GoValue)
-	}{
-		{
-			name:  "[]string",
-			goVal: Goval([]string{"Hello", "World", "!"}),
-			eval: func(t *testing.T, goval *GoValue) {
-				actual := goval.Value().([]string)
-				list, err := goval.ToList()
-				if err != nil {
-					t.Fatal(err)
-				}
-				for i := range actual {
-					var expected string
-					if val, ok := list.Index(i).(starlark.String); ok {
-						expected = string(val)
-					}
-					if actual[i] != expected {
-						t.Errorf("unexpected value in starlark value: %s", actual[i])
-					}
-				}
-			},
-		},
-		{
-			name:  "[]bool",
-			goVal: Goval([]bool{true, true, false}),
-			eval: func(t *testing.T, goval *GoValue) {
-				actual := goval.Value().([]bool)
-				list, err := goval.ToList()
-				if err != nil {
-					t.Fatal(err)
-				}
-				for i := range actual {
-					var expected bool
-					if val, ok := list.Index(i).(starlark.Bool); ok {
-						expected = bool(val)
-					}
-					if actual[i] != expected {
-						t.Errorf("unexpected value in starlark value: %t", actual[i])
-					}
-				}
-			},
-		},
-	}
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			test.eval(t, test.goVal)

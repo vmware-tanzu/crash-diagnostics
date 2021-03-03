@@ -14,17 +14,19 @@ type StarValue struct {
 	val starlark.Value
 }
 
-// Star wraps a Starlark value
-func Star(val starlark.Value) *StarValue {
+// Starlark wraps a Starlark value val
+// so it can be converted to a Go value.
+func Starlark(val starlark.Value) *StarValue {
 	return &StarValue{val: val}
 }
 
+// Value returns the wrapped Starlark value
 func (v *StarValue) Value() starlark.Value {
 	return v.val
 }
 
-// ToGo converts Starlark value in StarValue into the Go
-// value specified by pointer to value goPtr.
+// Go converts Starlark the wrapped value and stores the
+// result into a Go value specified by pointer goPtr.
 // Example:
 //
 //    var msg string
@@ -41,7 +43,7 @@ func (v *StarValue) Value() starlark.Value {
 //      *starlark.Dict  	-- map[K]T
 //      *starlark.Set   	-- []T
 
-func (v *StarValue) ToGo(goPtr interface{}) error {
+func (v *StarValue) Go(goPtr interface{}) error {
 	goval := reflect.ValueOf(goPtr)
 	gotype := goval.Type()
 	if gotype.Kind() != reflect.Ptr || goval.IsNil() {
