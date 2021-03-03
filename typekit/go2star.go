@@ -54,9 +54,9 @@ func (v *GoValue) Starlark(starval interface{}) error {
 	return goToStarlark(v.val, starval)
 }
 
-// List converts a slice Go value to a starlark.Tuple,
+// StarlarkList converts a slice of Go values to a starlark.Tuple,
 // then converts that tuple into a starlark.List
-func (v *GoValue) List(starval interface{}) error {
+func (v *GoValue) StarlarkList(starval interface{}) error {
 	var tuple starlark.Tuple
 	if err := v.Starlark(&tuple); err != nil {
 		return err
@@ -65,7 +65,31 @@ func (v *GoValue) List(starval interface{}) error {
 	case *starlark.Value:
 		*val = starlark.NewList(tuple)
 	case *starlark.List:
-		val = starlark.NewList(tuple)
+		*val = *starlark.NewList(tuple)
+	default:
+		return fmt.Errorf("target type %T must be *starlark.List or *starlark.Value", starval)
+	}
+	return nil
+}
+
+// StarlarkSet converts a slice of Go values to a starlark.Tuple,
+// then converts that tuple into a starlark.Set
+func (v *GoValue) StarlarkSet(starval interface{}) error {
+	var tuple starlark.Tuple
+	if err := v.Starlark(&tuple); err != nil {
+		return err
+	}
+
+	starSet := starlark.NewSet(len(tuple))
+	for _, val := range tuple {
+		starSet.Insert(val)
+	}
+
+	switch val := starval.(type) {
+	case *starlark.Value:
+		*val = starSet
+	case *starlark.Set:
+		*val = *starSet
 	default:
 		return fmt.Errorf("target type %T must be *starlark.List or *starlark.Value", starval)
 	}

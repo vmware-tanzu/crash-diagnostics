@@ -282,15 +282,113 @@ func TestGoToStarlark(t *testing.T) {
 			goVal: []string{"Hello", "World!"},
 			eval: func(t *testing.T, goVal interface{}) {
 				var starval starlark.List
-				if err := Go(goVal).List(&starval); err != nil {
+				if err := Go(goVal).StarlarkList(&starval); err != nil {
 					t.Fatal(err)
 				}
 				if starval.Len() != 2 {
-					t.Errorf("unexpected tuple length %d", starval.Len())
+					t.Errorf("unexpected list length %d", starval.Len())
 				}
 				if starval.Index(1).String() != `"World!"` {
-					t.Errorf("unexpected value: %s", starval.Index(1).String())
+					t.Errorf("unexpected list value: %s", starval.Index(1).String())
 				}
+			},
+		},
+		{
+			name:  "List[numeric]",
+			goVal: []int{1, 2, math.MaxInt8},
+			eval: func(t *testing.T, goVal interface{}) {
+				var starval starlark.List
+				if err := Go(goVal).StarlarkList(&starval); err != nil {
+					t.Fatal(err)
+				}
+				if starval.Len() != 3 {
+					t.Errorf("unexpected tuple length %d", starval.Len())
+				}
+
+				intVal, _ := starval.Index(2).(starlark.Int).Int64()
+				if intVal != math.MaxInt8 {
+					t.Errorf("unexpected int value: %d", intVal)
+				}
+			},
+		},
+		{
+			name:  "Tuple[mix]",
+			goVal: []interface{}{1, 2, 3, "Go!"},
+			eval: func(t *testing.T, goVal interface{}) {
+				var starval starlark.List
+				if err := Go(goVal).StarlarkList(&starval); err != nil {
+					t.Fatal(err)
+				}
+				if starval.Len() != 4 {
+					t.Errorf("unexpected tuple length %d", starval.Len())
+				}
+				strVal := starval.Index(3).String()
+				if strVal != `"Go!"` {
+					t.Errorf("Unexpected string element: %s", strVal)
+				}
+			},
+		},
+		{
+			name:  "List-Value",
+			goVal: []int{1, 2, math.MaxInt8},
+			eval: func(t *testing.T, goVal interface{}) {
+				var starval starlark.Value
+				if err := Go(goVal).StarlarkList(&starval); err != nil {
+					t.Fatal(err)
+				}
+				list := starval.(*starlark.List)
+				if list.Len() != 3 {
+					t.Errorf("unexpected tuple length %d", list.Len())
+				}
+
+				intVal, _ := list.Index(2).(starlark.Int).Int64()
+				if intVal != math.MaxInt8 {
+					t.Errorf("unexpected int value: %d", intVal)
+				}
+			},
+		},
+		{
+			name:  "Set[string]",
+			goVal: []string{"Hello", "World!"},
+			eval: func(t *testing.T, goVal interface{}) {
+				var starval starlark.Set
+				if err := Go(goVal).StarlarkSet(&starval); err != nil {
+					t.Fatal(err)
+				}
+				if starval.Len() != 2 {
+					t.Errorf("unexpected set length %d", starval.Len())
+				}
+				iter := starval.Iterate()
+				var val starlark.Value
+				for iter.Next(&val) {
+					if val.String() == `"World!"` {
+						iter.Done()
+						return
+					}
+				}
+				t.Errorf("Stararlk set value not found")
+			},
+		},
+		{
+			name:  "Set[mix]",
+			goVal: []interface{}{1, 2, 3, "Go!"},
+			eval: func(t *testing.T, goVal interface{}) {
+				var starval starlark.List
+				if err := Go(goVal).StarlarkList(&starval); err != nil {
+					t.Fatal(err)
+				}
+				if starval.Len() != 4 {
+					t.Errorf("unexpected tuple length %d", starval.Len())
+				}
+				iter := starval.Iterate()
+				var val starlark.Value
+				for iter.Next(&val) {
+					if val.String() == `"Go!"` {
+						iter.Done()
+						return
+					}
+				}
+				t.Errorf("Stararlk set value not found")
 			},
 		},
 	}
