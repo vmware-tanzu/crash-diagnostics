@@ -39,10 +39,10 @@ func runLocalFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tu
 	}
 
 	proc := run.LocalProc{
-		Pid:      p.ID(),
+		Pid:      int64(p.ID()),
 		Error:    errmsg,
 		Result:   p.Result(),
-		ExitCode: p.ExitCode(),
+		ExitCode: int64(p.ExitCode()),
 	}
 
 	var star starlarkstruct.Struct

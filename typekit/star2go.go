@@ -6,8 +6,10 @@ package typekit
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"go.starlark.net/starlark"
+	"go.starlark.net/starlarkstruct"
 )
 
 type StarValue struct {
@@ -199,6 +201,31 @@ func starlarkToGo(srcVal starlark.Value, goval reflect.Value) error {
 				return err
 			}
 			i++
+		}
+		return nil
+
+	case "struct":
+		if gotype.Kind() != reflect.Struct {
+			return fmt.Errorf("target type must be a struct")
+		}
+		structVal, ok := srcVal.(*starlarkstruct.Struct)
+		if !ok {
+			return fmt.Errorf("failed to assert %T as starlark.Struct", srcVal)
+		}
+		goval.Set(reflect.Zero(goval.Type()))
+		attrs := structVal.AttrNames()
+		for _, attr := range attrs {
+			attrVal, err := structVal.Attr(attr)
+			if err != nil {
+				return fmt.Errorf("failed retrieve attr %T from starlarkstruct.Struct", attr)
+			}
+
+			fieldName := strings.Title(attr)
+			goFieldVal := reflect.New(goval.FieldByName(fieldName).Type()).Elem()
+			if err := starlarkToGo(attrVal, goFieldVal); err != nil {
+				return err
+			}
+			goval.FieldByName(fieldName).Set(goFieldVal)
 		}
 		return nil
 	}

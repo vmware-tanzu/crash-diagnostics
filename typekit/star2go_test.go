@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"go.starlark.net/starlark"
+	"go.starlark.net/starlarkstruct"
 )
 
 func TestStarlarkToGo(t *testing.T) {
@@ -263,6 +264,29 @@ func TestStarlarkToGo(t *testing.T) {
 				}
 				if slice[1].(int64) != math.MaxInt32 {
 					t.Fatalf("unexpected slice[1] value: %v, want %d", slice[1], math.MaxInt32)
+				}
+			},
+		},
+		{
+			name: "struct",
+			starVal: func() *starlarkstruct.Struct {
+				dict := starlark.StringDict{
+					"msg0": starlark.String("Hello"),
+					"msg1": starlark.String("World!"),
+				}
+				return starlarkstruct.FromStringDict(starlark.String("struct"), dict)
+			}(),
+			eval: func(t *testing.T, val starlark.Value) {
+				var gostruct struct{ Msg0, Msg1 string }
+				err := starlarkToGo(val, reflect.ValueOf(&gostruct).Elem())
+				if err != nil {
+					t.Fatalf("failed to convert starlark to go value: %s", err)
+				}
+				if gostruct.Msg0 != "Hello" {
+					t.Fatalf("unexpected map[msg] value: %v", gostruct.Msg0)
+				}
+				if gostruct.Msg1 != "World!" {
+					t.Fatalf("unexpected map[msg] value: %v", gostruct.Msg1)
 				}
 			},
 		},

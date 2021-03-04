@@ -29,7 +29,7 @@ func TestRunLocalFunc(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				p := run.LocalProc{}
+				var p run.LocalProc
 				if err := typekit.Starlark(val).Go(&p); err != nil {
 					t.Fatalf("unable to convert result: %s", err)
 				}
