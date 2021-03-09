@@ -1,3 +1,6 @@
+// Copyright (c) 2021 VMware, Inc. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 package local
 
 import (
@@ -18,7 +21,6 @@ var (
 
 // runLocalFunc is a built-in starlark function that runs a provided command on the local machine.
 // Starlark format: result = run_local(cmd="script-command")
-//
 func runLocalFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var cmdStr string
 	if err := starlark.UnpackArgs(
