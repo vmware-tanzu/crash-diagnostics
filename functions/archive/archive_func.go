@@ -25,7 +25,7 @@ func init() {
 	builtins.Register(FuncName, Builtin)
 }
 
-// Func implements a Starlark.Builtin function that can be used to bundle to create a
+// archiveFunc implements a Starlark.Builtin function that can be used to bundle to create a
 // tar file bundle.
 // Script example: archive(output_file=<file name> ,source_paths=[<path list>])
 func archiveFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
