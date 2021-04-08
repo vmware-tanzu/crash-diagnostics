@@ -11,7 +11,7 @@ import (
 	"go.starlark.net/starlark"
 
 	crashlark "github.com/vmware-tanzu/crash-diagnostics/starlark"
-	crashtest "github.com/vmware-tanzu/crash-diagnostics/testing"
+	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 )
 
 func TestArchiveFunc(t *testing.T) {
@@ -29,22 +29,31 @@ func TestArchiveFunc(t *testing.T) {
 				}
 			},
 			eval: func(t *testing.T, kwargs []starlark.Tuple) {
-				val, err := archiveFunc(crashtest.NewStarlarkThreadLocal(t), nil, nil, kwargs)
+				val, err := Func(&starlark.Thread{}, nil, nil, kwargs)
 				if err != nil {
 					t.Fatal(err)
 				}
-				expected := "/tmp/out.tar.gz"
-				defer func() {
-					os.RemoveAll(expected)
-					os.RemoveAll("/tmp/crashd")
-				}()
 
-				result := ""
-				if r, ok := val.(starlark.String); ok {
-					result = string(r)
+				var arc Archive
+				if err := typekit.Starlark(val).Go(&arc); err != nil {
+					t.Fatal(err)
 				}
-				if result != expected {
-					t.Errorf("unexpected result: %s", result)
+
+				if arc.OutputFile != "/tmp/out.tar.gz" {
+					t.Errorf("unexpected output file: %s", arc.OutputFile)
+				}
+
+				if len(arc.SourcePaths) != 1 {
+					t.Errorf("unexpected source paths len: %d", len(arc.SourcePaths))
+				}
+
+				if err := os.RemoveAll(arc.OutputFile); err != nil {
+					t.Log(err)
+				}
+				for _, p := range arc.SourcePaths {
+					if err := os.RemoveAll(p); err != nil {
+						t.Log(err)
+					}
 				}
 			},
 		},

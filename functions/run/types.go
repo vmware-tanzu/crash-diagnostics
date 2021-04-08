@@ -7,7 +7,6 @@ package run
 // from a Starlark script.
 type LocalProc struct {
 	Pid      int64
-	Error    string
 	Result   string
 	ExitCode int64
 }
@@ -16,7 +15,6 @@ type LocalProc struct {
 // from a Starlark script.
 type RemoteProc struct {
 	resource string
-	Error    string
 	Result   string
 	ExitCode int64
 }

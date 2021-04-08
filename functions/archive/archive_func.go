@@ -8,7 +8,7 @@ import (
 
 	"go.starlark.net/starlark"
 
-	"github.com/vmware-tanzu/crash-diagnostics/archiver"
+	"github.com/vmware-tanzu/crash-diagnostics/functions"
 	"github.com/vmware-tanzu/crash-diagnostics/functions/builtins"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 )
@@ -45,17 +45,15 @@ func archiveFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tup
 		return starlark.None, fmt.Errorf("%s: type conversion error: %s", FuncName, err)
 	}
 
-	if len(argOutFile) == 0 {
-		argOutFile = DefaultBundleName
+	params := Params{
+		SourcePaths: paths,
+		OutputFile:  argOutFile,
 	}
 
-	if len(paths) == 0 {
-		return starlark.None, fmt.Errorf("%s: one or more paths required", FuncName)
+	result, err := newCmd().Run(thread, params)
+	if err != nil {
+		return starlark.None, fmt.Errorf("%s: command failed: %s", FuncName, err)
 	}
 
-	if err := archiver.Tar(argOutFile, paths...); err != nil {
-		return starlark.None, fmt.Errorf("%s failed: %s", FuncName, err)
-	}
-
-	return starlark.String(argOutFile), nil
+	return functions.MakeFuncResult(result)
 }

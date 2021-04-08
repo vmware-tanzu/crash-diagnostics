@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"go.starlark.net/starlark"
 
+	"github.com/vmware-tanzu/crash-diagnostics/functions"
 	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 	"github.com/vmware-tanzu/crash-diagnostics/util"
 )
@@ -18,35 +19,39 @@ const (
 	defaultWorkdir = "/tmp/crashd"
 )
 
-type Params struct {
-	Workdir      string
-	Gid          string
-	Uid          string
-	DefaultShell string
-	Requires     []string
-	UseSSHAgent  bool
+type confCmd struct{}
+
+func newCmd() *confCmd {
+	return new(confCmd)
 }
 
-// Configuration is a mirror of param (in this case)
-type Configuration = Params
-
-// Build creates the configuration value for the script
-func Build(t *starlark.Thread, params Params) (Configuration, error) {
+// Run applies processes the params and generates a configuration value for the script
+func (c *confCmd) Run(t *starlark.Thread, p interface{}) (functions.CommandResult, error) {
+	params, ok := p.(Params)
+	if !ok {
+		return nil, fmt.Errorf("unexpected params type: %T", p)
+	}
 
 	if err := validateParams(&params); err != nil {
-		return Params{}, fmt.Errorf("failed to build configuration: %w", err)
+		return nil, fmt.Errorf("failed to build configuration: %w", err)
+	}
+
+	if params.Workdir != "" {
+		if err := functions.MakeDir(params.Workdir, 0744); err != nil {
+			return nil, fmt.Errorf("failed to create workdir: %w", err)
+		}
 	}
 
 	// start local ssh-agent
 	if params.UseSSHAgent {
 		agent, err := ssh.StartAgent()
 		if err != nil {
-			return Params{}, errors.Wrap(err, "failed to start ssh agent")
+			return nil, errors.Wrap(err, "failed to start ssh agent")
 		}
 		t.SetLocal("ssh_agent", agent)
 	}
 
-	return params, nil
+	return functions.NewResult(params), nil
 }
 
 func validateParams(params *Params) error {

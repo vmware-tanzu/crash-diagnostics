@@ -290,6 +290,29 @@ func TestStarlarkToGo(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "sparse-struct",
+			starVal: func() *starlarkstruct.Struct {
+				dict := starlark.StringDict{
+					"msg0": starlark.String("Hello"),
+					"msg1": starlark.String(""),
+				}
+				return starlarkstruct.FromStringDict(starlark.String("struct"), dict)
+			}(),
+			eval: func(t *testing.T, val starlark.Value) {
+				var gostruct struct{ Msg0, Msg1 string }
+				err := starlarkToGo(val, reflect.ValueOf(&gostruct).Elem())
+				if err != nil {
+					t.Fatalf("failed to convert starlark to go value: %s", err)
+				}
+				if gostruct.Msg0 != "Hello" {
+					t.Fatalf("unexpected map[msg] value: %v", gostruct.Msg0)
+				}
+				if gostruct.Msg1 != "" {
+					t.Fatalf("unexpected map[msg] value: %v", gostruct.Msg1)
+				}
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -377,6 +400,37 @@ func TestStarGo(t *testing.T) {
 				if gomap["msg1"] != "World!" {
 					t.Fatalf("unexpected map[msg] value: %v", gomap["msg"])
 				}
+			},
+		},
+		{
+			name: "struct",
+			starVal: func() *starlarkstruct.Struct {
+				dict := starlark.StringDict{
+					"msg0": starlark.String("Hello"),
+					"msg1": starlark.String(""),
+					"msg2": starlark.MakeInt64(12),
+				}
+				return starlarkstruct.FromStringDict(starlark.String("struct"), dict)
+			}(),
+			eval: func(t *testing.T, val starlark.Value) {
+				var gostruct struct {
+					Msg0, Msg1 string
+					Msg2       int64
+				}
+				t.Logf("%T: %#v", val, val)
+				if err := Starlark(val).Go(&gostruct); err != nil {
+					t.Errorf("failed to convert starlark to go value: %s", err)
+				}
+				if gostruct.Msg0 != "Hello" {
+					t.Errorf("unexpected struct.Msg0 value: %v", gostruct.Msg0)
+				}
+				if gostruct.Msg1 != "" {
+					t.Errorf("unexpected struct.Msg1 value: %v", gostruct.Msg1)
+				}
+				if gostruct.Msg2 != 12 {
+					t.Errorf("unexpected struct.Msg2 value %v", gostruct.Msg2)
+				}
+				t.Logf("%T: %#v", gostruct, gostruct)
 			},
 		},
 	}

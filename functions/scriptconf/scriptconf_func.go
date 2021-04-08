@@ -68,13 +68,14 @@ func scriptConfigFunc(thread *starlark.Thread, _ *starlark.Builtin, args starlar
 		Requires:     progReqs,
 	}
 
-	config, err := Build(thread, params)
+	result, err := newCmd().Run(thread, params)
 	if err != nil {
 		return starlark.None, fmt.Errorf("%s: %s", FuncName, err)
 	}
 
+	// for configuration type commands, return only config value
 	var confStruct starlarkstruct.Struct
-	if err := typekit.Go(config).Starlark(&confStruct); err != nil {
+	if err := typekit.Go(result.Value()).Starlark(&confStruct); err != nil {
 		return starlark.None, fmt.Errorf("%s: %s", FuncName, err)
 	}
 

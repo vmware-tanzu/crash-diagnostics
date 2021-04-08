@@ -96,6 +96,17 @@ func (v *GoValue) StarlarkSet(starval interface{}) error {
 	return nil
 }
 
+// GoStructToStringDict is a helper func that converts a Go struct type to
+// starlark.StringDict.
+func GoStructToStringDict(gostruct interface{}) (starlark.StringDict, error) {
+	goval := reflect.ValueOf(gostruct)
+	gotype := goval.Type()
+	if gotype.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("source type must be a struct")
+	}
+	return goStructToStringDict(goval)
+}
+
 // goToStarlark translates Go value to a starlark.Value value
 // using the following type mapping:
 //
@@ -240,29 +251,22 @@ func goToStarlark(gov interface{}, starval interface{}) error {
 		return nil
 
 	case reflect.Struct:
-		makeStruct := func() (*starlarkstruct.Struct, error) {
-			stringDict := make(starlark.StringDict)
-			for i := 0; i < goval.NumField(); i++ {
-				fname := gotype.Field(i).Name
-				var fval starlark.Value
-				if err := goToStarlark(goval.Field(i).Interface(), &fval); err != nil {
-					return nil, fmt.Errorf("failed struct field conversion: %s", err)
-				}
-				stringDict[fname] = fval
-			}
-			return starlarkstruct.FromStringDict(starlark.String(gotype.Name()), stringDict), nil
-		}
-
-		result, err := makeStruct()
+		dict, err := goStructToStringDict(goval)
 		if err != nil {
 			return err
 		}
 
 		switch val := starval.(type) {
 		case *starlark.Value:
+			result := starlarkstruct.FromStringDict(starlark.String(gotype.Name()), dict)
 			*val = result
 		case *starlarkstruct.Struct:
+			result := starlarkstruct.FromStringDict(starlark.String(gotype.Name()), dict)
 			*val = *result
+		case starlark.StringDict:
+			val = dict
+		case *starlark.StringDict:
+			*val = dict
 		default:
 			return fmt.Errorf("target type %T must be *starlarkstruct.Struct or *starlark.Value", starval)
 		}
@@ -273,6 +277,21 @@ func goToStarlark(gov interface{}, starval interface{}) error {
 		return fmt.Errorf("unable to convert Go type %T to Starlark type", gov)
 	}
 
+}
+
+func goStructToStringDict(goval reflect.Value) (starlark.StringDict, error) {
+	gotype := goval.Type()
+	stringDict := make(starlark.StringDict)
+	for i := 0; i < goval.NumField(); i++ {
+		fname := gotype.Field(i).Name
+		var fval starlark.Value
+		if err := goToStarlark(goval.Field(i).Interface(), &fval); err != nil {
+			return nil, fmt.Errorf("failed struct field conversion: %s", err)
+		}
+		stringDict[fname] = fval
+	}
+
+	return stringDict, nil
 }
 
 func assertVal(v interface{}) error {
