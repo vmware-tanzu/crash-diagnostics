@@ -42,21 +42,12 @@ func (c *DefaultResult) Value() interface{} {
 }
 
 func MakeFuncResult(result CommandResult) (starlark.Value, error) {
-	dict, err := typekit.GoStructToStringDict(result.Value())
-	if err != nil {
-		return nil, fmt.Errorf("conversion error: %s", err)
-	}
-	//dict["Err"] = starlark.String("")
-	structVal := starlarkstruct.FromStringDict(starlark.String("CommandResult"), dict)
-	fmt.Printf("%T: %#v", structVal, structVal)
-
-	//return starlarkstruct.FromStringDict(starlark.String("CommandResult"), dict), nil
 	var star starlarkstruct.Struct
 	if err := typekit.Go(result.Value()).Starlark(&star); err != nil {
 		return nil, fmt.Errorf("conversion error: %v", err)
 	}
-	fmt.Printf("%T: %#v", &star, &star)
-	return structVal, nil
+
+	return &star, nil
 }
 
 // Command represents a Starlark function that executes
