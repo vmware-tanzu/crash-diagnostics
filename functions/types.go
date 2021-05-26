@@ -4,12 +4,7 @@
 package functions
 
 import (
-	"fmt"
-
 	"go.starlark.net/starlark"
-	"go.starlark.net/starlarkstruct"
-
-	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 )
 
 // CommandResult represents the result of a command
@@ -39,15 +34,6 @@ func (c *DefaultResult) Err() string {
 
 func (c *DefaultResult) Value() interface{} {
 	return c.val
-}
-
-func MakeFuncResult(result CommandResult) (starlark.Value, error) {
-	var star starlarkstruct.Struct
-	if err := typekit.Go(result.Value()).Starlark(&star); err != nil {
-		return nil, fmt.Errorf("conversion error: %v", err)
-	}
-
-	return &star, nil
 }
 
 // Command represents a Starlark function that executes

@@ -10,8 +10,8 @@ import (
 func TestCmd_Run(t *testing.T) {
 	tests := []struct {
 		name       string
-		params     Params
-		arc        Archive
+		params     Args
+		arc        Result
 		shouldFail bool
 	}{
 		{
@@ -20,18 +20,18 @@ func TestCmd_Run(t *testing.T) {
 		},
 		{
 			name:   "default archive name",
-			params: Params{SourcePaths: []string{"/tmp/crashd"}},
-			arc:    Archive{SourcePaths: []string{"/tmp/crashd"}, OutputFile: DefaultBundleName},
+			params: Args{SourcePaths: []string{"/tmp/crashd"}},
+			arc:    Result{OutputFile: DefaultBundleName},
 		},
 		{
 			name:   "archive name",
-			params: Params{SourcePaths: []string{"/tmp/crashd"}, OutputFile: "test.tar.gz"},
-			arc:    Archive{SourcePaths: []string{"/tmp/crashd"}, OutputFile: "test.tar.gz"},
+			params: Args{SourcePaths: []string{"/tmp/crashd"}, OutputFile: "test.tar.gz"},
+			arc:    Result{OutputFile: "test.tar.gz"},
 		},
 		{
 			name:   "multiple files",
-			params: Params{SourcePaths: []string{"/tmp/crashd0", "/tmp/crashd1"}, OutputFile: "test.tar.gz"},
-			arc:    Archive{SourcePaths: []string{"/tmp/crashd0", "/tmp/crashd1"}, OutputFile: "test.tar.gz"},
+			params: Args{SourcePaths: []string{"/tmp/crashd0", "/tmp/crashd1"}, OutputFile: "test.tar.gz"},
+			arc:    Result{OutputFile: "test.tar.gz"},
 		},
 	}
 
@@ -49,25 +49,16 @@ func TestCmd_Run(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			arc, ok := result.Value().(Archive)
-			if !ok {
-				t.Fatalf("unexpected type %T returned by function %s", result.Value(), FuncName)
+			if result.Error != "" && !test.shouldFail {
+				t.Errorf("unexpected error: %s", result.Error)
 			}
 
-			if result.Err() != "" && !test.shouldFail {
-				t.Errorf("unexpected error: %s", result.Err())
-			}
-
-			if len(arc.SourcePaths) != len(test.arc.SourcePaths) {
-				t.Errorf("unexpected source paths length: %d", len(arc.SourcePaths))
-			}
-
-			if arc.Size == 0 && !test.shouldFail {
+			if result.Size == 0 && !test.shouldFail {
 				t.Errorf("archive file has size 0")
 			}
 
 			// clean up
-			if err := os.RemoveAll(arc.OutputFile); err != nil {
+			if err := os.RemoveAll(result.OutputFile); err != nil {
 				t.Log(err)
 			}
 

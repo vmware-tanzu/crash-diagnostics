@@ -6,11 +6,11 @@ package archive
 import (
 	"fmt"
 
-	"go.starlark.net/starlark"
-
-	"github.com/vmware-tanzu/crash-diagnostics/functions"
-	"github.com/vmware-tanzu/crash-diagnostics/functions/builtins"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
+	"go.starlark.net/starlark"
+	"go.starlark.net/starlarkstruct"
+
+	"github.com/vmware-tanzu/crash-diagnostics/functions/builtins"
 )
 
 var (
@@ -29,31 +29,18 @@ func init() {
 // tar file bundle.
 // Script example: archive(output_file=<file name> ,source_paths=[<path list>])
 func archiveFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	var argOutFile string
-	var argPaths *starlark.List
-
-	if err := starlark.UnpackArgs(
-		FuncName, args, kwargs,
-		"output_file?", &argOutFile,
-		"source_paths", &argPaths,
-	); err != nil {
+	var params Args
+	if err := typekit.KwargsToGo(kwargs, &params); err != nil {
 		return starlark.None, fmt.Errorf("%s: %s", FuncName, err)
-	}
-
-	var paths []string
-	if err := typekit.Starlark(argPaths).Go(&paths); err != nil {
-		return starlark.None, fmt.Errorf("%s: type conversion error: %s", FuncName, err)
-	}
-
-	params := Params{
-		SourcePaths: paths,
-		OutputFile:  argOutFile,
 	}
 
 	result, err := newCmd().Run(thread, params)
 	if err != nil {
 		return starlark.None, fmt.Errorf("%s: command failed: %s", FuncName, err)
 	}
-
-	return functions.MakeFuncResult(result)
+	starResult := new(starlarkstruct.Struct)
+	if err := typekit.Go(result).Starlark(starResult); err != nil {
+		return nil, fmt.Errorf("conversion error: %v", err)
+	}
+	return starResult, nil
 }

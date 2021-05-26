@@ -1,12 +1,13 @@
 package archive
 
-// Params captures the argument for the command
-type Params struct {
-	SourcePaths []string
-	OutputFile  string
-	Size        uint64
+// Args captures the argument for the command
+type Args struct {
+	SourcePaths []string `arg:"source_paths"`
+	OutputFile  string   `arg:"output_file" optional:"true"`
 }
 
-// Archive is used to represent the output of
-// an archive command
-type Archive = Params
+type Result struct {
+	OutputFile string
+	Error      string
+	Size       int64
+}

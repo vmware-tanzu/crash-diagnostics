@@ -33,13 +33,14 @@ func TestArchiveFunc(t *testing.T) {
 				if err := createSourceFile(t, "/tmp/crashd", "test.txt", "Hello"); err != nil {
 					t.Fatal(err)
 				}
+				defer os.RemoveAll("/tmp/crashd")
 
 				val, err := Func(&starlark.Thread{}, nil, nil, kwargs)
 				if err != nil {
 					t.Fatal(err)
 				}
 
-				var arc Archive
+				var arc Result
 				if err := typekit.Starlark(val).Go(&arc); err != nil {
 					t.Fatal(err)
 				}
@@ -51,17 +52,8 @@ func TestArchiveFunc(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				if len(arc.SourcePaths) != 1 {
-					t.Errorf("unexpected source paths len: %d", len(arc.SourcePaths))
-				}
-
 				if err := os.RemoveAll(arc.OutputFile); err != nil {
 					t.Log(err)
-				}
-				for _, p := range arc.SourcePaths {
-					if err := os.RemoveAll(p); err != nil {
-						t.Log(err)
-					}
 				}
 			},
 		},
@@ -82,12 +74,14 @@ func TestArchiveFunc(t *testing.T) {
 				if err := createSourceFile(t, "/tmp/crashd", "2.txt", "Hello"); err != nil {
 					t.Fatal(err)
 				}
+				defer os.RemoveAll("/tmp/crashd")
+
 				val, err := Func(&starlark.Thread{}, nil, nil, kwargs)
 				if err != nil {
 					t.Fatal(err)
 				}
 
-				var arc Archive
+				var arc Result
 				if err := typekit.Starlark(val).Go(&arc); err != nil {
 					t.Fatal(err)
 				}
@@ -97,11 +91,6 @@ func TestArchiveFunc(t *testing.T) {
 
 				if err := os.RemoveAll(arc.OutputFile); err != nil {
 					t.Log(err)
-				}
-				for _, p := range arc.SourcePaths {
-					if err := os.RemoveAll(p); err != nil {
-						t.Log(err)
-					}
 				}
 			},
 		},
