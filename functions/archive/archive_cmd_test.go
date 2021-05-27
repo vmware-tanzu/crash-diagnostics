@@ -44,9 +44,9 @@ func TestCmd_Run(t *testing.T) {
 				}
 			}
 
-			result, err := newCmd().Run(&starlark.Thread{}, test.params)
-			if err != nil {
-				t.Fatal(err)
+			result := newCmd().Run(&starlark.Thread{}, test.params)
+			if result.Error != "" && !test.shouldFail {
+				t.Fatal(result.Error)
 			}
 
 			if result.Error != "" && !test.shouldFail {

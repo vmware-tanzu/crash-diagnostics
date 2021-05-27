@@ -7,6 +7,8 @@ import (
 	"go.starlark.net/starlark"
 )
 
+type FunctionName string
+
 // CommandResult represents the result of a command
 type CommandResult interface {
 	Err() string

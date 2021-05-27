@@ -239,7 +239,7 @@ func TestGoToStarlark(t *testing.T) {
 			},
 		},
 		{
-			name:  "Struct[string]string",
+			name:  "Struct-starlarkstruct",
 			goVal: struct{ Msg, Target string }{Msg: "hello", Target: "world"},
 			eval: func(t *testing.T, goVal interface{}) {
 				var starval starlarkstruct.Struct
@@ -248,7 +248,31 @@ func TestGoToStarlark(t *testing.T) {
 				}
 				val, err := starval.Attr("Msg")
 				if err != nil {
-					t.Errorf("failed to get value from starlarkstruct.Struct: %s", err)
+					t.Fatalf("failed to get value from starlarkstruct.Struct: %s", err)
+				}
+
+				if val.String() != `"hello"` {
+					t.Errorf("unexpected value for starlark.Dict value: %s", val.String())
+				}
+
+			},
+		},
+		{
+			name: "Struct-starlarkstruct-annotated",
+			goVal: struct {
+				Msg    string `name:"msg_field"`
+				Target string
+			}{
+				Msg: "hello", Target: "world",
+			},
+			eval: func(t *testing.T, goVal interface{}) {
+				var starval starlarkstruct.Struct
+				if err := goToStarlark(goVal, &starval); err != nil {
+					t.Fatal(err)
+				}
+				val, err := starval.Attr("msg_field")
+				if err != nil {
+					t.Fatalf("failed to get value from starlarkstruct.Struct: %s", err)
 				}
 
 				if val.String() != `"hello"` {
@@ -268,13 +292,37 @@ func TestGoToStarlark(t *testing.T) {
 				structVal := starval.(*starlarkstruct.Struct)
 				val, err := structVal.Attr("Msg")
 				if err != nil {
-					t.Errorf("failed to get value from starlarkstruct.Struct: %s", err)
+					t.Fatalf("failed to get value from starlarkstruct.Struct: %s", err)
 				}
 
 				if val.String() != `"hello"` {
 					t.Errorf("unexpected value for starlark.Dict value: %s", val.String())
 				}
 
+			},
+		},
+		{
+			name: "Struct-Value-Annotated",
+			goVal: struct {
+				Msg    string
+				Target string `name:"tgt"`
+			}{
+				Msg: "hello", Target: "world",
+			},
+			eval: func(t *testing.T, goVal interface{}) {
+				var starval starlark.Value
+				if err := goToStarlark(goVal, &starval); err != nil {
+					t.Fatal(err)
+				}
+				structVal := starval.(*starlarkstruct.Struct)
+				val, err := structVal.Attr("tgt")
+				if err != nil {
+					t.Fatalf("failed to get value from starlarkstruct.Struct: %s", err)
+				}
+
+				if val.String() != `"world"` {
+					t.Errorf("unexpected value for starlark.Dict value: %s", val.String())
+				}
 			},
 		},
 		{

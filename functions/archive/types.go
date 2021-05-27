@@ -7,7 +7,7 @@ type Args struct {
 }
 
 type Result struct {
-	OutputFile string
-	Error      string
-	Size       int64
+	OutputFile string `name:"output_file"`
+	Error      string `name:"error"`
+	Size       int64  `name:"size"`
 }

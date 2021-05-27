@@ -4,9 +4,16 @@
 package functions
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+
+	"go.starlark.net/starlark"
 )
+
+func FuncError(funcName FunctionName, err error) (starlark.Value, error) {
+	return starlark.None, fmt.Errorf("%s: failed: %s", funcName, err)
+}
 
 func MakeDir(path string, mode os.FileMode) error {
 	if _, err := os.Stat(path); err != nil && !os.IsNotExist(err) {

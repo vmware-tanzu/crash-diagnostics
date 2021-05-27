@@ -3,6 +3,7 @@ package builtins
 import (
 	"sync"
 
+	"github.com/vmware-tanzu/crash-diagnostics/functions"
 	"go.starlark.net/starlark"
 )
 
@@ -16,10 +17,10 @@ func init() {
 }
 
 // Register registers a Starlark built-in function
-func Register(name string, builtin *starlark.Builtin) {
+func Register(name functions.FunctionName, builtin *starlark.Builtin) {
 	mutex.Lock()
 	defer mutex.Unlock()
-	registry[name] = builtin
+	registry[string(name)] = builtin
 }
 
 func Registry() starlark.StringDict {

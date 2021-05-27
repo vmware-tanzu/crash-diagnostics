@@ -212,7 +212,7 @@ func starlarkToGo(srcVal starlark.Value, goval reflect.Value) error {
 		if !ok {
 			return fmt.Errorf("failed to assert %T as starlark.Struct", srcVal)
 		}
-		goval.Set(reflect.Zero(goval.Type()))
+
 		attrs := structVal.AttrNames()
 		for _, attr := range attrs {
 			attrVal, err := structVal.Attr(attr)
@@ -220,12 +220,22 @@ func starlarkToGo(srcVal starlark.Value, goval reflect.Value) error {
 				return fmt.Errorf("failed retrieve attr %T from starlarkstruct.Struct", attr)
 			}
 
-			fieldName := strings.Title(attr)
-			goFieldVal := reflect.New(goval.FieldByName(fieldName).Type()).Elem()
+			// match starlarkstruct field name using gostruct field tag
+			// or, if not found, use the starlarkstruct field attr
+
+			var fieldName string
+			goStructField, goFieldVal, found := findFieldByTag(goval, "name", attr)
+			if found {
+				fieldName = goStructField.Name
+			} else {
+				fieldName = strings.Title(attr)
+				goFieldVal = reflect.New(goval.FieldByName(fieldName).Type()).Elem()
+			}
 			if err := starlarkToGo(attrVal, goFieldVal); err != nil {
 				return err
 			}
-			goval.FieldByName(fieldName).Set(goFieldVal)
+			field := goval.FieldByName(fieldName)
+			field.Set(goFieldVal)
 		}
 		return nil
 	}
@@ -237,4 +247,23 @@ func starlarkToGo(srcVal starlark.Value, goval reflect.Value) error {
 	}
 
 	return fmt.Errorf("failed conversion")
+}
+
+func findFieldByTag(goval reflect.Value, tagKey, tagValue string) (reflect.StructField, reflect.Value, bool) {
+	gotype := goval.Type()
+	for i := 0; i < goval.NumField(); i++ {
+		fieldType := gotype.Field(i)
+		val, ok := fieldType.Tag.Lookup(tagKey)
+		if !ok {
+			continue
+		}
+		if val == tagValue {
+			fieldVal := goval.Field(i)
+			if !fieldVal.IsValid() {
+				fieldVal = reflect.New(fieldType.Type).Elem()
+			}
+			return fieldType, fieldVal, true
+		}
+	}
+	return reflect.StructField{}, reflect.Zero(gotype), false
 }

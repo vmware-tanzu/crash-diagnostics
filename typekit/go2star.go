@@ -283,7 +283,15 @@ func goStructToStringDict(goval reflect.Value) (starlark.StringDict, error) {
 	gotype := goval.Type()
 	stringDict := make(starlark.StringDict)
 	for i := 0; i < goval.NumField(); i++ {
-		fname := gotype.Field(i).Name
+		field := gotype.Field(i)
+		fname := field.Name
+
+		// get starlarkstruct field name from tag (if any)
+		name, _ := field.Tag.Lookup("name")
+		if name != "" {
+			fname = name
+		}
+
 		var fval starlark.Value
 		if err := goToStarlark(goval.Field(i).Interface(), &fval); err != nil {
 			return nil, fmt.Errorf("failed struct field conversion: %s", err)
