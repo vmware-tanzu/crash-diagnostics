@@ -10,30 +10,30 @@ import (
 func TestConfCmd_Run(t *testing.T) {
 	tests := []struct {
 		name   string
-		params Params
-		config Configuration
+		params Args
+		config Result
 	}{
 		{
 			name:   "default values",
-			params: Params{},
-			config: Configuration{Workdir: defaultWorkdir, Gid: getGid(), Uid: getUid()},
+			params: Args{},
+			config: Result{Workdir: defaultWorkdir, Gid: getGid(), Uid: getUid()},
 		},
 		{
 			name:   "all values",
-			params: Params{Workdir: "foo", Gid: "00", Uid: "01", UseSSHAgent: true, Requires: []string{"a/b"}},
-			config: Configuration{Workdir: "foo", Gid: "00", Uid: "01", UseSSHAgent: true, Requires: []string{"a/b"}},
+			params: Args{Workdir: "foo", Gid: "00", Uid: "01", UseSSHAgent: true, Requires: []string{"a/b"}},
+			config: Result{Workdir: "foo", Gid: "00", Uid: "01", UseSSHAgent: true, Requires: []string{"a/b"}},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			thread := &starlark.Thread{}
-			result, err := newCmd().Run(thread, test.params)
-			if err != nil {
-				t.Fatal(err)
+			result := newCmd().Run(thread, test.params)
+			if result.Error != "" {
+				t.Fatal(result.Error)
 			}
 
-			cfg := result.Value().(Configuration)
+			cfg := result
 			if cfg.Workdir != test.config.Workdir {
 				t.Errorf("unexpected workdir value %s", cfg.Workdir)
 			}
@@ -44,7 +44,7 @@ func TestConfCmd_Run(t *testing.T) {
 				t.Errorf("unexpected Gid: %s", cfg.Gid)
 			}
 			if cfg.Uid != test.config.Uid {
-				t.Errorf("unexpected Uid: %s", cfg.Uid)
+				t.Errorf("expected Uid %s, got: %s", test.config.Uid, cfg.Uid)
 			}
 			if cfg.UseSSHAgent != test.config.UseSSHAgent {
 				t.Errorf("unexpected UseSSHAgent: %t", cfg.UseSSHAgent)

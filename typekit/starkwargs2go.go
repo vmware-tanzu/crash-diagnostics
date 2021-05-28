@@ -15,8 +15,8 @@ import (
 // the keyword argument mapping as:
 //
 //  type Param struct {
-//      OutputFile  string   `arg:"output_file" optional:"true"`
-//      SourcePaths []string `arg:"output_path"`
+//      OutputFile  string   `name:"output_file" optional:"true"`
+//      SourcePaths []string `name:"output_path"`
 //  }
 //
 // The previous struct can be mapped to the following keyword args:
@@ -26,7 +26,7 @@ import (
 //	   {starlark.String("source_paths"), starlark.NewList([]starlark.Value{starlark.String("/tmp/crashd")})},
 // }
 //
-// Supported annotation: `arg:"arg_name" optional:"true|false" (default false)`
+// Supported annotation: `name:"arg_name" optional:"true|false" (default false)`
 func KwargsToGo(kwargs []starlark.Tuple, goStructPtr interface{}) error {
 	goval := reflect.ValueOf(goStructPtr)
 	gotype := goval.Type()
@@ -48,9 +48,10 @@ func kwargsToGo(kwargs []starlark.Tuple, goval reflect.Value) error {
 
 	for i := 0; i < goval.NumField(); i++ {
 		field := gotype.Field(i)
-		argName, ok := field.Tag.Lookup("arg")
+
+		argName, ok := field.Tag.Lookup("name")
 		if !ok {
-			return fmt.Errorf("tag 'arg' is required")
+			continue
 		}
 
 		// get arg from keyword args (use either tag or field name)

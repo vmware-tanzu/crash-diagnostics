@@ -26,35 +26,37 @@ func newCmd() *confCmd {
 }
 
 // Run applies processes the params and generates a configuration value for the script
-func (c *confCmd) Run(t *starlark.Thread, p interface{}) (functions.CommandResult, error) {
-	params, ok := p.(Params)
-	if !ok {
-		return nil, fmt.Errorf("unexpected params type: %T", p)
+func (c *confCmd) Run(t *starlark.Thread, args Args) Result {
+	if err := validateArgs(&args); err != nil {
+		return Result{Error: fmt.Sprintf("failed to build configuration: %s", err)}
 	}
 
-	if err := validateParams(&params); err != nil {
-		return nil, fmt.Errorf("failed to build configuration: %w", err)
-	}
-
-	if params.Workdir != "" {
-		if err := functions.MakeDir(params.Workdir, 0744); err != nil {
-			return nil, fmt.Errorf("failed to create workdir: %w", err)
+	if args.Workdir != "" {
+		if err := functions.MakeDir(args.Workdir, 0744); err != nil {
+			return Result{Error: fmt.Sprintf("failed to create workdir: %s", err)}
 		}
 	}
 
 	// start local ssh-agent
-	if params.UseSSHAgent {
+	if args.UseSSHAgent {
 		agent, err := ssh.StartAgent()
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to start ssh agent")
+			return Result{Error: errors.Wrap(err, "failed to start ssh agent").Error()}
 		}
 		t.SetLocal("ssh_agent", agent)
 	}
 
-	return functions.NewResult(params), nil
+	return Result{
+		Workdir:      args.Workdir,
+		Gid:          args.Gid,
+		Uid:          args.Uid,
+		DefaultShell: args.DefaultShell,
+		Requires:     args.Requires,
+		UseSSHAgent:  args.UseSSHAgent,
+	}
 }
 
-func validateParams(params *Params) error {
+func validateArgs(params *Args) error {
 	if params.Workdir == "" {
 		params.Workdir = defaultWorkdir
 	}

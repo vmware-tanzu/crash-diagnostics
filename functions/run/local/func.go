@@ -6,6 +6,7 @@ package local
 import (
 	"fmt"
 
+	"github.com/vmware-tanzu/crash-diagnostics/functions"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 
@@ -13,31 +14,25 @@ import (
 )
 
 var (
-	FuncName = "run_local"
-	Func     = runLocalFunc
-	Builtin  = starlark.NewBuiltin(FuncName, Func)
+	Name    = functions.FunctionName("run_local")
+	Func    = runLocalFunc
+	Builtin = starlark.NewBuiltin(string(Name), Func)
 )
 
 // runLocalFunc is a built-in starlark function that runs a provided command on the local machine.
 // Starlark format: result = run_local(cmd="script-command")
-func runLocalFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	var cmdParam string
-	if err := starlark.UnpackArgs(
-		FuncName, args, kwargs,
-		"cmd", &cmdParam,
-	); err != nil {
-		return starlark.None, fmt.Errorf("%s: %s", FuncName, err)
+func runLocalFunc(thread *starlark.Thread, b *starlark.Builtin, _ starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+	var args Args
+	if err := typekit.KwargsToGo(kwargs, &args); err != nil {
+		return functions.FuncError(Name, fmt.Errorf("%s: %s", Name, err))
 	}
 
-	result, err := newCmd().Run(thread, cmdParam)
-	if err != nil {
-		return starlark.None, fmt.Errorf("%s: command failed: %s", FuncName, err)
-	}
+	result := newCmd().Run(thread, args)
 
-	var star starlarkstruct.Struct
-	if err := typekit.Go(result.Value()).Starlark(&star); err != nil {
-		return starlark.None, fmt.Errorf("%s: conversion error: %s", FuncName, err)
+	// convert and return result
+	starResult := new(starlarkstruct.Struct)
+	if err := typekit.Go(result).Starlark(starResult); err != nil {
+		return functions.FuncError(Name, fmt.Errorf("conversion error: %v", err))
 	}
-
-	return &star, nil
+	return starResult, nil
 }

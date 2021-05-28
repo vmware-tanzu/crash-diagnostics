@@ -17,7 +17,7 @@ func TestStarKwargs2Go(t *testing.T) {
 			kwargs: []starlark.Tuple{},
 			eval: func(t *testing.T, kwargs []starlark.Tuple) {
 				val := struct {
-					A string `arg:"a" optional:"true"`
+					A string `name:"a" optional:"true"`
 				}{}
 				if err := KwargsToGo(kwargs, &val); err != nil {
 					t.Fatal(err)
@@ -32,7 +32,7 @@ func TestStarKwargs2Go(t *testing.T) {
 			kwargs: []starlark.Tuple{},
 			eval: func(t *testing.T, kwargs []starlark.Tuple) {
 				val := struct {
-					A string `arg:"a" optional:"false"`
+					A string `name:"a" optional:"false"`
 				}{}
 				if err := KwargsToGo(kwargs, &val); err == nil {
 					t.Fatal("should fail due to missing arg")
@@ -44,7 +44,7 @@ func TestStarKwargs2Go(t *testing.T) {
 			kwargs: []starlark.Tuple{},
 			eval: func(t *testing.T, kwargs []starlark.Tuple) {
 				val := struct {
-					A string `arg:"a"`
+					A string `name:"a"`
 				}{}
 				if err := KwargsToGo(kwargs, &val); err == nil {
 					t.Fatal("should fail due to missing arg")
@@ -59,8 +59,8 @@ func TestStarKwargs2Go(t *testing.T) {
 			},
 			eval: func(t *testing.T, kwargs []starlark.Tuple) {
 				val := struct {
-					A string `arg:"a"`
-					B int64  `arg:"b"`
+					A string `name:"a"`
+					B int64  `name:"b"`
 				}{}
 				if err := KwargsToGo(kwargs, &val); err != nil {
 					t.Fatal(err)
@@ -81,8 +81,8 @@ func TestStarKwargs2Go(t *testing.T) {
 			},
 			eval: func(t *testing.T, kwargs []starlark.Tuple) {
 				val := struct {
-					A string `arg:"a" optional:"true"`
-					B int64  `arg:"b" optional:"true"`
+					A string `name:"a" optional:"true"`
+					B int64  `name:"b" optional:"true"`
 				}{}
 				if err := KwargsToGo(kwargs, &val); err != nil {
 					t.Fatal(err)
@@ -103,8 +103,8 @@ func TestStarKwargs2Go(t *testing.T) {
 			},
 			eval: func(t *testing.T, kwargs []starlark.Tuple) {
 				val := struct {
-					A string `arg:"a" optional:"true"`
-					B int64  `arg:"b" optional:"false"`
+					A string `name:"a" optional:"true"`
+					B int64  `name:"b" optional:"false"`
 				}{}
 				if err := KwargsToGo(kwargs, &val); err != nil {
 					t.Fatal(err)
@@ -124,8 +124,8 @@ func TestStarKwargs2Go(t *testing.T) {
 			},
 			eval: func(t *testing.T, kwargs []starlark.Tuple) {
 				val := struct {
-					A string `arg:"a"`
-					B int64  `arg:"b" optional:"true"`
+					A string `name:"a"`
+					B int64  `name:"b" optional:"true"`
 				}{}
 				if err := KwargsToGo(kwargs, &val); err != nil {
 					t.Fatal(err)

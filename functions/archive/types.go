@@ -2,8 +2,8 @@ package archive
 
 // Args captures the argument for the command
 type Args struct {
-	SourcePaths []string `arg:"source_paths"`
-	OutputFile  string   `arg:"output_file" optional:"true"`
+	SourcePaths []string `name:"source_paths"`
+	OutputFile  string   `name:"output_file" optional:"true"`
 }
 
 type Result struct {

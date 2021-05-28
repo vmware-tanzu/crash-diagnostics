@@ -7,42 +7,36 @@ import (
 	"testing"
 
 	"go.starlark.net/starlark"
-
-	"github.com/vmware-tanzu/crash-diagnostics/functions/run"
 )
 
 func TestCmd_Run(t *testing.T) {
 	tests := []struct {
 		name       string
-		param      string
+		args       Args
 		expected   string
 		shouldFail bool
 	}{
 		{
 			name:     "simple exec",
-			param:    `echo "Hello World!"`,
+			args:     Args{Cmd: `echo "Hello World!"`},
 			expected: "Hello World!",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result, err := newCmd().Run(&starlark.Thread{}, test.param)
-			if !test.shouldFail && err != nil {
-				t.Fatal(err)
+			result := newCmd().Run(&starlark.Thread{}, test.args)
+			if !test.shouldFail && result.Error != "" {
+				t.Fatal(result.Error)
 			}
 
-			proc, ok := result.Value().(run.LocalProc)
-			if !ok {
-				t.Fatalf("unexpected type in CommandResult %T", result.Value())
+			if result.Result != test.expected {
+				t.Errorf("command returned unexpected result: %s", result.Result)
 			}
-			if proc.Result != test.expected {
-				t.Errorf("command returned unexpected result: %s", proc.Result)
-			}
-			if proc.Pid == 0 {
+			if result.Pid == 0 {
 				t.Errorf("successful command returned 0 pid")
 			}
-			if proc.ExitCode != 0 {
+			if result.ExitCode != 0 {
 				t.Errorf("successful command returned non-zero exit code")
 			}
 		})

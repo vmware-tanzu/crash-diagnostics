@@ -25,7 +25,7 @@ func TestScriptConfigFunc(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				var conf Configuration
+				var conf Result
 				if err := typekit.Starlark(val).Go(&conf); err != nil {
 					t.Fatal(err)
 				}
@@ -45,7 +45,7 @@ func TestScriptConfigFunc(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				var conf Configuration
+				var conf Result
 				if err := typekit.Starlark(val).Go(&conf); err != nil {
 					t.Fatal(err)
 				}
@@ -68,7 +68,7 @@ func TestScriptConfigFunc(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				var conf Configuration
+				var conf Result
 				if err := typekit.Starlark(val).Go(&conf); err != nil {
 					t.Fatal(err)
 				}
@@ -93,7 +93,7 @@ func TestScriptConfigFunc(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				var conf Configuration
+				var conf Result
 				if err := typekit.Starlark(val).Go(&conf); err != nil {
 					t.Fatal(err)
 				}

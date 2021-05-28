@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vmware-tanzu/crash-diagnostics/functions/run"
 	crashlark "github.com/vmware-tanzu/crash-diagnostics/starlark"
 	crashtest "github.com/vmware-tanzu/crash-diagnostics/testing"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
@@ -17,19 +16,19 @@ import (
 
 func TestRunLocalFunc(t *testing.T) {
 	tests := []struct {
-		name string
-		args starlark.Tuple
-		eval func(t *testing.T, args starlark.Tuple)
+		name   string
+		kwargs []starlark.Tuple
+		eval   func(t *testing.T, kwargs []starlark.Tuple)
 	}{
 		{
-			name: "simple command",
-			args: starlark.Tuple{starlark.String("echo 'Hello World!'")},
-			eval: func(t *testing.T, args starlark.Tuple) {
-				val, err := runLocalFunc(crashtest.NewStarlarkThreadLocal(t), nil, args, nil)
+			name:   "simple command",
+			kwargs: []starlark.Tuple{{starlark.String("cmd"), starlark.String("echo 'Hello World!'")}},
+			eval: func(t *testing.T, kwargs []starlark.Tuple) {
+				val, err := runLocalFunc(crashtest.NewStarlarkThreadLocal(t), nil, nil, kwargs)
 				if err != nil {
 					t.Fatal(err)
 				}
-				var p run.LocalProc
+				var p Result
 				if err := typekit.Starlark(val).Go(&p); err != nil {
 					t.Fatalf("unable to convert result: %s", err)
 				}
@@ -43,7 +42,7 @@ func TestRunLocalFunc(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			test.eval(t, test.args)
+			test.eval(t, test.kwargs)
 		})
 	}
 }
