@@ -29,7 +29,7 @@ func TestScriptConfigFunc(t *testing.T) {
 				if err := typekit.Starlark(val).Go(&conf); err != nil {
 					t.Fatal(err)
 				}
-				if conf.Workdir != defaultWorkdir {
+				if conf.Workdir != DefaultWorkdir() {
 					t.Errorf("unexpected workdir value: %s", conf.Workdir)
 				}
 				if err := os.RemoveAll(conf.Workdir); err != nil {

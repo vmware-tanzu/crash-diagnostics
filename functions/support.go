@@ -8,10 +8,19 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 	"go.starlark.net/starlark"
+	"go.starlark.net/starlarkstruct"
 )
 
-func FuncError(funcName FunctionName, err error) (starlark.Value, error) {
+func Result(funcName FunctionName, result interface{}) (starlark.Value, error) {
+	starResult := new(starlarkstruct.Struct)
+	if err := typekit.Go(result).Starlark(starResult); err != nil {
+		return Error(funcName, fmt.Errorf("conversion error: %v", err))
+	}
+	return starResult, nil
+}
+func Error(funcName FunctionName, err error) (starlark.Value, error) {
 	return starlark.None, fmt.Errorf("%s: failed: %s", funcName, err)
 }
 

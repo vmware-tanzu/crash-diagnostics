@@ -7,11 +7,9 @@ import (
 	"fmt"
 
 	"github.com/vmware-tanzu/crash-diagnostics/functions"
+	"github.com/vmware-tanzu/crash-diagnostics/functions/builtins"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 	"go.starlark.net/starlark"
-	"go.starlark.net/starlarkstruct"
-
-	"github.com/vmware-tanzu/crash-diagnostics/functions/builtins"
 )
 
 var (
@@ -32,16 +30,12 @@ func init() {
 func archiveFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var params Args
 	if err := typekit.KwargsToGo(kwargs, &params); err != nil {
-		return functions.FuncError(Name, fmt.Errorf("%s: %s", Name, err))
+		return functions.Error(Name, fmt.Errorf("%s: %s", Name, err))
 	}
 
 	// execute command
 	result := newCmd().Run(thread, params)
 
 	// convert and return result
-	starResult := new(starlarkstruct.Struct)
-	if err := typekit.Go(result).Starlark(starResult); err != nil {
-		return functions.FuncError(Name, fmt.Errorf("conversion error: %v", err))
-	}
-	return starResult, nil
+	return functions.Result(Name, result)
 }

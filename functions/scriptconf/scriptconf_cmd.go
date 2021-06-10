@@ -5,18 +5,16 @@ package scriptconf
 
 import (
 	"fmt"
+	"os"
 	"os/user"
 
 	"github.com/pkg/errors"
+	"github.com/vmware-tanzu/crash-diagnostics/functions/sshconf"
 	"go.starlark.net/starlark"
 
 	"github.com/vmware-tanzu/crash-diagnostics/functions"
 	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 	"github.com/vmware-tanzu/crash-diagnostics/util"
-)
-
-const (
-	defaultWorkdir = "/tmp/crashd"
 )
 
 type confCmd struct{}
@@ -31,10 +29,9 @@ func (c *confCmd) Run(t *starlark.Thread, args Args) Result {
 		return Result{Error: fmt.Sprintf("failed to build configuration: %s", err)}
 	}
 
-	if args.Workdir != "" {
-		if err := functions.MakeDir(args.Workdir, 0744); err != nil {
-			return Result{Error: fmt.Sprintf("failed to create workdir: %s", err)}
-		}
+	// create workdir if needed
+	if err := functions.MakeDir(args.Workdir, 0744); !os.IsExist(err) {
+		return Result{Error: fmt.Sprintf("failed to create workdir: %s", err)}
 	}
 
 	// start local ssh-agent
@@ -43,7 +40,7 @@ func (c *confCmd) Run(t *starlark.Thread, args Args) Result {
 		if err != nil {
 			return Result{Error: errors.Wrap(err, "failed to start ssh agent").Error()}
 		}
-		t.SetLocal("ssh_agent", agent)
+		t.SetLocal(sshconf.SSHAgentIdentifier, agent)
 	}
 
 	return Result{
@@ -58,7 +55,7 @@ func (c *confCmd) Run(t *starlark.Thread, args Args) Result {
 
 func validateArgs(params *Args) error {
 	if params.Workdir == "" {
-		params.Workdir = defaultWorkdir
+		params.Workdir = DefaultWorkdir()
 	}
 	wd, err := util.ExpandPath(params.Workdir)
 	if err != nil {

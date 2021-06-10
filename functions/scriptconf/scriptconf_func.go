@@ -7,11 +7,9 @@ import (
 	"fmt"
 
 	"github.com/vmware-tanzu/crash-diagnostics/functions"
-	"go.starlark.net/starlark"
-	"go.starlark.net/starlarkstruct"
-
 	"github.com/vmware-tanzu/crash-diagnostics/functions/builtins"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
+	"go.starlark.net/starlark"
 )
 
 var (
@@ -41,16 +39,27 @@ func init() {
 func scriptConfigFunc(thread *starlark.Thread, _ *starlark.Builtin, _ starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var args Args
 	if err := typekit.KwargsToGo(kwargs, &args); err != nil {
-		return functions.FuncError(Name, fmt.Errorf("%s: %s", Name, err))
+		return functions.Error(Name, fmt.Errorf("%s: %s", Name, err))
 	}
 
 	result := newCmd().Run(thread, args)
 
-	// convert and return result
-	starResult := new(starlarkstruct.Struct)
-	if err := typekit.Go(result).Starlark(starResult); err != nil {
-		return functions.FuncError(Name, fmt.Errorf("conversion error: %v", err))
-	}
-	return starResult, nil
+	// save config result in thread
+	thread.SetLocal(string(Name), result)
 
+	// convert and return result
+	return functions.Result(Name, result)
+}
+
+// ResultFromThread retrieves script config result from provided
+// thread instance. If found, bool = true.
+func ResultFromThread(t *starlark.Thread) (Result, bool) {
+	if val := t.Local(string(Name)); val != nil {
+		result, ok := val.(Result)
+		if !ok {
+			return Result{}, ok
+		}
+		return result, true
+	}
+	return Result{}, false
 }

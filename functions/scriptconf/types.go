@@ -1,4 +1,12 @@
+// Copyright (c) 2021 VMware, Inc. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+// Package scriptconf represents the `script_conf` starlark function
 package scriptconf
+
+var (
+	DefaultWorkdir = func() string { return "/tmp/crashd" }
+)
 
 // Args represent input arguments passed to starlark function.
 // Args can also be used as output arguments to built-in function.

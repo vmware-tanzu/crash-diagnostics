@@ -1,3 +1,6 @@
+// Copyright (c) 2021 VMware, Inc. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 package scriptconf
 
 import (
@@ -16,7 +19,7 @@ func TestConfCmd_Run(t *testing.T) {
 		{
 			name:   "default values",
 			params: Args{},
-			config: Result{Workdir: defaultWorkdir, Gid: getGid(), Uid: getUid()},
+			config: Result{Workdir: DefaultWorkdir(), Gid: getGid(), Uid: getUid()},
 		},
 		{
 			name:   "all values",
