@@ -79,28 +79,6 @@ func TestSSHConfigFunc(t *testing.T) {
 				}
 			},
 		},
-		//{
-		//	name: "with shell",
-		//	kwargs: []starlark.Tuple{
-		//		{starlark.String("default_shell"), starlark.String("/a/b/c")},
-		//	},
-		//	eval: func(t *testing.T, kwargs []starlark.Tuple) {
-		//		val, err := Func(&starlark.Thread{}, nil, nil, kwargs)
-		//		if err != nil {
-		//			t.Fatal(err)
-		//		}
-		//		var conf Result
-		//		if err := typekit.Starlark(val).Go(&conf); err != nil {
-		//			t.Fatal(err)
-		//		}
-		//		if conf.DefaultShell != "/a/b/c" {
-		//			t.Errorf("unexpected defaultShell value: %s", conf.DefaultShell)
-		//		}
-		//		if err := os.RemoveAll(conf.Workdir); err != nil {
-		//			t.Error(err)
-		//		}
-		//	},
-		//},
 	}
 
 	for _, test := range tests {

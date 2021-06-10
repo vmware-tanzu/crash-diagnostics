@@ -1,7 +1,7 @@
 // Copyright (c) 2021 VMware, Inc. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package run_local
+package hostlist_provider
 
 import (
 	"fmt"
@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	Name    = functions.FunctionName("run_local")
-	Func    = runLocalFunc
+	Name    = functions.FunctionName("hostlist_provider")
+	Func    = hostListProviderFunc
 	Builtin = starlark.NewBuiltin(string(Name), Func)
 )
 
@@ -23,16 +23,21 @@ func init() {
 	builtins.Register(Name, Builtin)
 }
 
-// runLocalFunc is a built-in starlark function that runs a provided command on the local machine.
-// Starlark format: result = run_local(cmd="script-command")
-func runLocalFunc(thread *starlark.Thread, b *starlark.Builtin, _ starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+// hostListProviderFunc is a built-in starlark function that enumerates host resources from a
+// provided list of hosts addresses.
+//
+// Args
+// - hosts: list of host addresses (required)
+//
+// Example: hostlist_provider(hosts=["host1", "host2"])
+func hostListProviderFunc(thread *starlark.Thread, b *starlark.Builtin, _ starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var args Args
 	if err := typekit.KwargsToGo(kwargs, &args); err != nil {
 		return functions.Error(Name, fmt.Errorf("%s: %s", Name, err))
 	}
 
-	result := newCmd().Run(thread, args)
+	resources := newCmd().Run(thread, args)
 
 	// convert and return result
-	return functions.Result(Name, result)
+	return functions.Result(Name, resources)
 }

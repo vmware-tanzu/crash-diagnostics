@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/vmware-tanzu/crash-diagnostics/functions/sshconf"
 	"go.starlark.net/starlark"
 )
 
@@ -53,7 +54,7 @@ func TestConfCmd_Run(t *testing.T) {
 				t.Errorf("unexpected UseSSHAgent: %t", cfg.UseSSHAgent)
 			}
 			if cfg.UseSSHAgent {
-				if thread.Local("ssh_agent") == nil {
+				if thread.Local(sshconf.SSHAgentIdentifier) == nil {
 					t.Errorf("ssh_agent was not stored in thread_local")
 				}
 			}

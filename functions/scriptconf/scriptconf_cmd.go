@@ -26,11 +26,11 @@ func newCmd() *confCmd {
 // Run applies processes the params and generates a configuration value for the script
 func (c *confCmd) Run(t *starlark.Thread, args Args) Result {
 	if err := validateArgs(&args); err != nil {
-		return Result{Error: fmt.Sprintf("failed to build configuration: %s", err)}
+		return Result{Error: fmt.Sprintf("failed to validate configuration: %s", err)}
 	}
 
 	// create workdir if needed
-	if err := functions.MakeDir(args.Workdir, 0744); !os.IsExist(err) {
+	if err := functions.MakeDir(args.Workdir, 0744); err != nil && !os.IsExist(err) {
 		return Result{Error: fmt.Sprintf("failed to create workdir: %s", err)}
 	}
 
