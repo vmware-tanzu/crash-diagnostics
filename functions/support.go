@@ -6,6 +6,7 @@ package functions
 import (
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
 
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
@@ -46,4 +47,28 @@ func ExpandPath(path string) (string, error) {
 	}
 
 	return filepath.Join(home, path[1:]), nil
+}
+
+func DefaultGid() string {
+	usr, err := user.Current()
+	if err != nil {
+		return ""
+	}
+	return usr.Gid
+}
+
+func DefaultUid() string {
+	usr, err := user.Current()
+	if err != nil {
+		return ""
+	}
+	return usr.Uid
+}
+
+func DefaultUsername() string {
+	usr, err := user.Current()
+	if err != nil {
+		return ""
+	}
+	return usr.Username
 }

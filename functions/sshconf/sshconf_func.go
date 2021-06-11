@@ -47,3 +47,13 @@ func sshConfigFunc(thread *starlark.Thread, _ *starlark.Builtin, _ starlark.Tupl
 	// convert and return result
 	return functions.Result(Name, config)
 }
+
+func DefaultSSHConfig() *Config {
+	return &Config{
+		Username:       functions.DefaultUsername(),
+		Port:           DefaultPort(),
+		PrivateKeyPath: DefaultPKPath(),
+		MaxRetries:     DefaultMaxRetries(),
+		ConnTimeout:    DefaultConnTimeout(),
+	}
+}

@@ -148,7 +148,7 @@ func RemoveKeyFromAgent(keyPath string) error {
 
 func WriteKeys(rootPath string) error {
 	pkPath := filepath.Join(rootPath, "id_rsa")
-	pkFile, err := os.OpenFile(pkPath, os.O_RDWR|os.O_CREATE, 0644)
+	pkFile, err := os.OpenFile(pkPath, os.O_RDWR|os.O_CREATE, 0400)
 	if err != nil {
 		return err
 	}

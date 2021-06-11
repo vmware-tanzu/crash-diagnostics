@@ -3,7 +3,7 @@
 
 // Package hostlist_provider represents a resource provider created by  '
 // starlark function `hostlist_provider()`
-package hostlist_provider
+package hostlist
 
 type Args struct {
 	Hosts []string `name:"hosts"`

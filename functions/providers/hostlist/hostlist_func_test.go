@@ -1,12 +1,12 @@
 // Copyright (c) 2021 VMware, Inc. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package hostlist_provider
+package hostlist
 
 import (
 	"testing"
 
-	"github.com/vmware-tanzu/crash-diagnostics/functions"
+	"github.com/vmware-tanzu/crash-diagnostics/functions/providers"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 	"go.starlark.net/starlark"
 )
@@ -40,7 +40,7 @@ func TestHostListProviderFunc(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				var res functions.ProviderResources
+				var res providers.Resources
 				if err := typekit.Starlark(val).Go(&res); err != nil {
 					t.Fatal(err)
 				}

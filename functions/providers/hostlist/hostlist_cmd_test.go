@@ -1,12 +1,12 @@
 // Copyright (c) 2021 VMware, Inc. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package hostlist_provider
+package hostlist
 
 import (
 	"testing"
 
-	"github.com/vmware-tanzu/crash-diagnostics/functions"
+	"github.com/vmware-tanzu/crash-diagnostics/functions/providers"
 	"go.starlark.net/starlark"
 )
 
@@ -14,7 +14,7 @@ func TestCmd_Run(t *testing.T) {
 	tests := []struct {
 		name       string
 		args       Args
-		res        functions.ProviderResources
+		res        providers.Resources
 		shouldFail bool
 	}{
 		{
@@ -25,7 +25,7 @@ func TestCmd_Run(t *testing.T) {
 		{
 			name: "multi-hosts",
 			args: Args{Hosts: []string{"foo", "bar"}},
-			res:  functions.ProviderResources{Hosts: []string{"foo", "bar"}},
+			res:  providers.Resources{Hosts: []string{"foo", "bar"}},
 		},
 	}
 

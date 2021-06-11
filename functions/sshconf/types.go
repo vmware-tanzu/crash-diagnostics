@@ -11,6 +11,7 @@ import (
 
 var (
 	DefaultPort        = func() string { return "22" }
+	DefaultMaxRetries  = func() int64 { return 3 }
 	DefaultConnTimeout = func() int64 { return 30 }
 	DefaultPKPath      = func() string {
 		return filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa")
