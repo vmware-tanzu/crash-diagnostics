@@ -36,8 +36,8 @@ func hostListProviderFunc(thread *starlark.Thread, b *starlark.Builtin, _ starla
 		return functions.Error(Name, fmt.Errorf("%s: %s", Name, err))
 	}
 
-	resources := newCmd().Run(thread, args)
+	result := newCmd().Run(thread, args)
 
 	// convert and return result
-	return functions.Result(Name, resources)
+	return functions.Result(Name, result)
 }

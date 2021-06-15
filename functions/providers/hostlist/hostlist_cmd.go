@@ -14,13 +14,15 @@ func newCmd() *cmd {
 	return new(cmd)
 }
 
-func (c *cmd) Run(t *starlark.Thread, args Args) providers.Resources {
+func (c *cmd) Run(t *starlark.Thread, args Args) providers.Result {
 	if len(args.Hosts) == 0 {
-		return providers.Resources{Error: "host list is required"}
+		return providers.Result{Error: "host list is required"}
 	}
 
-	return providers.Resources{
-		Provider: string(Name),
-		Hosts:    args.Hosts,
+	return providers.Result{
+		Resources: providers.Resources{
+			Provider: string(Name),
+			Hosts:    args.Hosts,
+		},
 	}
 }

@@ -11,7 +11,11 @@ var (
 )
 
 type Resources struct {
-	Error    string   `name:"error"`
 	Provider string   `name:"provider"`
 	Hosts    []string `name:"hosts"`
+}
+
+type Result struct {
+	Error     string    `name:"error"`
+	Resources Resources `name:"resources"`
 }
