@@ -4,6 +4,7 @@
 package scriptconf
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/vmware-tanzu/crash-diagnostics/functions"
@@ -51,15 +52,43 @@ func scriptConfigFunc(thread *starlark.Thread, _ *starlark.Builtin, _ starlark.T
 	return functions.Result(Name, result)
 }
 
-// ResultFromThread retrieves script config result from provided
+// ConfigFromThread retrieves script config result from provided
 // thread instance. If found, bool = true.
-func ResultFromThread(t *starlark.Thread) (Result, bool) {
+func ConfigFromThread(t *starlark.Thread) (Config, bool) {
 	if val := t.Local(string(Name)); val != nil {
-		result, ok := val.(Result)
+		result, ok := val.(Config)
 		if !ok {
-			return Result{}, ok
+			return Config{}, ok
 		}
 		return result, true
 	}
-	return Result{}, false
+	return Config{}, false
+}
+
+func MakeConfigForThread(t *starlark.Thread) (Config, error) {
+	conf := makeDefaultConf()
+	args := Args{
+		Workdir:      conf.Workdir,
+		Gid:          conf.Gid,
+		Uid:          conf.Uid,
+		DefaultShell: conf.DefaultShell,
+		Requires:     conf.Requires,
+		UseSSHAgent:  conf.UseSSHAgent,
+	}
+	cfg := newCmd().Run(t, args)
+	if cfg.Error != "" {
+		return Config{}, errors.New(cfg.Error)
+	}
+	return cfg, nil
+}
+
+func makeDefaultConf() Config {
+	return Config{
+		Workdir:      DefaultWorkdir(),
+		Gid:          functions.DefaultGid(),
+		Uid:          functions.DefaultUid(),
+		DefaultShell: "/bin/sh",
+		Requires:     []string{"/bin/ssh", "/bin/scp"},
+		UseSSHAgent:  false,
+	}
 }

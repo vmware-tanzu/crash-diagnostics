@@ -15,17 +15,17 @@ func TestConfCmd_Run(t *testing.T) {
 	tests := []struct {
 		name   string
 		params Args
-		config Result
+		config Config
 	}{
 		{
 			name:   "default values",
 			params: Args{},
-			config: Result{Workdir: DefaultWorkdir(), Gid: getGid(), Uid: getUid()},
+			config: Config{Workdir: DefaultWorkdir(), Gid: getGid(), Uid: getUid()},
 		},
 		{
 			name:   "all values",
 			params: Args{Workdir: "foo", Gid: "00", Uid: "01", UseSSHAgent: true, Requires: []string{"a/b"}},
-			config: Result{Workdir: "foo", Gid: "00", Uid: "01", UseSSHAgent: true, Requires: []string{"a/b"}},
+			config: Config{Workdir: "foo", Gid: "00", Uid: "01", UseSSHAgent: true, Requires: []string{"a/b"}},
 		},
 	}
 
@@ -54,7 +54,7 @@ func TestConfCmd_Run(t *testing.T) {
 				t.Errorf("unexpected UseSSHAgent: %t", cfg.UseSSHAgent)
 			}
 			if cfg.UseSSHAgent {
-				if thread.Local(sshconf.SSHAgentIdentifier) == nil {
+				if thread.Local(sshconf.AgentIdentifier) == nil {
 					t.Errorf("ssh_agent was not stored in thread_local")
 				}
 			}

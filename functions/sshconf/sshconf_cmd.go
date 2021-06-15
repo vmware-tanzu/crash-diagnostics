@@ -6,7 +6,6 @@ package sshconf
 import (
 	"fmt"
 
-	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 	"go.starlark.net/starlark"
 )
 
@@ -47,15 +46,4 @@ func (c *confCmd) Run(t *starlark.Thread, args Args) Config {
 		MaxRetries:     args.MaxRetries,
 		ConnTimeout:    args.ConnTimeout,
 	}
-}
-
-func SSHAgentFromThread(t *starlark.Thread) (ssh.Agent, bool) {
-	if agentVal := t.Local(SSHAgentIdentifier); agentVal != nil {
-		agent, ok := agentVal.(ssh.Agent)
-		if !ok {
-			return nil, false
-		}
-		return agent, true
-	}
-	return nil, false
 }

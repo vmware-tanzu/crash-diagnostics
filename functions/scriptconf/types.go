@@ -6,6 +6,9 @@ package scriptconf
 
 var (
 	DefaultWorkdir = func() string { return "/tmp/crashd" }
+	DefaultConf    = makeDefaultConf
+
+	Identifier = string(Name)
 )
 
 // Args represent input arguments passed to starlark function.
@@ -29,9 +32,8 @@ type Args struct {
 	UseSSHAgent  bool     `name:"use_ssh_agent" optional:"true"`
 }
 
-// Result represent configuration returned by the function
-// It is just an alias.
-type Result struct {
+// Config represent configuration returned by the function
+type Config struct {
 	Error        string   `name:"error"`
 	Workdir      string   `name:"workdir"`
 	Gid          string   `name:"gid"`

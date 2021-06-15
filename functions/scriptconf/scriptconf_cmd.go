@@ -24,26 +24,26 @@ func newCmd() *confCmd {
 }
 
 // Run applies processes the params and generates a configuration value for the script
-func (c *confCmd) Run(t *starlark.Thread, args Args) Result {
+func (c *confCmd) Run(t *starlark.Thread, args Args) Config {
 	if err := validateArgs(&args); err != nil {
-		return Result{Error: fmt.Sprintf("failed to validate configuration: %s", err)}
+		return Config{Error: fmt.Sprintf("failed to validate configuration: %s", err)}
 	}
 
 	// create workdir if needed
 	if err := functions.MakeDir(args.Workdir, 0744); err != nil && !os.IsExist(err) {
-		return Result{Error: fmt.Sprintf("failed to create workdir: %s", err)}
+		return Config{Error: fmt.Sprintf("failed to create workdir: %s", err)}
 	}
 
 	// start local ssh-agent
 	if args.UseSSHAgent {
 		agent, err := ssh.StartAgent()
 		if err != nil {
-			return Result{Error: errors.Wrap(err, "failed to start ssh agent").Error()}
+			return Config{Error: errors.Wrap(err, "failed to start ssh agent").Error()}
 		}
-		t.SetLocal(sshconf.SSHAgentIdentifier, agent)
+		t.SetLocal(sshconf.AgentIdentifier, agent)
 	}
 
-	return Result{
+	return Config{
 		Workdir:      args.Workdir,
 		Gid:          args.Gid,
 		Uid:          args.Uid,

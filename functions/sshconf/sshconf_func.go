@@ -4,10 +4,12 @@
 package sshconf
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/vmware-tanzu/crash-diagnostics/functions"
 	"github.com/vmware-tanzu/crash-diagnostics/functions/builtins"
+	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 	"go.starlark.net/starlark"
 )
@@ -48,8 +50,48 @@ func sshConfigFunc(thread *starlark.Thread, _ *starlark.Builtin, _ starlark.Tupl
 	return functions.Result(Name, config)
 }
 
-func DefaultSSHConfig() *Config {
-	return &Config{
+func SSHAgentFromThread(t *starlark.Thread) (ssh.Agent, bool) {
+	if agentVal := t.Local(AgentIdentifier); agentVal != nil {
+		agent, ok := agentVal.(ssh.Agent)
+		if !ok {
+			return nil, false
+		}
+		return agent, true
+	}
+	return nil, false
+}
+
+// ConfigFromThread returns an sshconf.Config from provided
+// starlark thread.
+func ConfigFromThread(t *starlark.Thread) (Config, bool) {
+	if confVal := t.Local(Identifier); confVal != nil {
+		conf, ok := confVal.(Config)
+		if !ok {
+			return Config{}, false
+		}
+		return conf, true
+	}
+	return Config{}, false
+}
+
+func MakeConfigForThread(t *starlark.Thread) (Config, error) {
+	conf := makeDefaultSSHConfig()
+	args := Args {
+		Username:       conf.Username,
+		Port:           conf.Port,
+		PrivateKeyPath: conf.PrivateKeyPath,
+		MaxRetries:     conf.MaxRetries,
+		ConnTimeout:    conf.ConnTimeout,
+	}
+	result := newCmd().Run(t, args)
+	if result.Error != "" {
+		return Config{}, errors.New(result.Error)
+	}
+	return result, nil
+}
+
+func makeDefaultSSHConfig() Config {
+	return Config{
 		Username:       functions.DefaultUsername(),
 		Port:           DefaultPort(),
 		PrivateKeyPath: DefaultPKPath(),

@@ -22,7 +22,7 @@ func (c *cmd) Run(t *starlark.Thread, args Args) Result {
 	}
 
 	if args.Workdir == "" {
-		if conf, ok := scriptconf.ResultFromThread(t); ok {
+		if conf, ok := scriptconf.ConfigFromThread(t); ok {
 			args.Workdir = conf.Workdir
 		} else {
 			args.Workdir = functions.DefaultValues.Workdir

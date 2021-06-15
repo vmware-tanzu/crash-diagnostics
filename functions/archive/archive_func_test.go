@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/vmware-tanzu/crash-diagnostics/exec"
 	"go.starlark.net/starlark"
 
-	crashlark "github.com/vmware-tanzu/crash-diagnostics/starlark"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 )
 
@@ -114,30 +114,30 @@ func TestArchiveScript(t *testing.T) {
 result = archive(output_file="/tmp/archive.tar.gz", source_paths=["/tmp/crashd"])
 `,
 			eval: func(t *testing.T, script string) {
-				exe := crashlark.New()
-				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
+				output, err := exec.Run("test.star", strings.NewReader(script), nil)
+				if err != nil {
 					t.Fatal(err)
 				}
 
 				expected := "/tmp/archive.tar.gz"
-				var result string
-				resultVal := exe.Result()["result"]
+				resultVal := output["result"]
 				if resultVal == nil {
 					t.Fatal("archive() should be assigned to a variable for test")
 				}
-				res, ok := resultVal.(starlark.String)
-				if !ok {
-					t.Fatal("archive() should return a string")
+				var result Result
+				if err := typekit.Starlark(resultVal).Go(&result); err != nil {
+
 				}
-				result = string(res)
+
 				defer func() {
-					os.RemoveAll(result)
+					os.RemoveAll(expected)
 					os.RemoveAll("/tmp/crashd")
 				}()
 
-				if result != expected {
-					t.Errorf("unexpected result: %s", result)
+				if result.OutputFile != expected {
+					t.Errorf("unexpected result: %s", result.OutputFile)
 				}
+
 			},
 		},
 	}
