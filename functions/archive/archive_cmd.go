@@ -33,5 +33,5 @@ func (c *cmd) Run(t *starlark.Thread, params Args) Result {
 		return Result{Error: fmt.Sprintf("%s: stat failed: %s", Name, err)}
 	}
 
-	return Result{Size: info.Size(), OutputFile: params.OutputFile}
+	return Result{Archive: Archive{Size: info.Size(), OutputFile: params.OutputFile}}
 }

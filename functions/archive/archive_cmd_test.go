@@ -21,17 +21,17 @@ func TestCmd_Run(t *testing.T) {
 		{
 			name:   "default archive name",
 			params: Args{SourcePaths: []string{"/tmp/crashd"}},
-			arc:    Result{OutputFile: DefaultBundleName},
+			arc:    Result{Archive: Archive{OutputFile: DefaultBundleName}},
 		},
 		{
 			name:   "archive name",
 			params: Args{SourcePaths: []string{"/tmp/crashd"}, OutputFile: "test.tar.gz"},
-			arc:    Result{OutputFile: "test.tar.gz"},
+			arc:    Result{Archive: Archive{OutputFile: "test.tar.gz"}},
 		},
 		{
 			name:   "multiple files",
 			params: Args{SourcePaths: []string{"/tmp/crashd0", "/tmp/crashd1"}, OutputFile: "test.tar.gz"},
-			arc:    Result{OutputFile: "test.tar.gz"},
+			arc:    Result{Archive: Archive{OutputFile: "test.tar.gz"}},
 		},
 	}
 
@@ -46,19 +46,15 @@ func TestCmd_Run(t *testing.T) {
 
 			result := newCmd().Run(&starlark.Thread{}, test.params)
 			if result.Error != "" && !test.shouldFail {
-				t.Fatal(result.Error)
-			}
-
-			if result.Error != "" && !test.shouldFail {
 				t.Errorf("unexpected error: %s", result.Error)
 			}
 
-			if result.Size == 0 && !test.shouldFail {
+			if result.Archive.Size == 0 && !test.shouldFail {
 				t.Errorf("archive file has size 0")
 			}
 
 			// clean up
-			if err := os.RemoveAll(result.OutputFile); err != nil {
+			if err := os.RemoveAll(result.Archive.OutputFile); err != nil {
 				t.Log(err)
 			}
 
@@ -67,7 +63,6 @@ func TestCmd_Run(t *testing.T) {
 					t.Log(err)
 				}
 			}
-
 		})
 	}
 }

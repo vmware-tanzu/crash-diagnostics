@@ -40,19 +40,19 @@ func TestArchiveFunc(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				var arc Result
-				if err := typekit.Starlark(val).Go(&arc); err != nil {
+				var result Result
+				if err := typekit.Starlark(val).Go(&result); err != nil {
 					t.Fatal(err)
 				}
 
-				if arc.OutputFile != "/tmp/out.tar.gz" {
-					t.Errorf("unexpected output file: %s", arc.OutputFile)
+				if result.Archive.OutputFile != "/tmp/out.tar.gz" {
+					t.Errorf("unexpected output file: %s", result.Archive.OutputFile)
 				}
-				if _, err := os.Stat(arc.OutputFile); err != nil {
+				if _, err := os.Stat(result.Archive.OutputFile); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := os.RemoveAll(arc.OutputFile); err != nil {
+				if err := os.RemoveAll(result.Archive.OutputFile); err != nil {
 					t.Log(err)
 				}
 			},
@@ -81,15 +81,15 @@ func TestArchiveFunc(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				var arc Result
-				if err := typekit.Starlark(val).Go(&arc); err != nil {
+				var result Result
+				if err := typekit.Starlark(val).Go(&result); err != nil {
 					t.Fatal(err)
 				}
-				if _, err := os.Stat(arc.OutputFile); err != nil {
+				if _, err := os.Stat(result.Archive.OutputFile); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := os.RemoveAll(arc.OutputFile); err != nil {
+				if err := os.RemoveAll(result.Archive.OutputFile); err != nil {
 					t.Log(err)
 				}
 			},
@@ -126,7 +126,7 @@ result = archive(output_file="/tmp/archive.tar.gz", source_paths=["/tmp/crashd"]
 				}
 				var result Result
 				if err := typekit.Starlark(resultVal).Go(&result); err != nil {
-
+					t.Fatal(err)
 				}
 
 				defer func() {
@@ -134,8 +134,8 @@ result = archive(output_file="/tmp/archive.tar.gz", source_paths=["/tmp/crashd"]
 					os.RemoveAll("/tmp/crashd")
 				}()
 
-				if result.OutputFile != expected {
-					t.Errorf("unexpected result: %s", result.OutputFile)
+				if result.Archive.OutputFile != expected {
+					t.Errorf("unexpected result: %s", result.Archive.OutputFile)
 				}
 
 			},
