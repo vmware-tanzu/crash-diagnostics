@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func GetNodeAddresses(ctx context.Context, kubeconfigPath string, labels, names []string) ([]string, error) {
+func GetNodeAddresses(ctx context.Context, kubeconfigPath string, names, labels []string) ([]string, error) {
 	client, err := New(kubeconfigPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not initialize search client")
