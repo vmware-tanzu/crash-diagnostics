@@ -1,0 +1,92 @@
+conf = crashd_config(workdir=args.workdir)
+ssh_conf = ssh_config(username="capv", private_key_path=args.private_key)
+kube_conf = kube_config(path=args.mc_config)
+
+
+#list out management and cluster nodes
+wc_provider=capv_provider(
+    workload_cluster=args.cluster_name,
+    ssh_config=ssh_conf,
+    mgmt_kube_config=kube_conf
+)
+
+def fetch_workload_provider(iaas, cluster_name, ssh_cfg, kube_cfg, filter_labels):
+    ns = args.workload_cluster_ns
+    if iaas == "vsphere":
+        provider = capv_provider(
+            workload_cluster=cluster_name,
+            namespace=ns,
+            ssh_config=ssh_cfg,
+            mgmt_kube_config=kube_cfg,
+            labels=filter_labels
+        )
+    else:
+        provider = capa_provider(
+            workload_cluster=cluster_name,
+            namespace=ns,
+            ssh_config=ssh_cfg,
+            mgmt_kube_config=kube_cfg,
+            labels=filter_labels
+        )
+    return provider
+
+
+def capture_windows_node_diagnostics(nodes, cni):
+    if cni == antrea: 
+        capture(cmd="Get-Service ovs* | select * ", resources=nodes)
+        capture(cmd="Get-Service antrea-agent | select * ", resources=nodes)
+        capture(cmd="Get-Service kube-proxy | select * ", resources=nodes)
+        capture(cmd="cat c:\\var\\log\\antrea\\antrea-agent.exe.INFO", resources=nodes)
+        copy_from(path="c:\\openvswitch\\var\\log\\openvswitch\\ovs-vswitchd.log", resources=nodes)
+        copy_from(path="c:\\openvswitch\\var\\log\\openvswitch\\ovsdb-server.log", resources=nodes)
+
+    capture(cmd="Get-CimInstance -ClassName Win32_LogicalDisk", file_name="disk_info.out", resources=nodes)
+    capture(cmd="(Get-ItemProperty -Path c:\\windows\\system32\\hal.dll).VersionInfo.FileVersion",file_name="windows_version_info.out", resources=nodes)
+    capture(cmd="cat C:\\k\\StartKubelet.ps1 ; cat C:\\var\\lib\\kubelet\\kubeadm-flags.env", resources=nodes)
+    capture(cmd="Get-Service Kubelet | select * ", resources=nodes)
+    capture(cmd="Get-Service Containerd | select * ", resources=nodes)
+    capture(cmd="Get-Service Kubelet | select * ", resources=nodes)
+    capture(cmd="Get-HNSNetwork", resources=nodes)
+    capture(cmd="& 'c:\\Program Files\\containerd\\crictl.exe' -r 'npipe:////./pipe/containerd-containerd' info", resources=nodes)
+    capture(cmd="Get-MpPreference | select ExclusionProcess", resources=nodes)
+    capture(cmd="cat c:\\var\\log\\kubelet\\kubelet.exe.INFO", resources=nodes)
+    capture(cmd="cat c:\\var\\log\\kube-proxy\\kube-proxy.exe.INFO", resources=nodes)
+    capture(cmd="cat 'c:\\Program Files\\Cloudbase Solutions\\Cloudbase-Init\\log\\cloudbase-init-unattend.log'", resources=nodes)
+    capture(cmd="cat 'c:\\Program Files\\Cloudbase Solutions\\Cloudbase-Init\\log\\cloudbase-init.log'", resources=nodes)
+    copy_from(path="C:\\Windows\\System32\\Winevt\\Logs\\System.evtx", resources=nodes)
+    copy_from(path="C:\\Windows\\System32\\Winevt\\Logs\\Application.evtx", resources=nodes)
+
+def capture_node_diagnostics(nodes):
+    capture(cmd="sudo df -i", resources=nodes)
+    capture(cmd="sudo crictl info", resources=nodes)
+    capture(cmd="df -h /var/lib/containerd", resources=nodes)
+    capture(cmd="sudo systemctl status kubelet", resources=nodes)
+    capture(cmd="sudo systemctl status containerd", resources=nodes)
+    capture(cmd="sudo journalctl -xeu kubelet", resources=nodes)
+
+    capture(cmd="sudo cat /var/log/cloud-init-output.log", resources=nodes)
+    capture(cmd="sudo cat /var/log/cloud-init.log", resources=nodes)
+
+
+#fetch linux nodes
+wc_provider_linux = fetch_workload_provider(infra, name, ssh_conf, kube_conf, ["kubernetes.io/os=linux"])
+nodes = resources(provider=wc_provider_linux)
+
+#fetch windows nodes
+wc_provider_windows = fetch_workload_provider(infra, name, ssh_conf, kube_conf, ["kubernetes.io/os=windows"])
+win_nodes = resources(provider=wc_provider_windows)
+
+capture_node_diagnostics(nodes)
+capture_windows_node_diagnostics(win_nodes, args.cni)    
+
+
+#add code to collect pod info from cluster
+set_defaults(kube_config(capi_provider = wc_provider))
+
+pod_ns=["default", "kube-system"]
+
+kube_capture(what="logs", namespaces=pod_ns)
+kube_capture(what="objects", kinds=["pods", "services"], namespaces=pod_ns)
+kube_capture(what="objects", kinds=["deployments", "replicasets"], groups=["apps"], namespaces=pod_ns)
+
+archive(output_file="diagnostics.tar.gz", source_paths=[conf.workdir])
