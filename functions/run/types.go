@@ -11,18 +11,18 @@ import (
 )
 
 type Args struct {
-	Cmd       string               `name:"cmd"`
-	SSHConfig *sshconf.Config      `name:"ssh_config" optional:"true"`
-	Resources *providers.Resources `name:"resources" optional:"true"`
+	Cmd       string              `name:"cmd"`
+	SSHConfig sshconf.Config      `name:"ssh_config" optional:"true"`
+	Resources providers.Resources `name:"resources" optional:"true"`
 }
 
-type CmdResult struct {
+type RemoteProc struct {
 	Error  string `name:"error"`
 	Host   string `name:"host"`
 	Output string `name:"output"`
 }
 
 type Result struct {
-	Error      string      `name:"error"`
-	CmdResults []CmdResult `name:"cmd_results"`
+	Error string       `name:"error"`
+	Procs []RemoteProc `name:"procs"`
 }

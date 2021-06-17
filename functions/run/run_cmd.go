@@ -5,6 +5,7 @@ package run
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 	"go.starlark.net/starlark"
@@ -20,12 +21,13 @@ func (c *cmd) Run(t *starlark.Thread, agent ssh.Agent, args Args) Result {
 	if agent == nil {
 		return Result{Error: "missing ssh-agent"}
 	}
-	sshConf := args.SSHConfig
-	if sshConf == nil {
+
+	if reflect.ValueOf(args.SSHConfig).IsZero() {
 		return Result{Error: "missing SSH config"}
 	}
+	sshConf := args.SSHConfig
 
-	if args.Resources == nil {
+	if reflect.ValueOf(args.Resources).IsZero() {
 		return Result{Error: "missing resources"}
 	}
 	hosts := args.Resources.Hosts
@@ -33,7 +35,7 @@ func (c *cmd) Run(t *starlark.Thread, agent ssh.Agent, args Args) Result {
 		return Result{Error: fmt.Sprintf("%s provided no host", args.Resources.Provider)}
 	}
 
-	var cmdResults []CmdResult
+	var cmdResults []RemoteProc
 	for _, host := range hosts {
 		var jumpProxy *ssh.ProxyJumpArgs
 		if sshConf.JumpHost != "" && sshConf.JumpUsername != "" {
@@ -56,7 +58,7 @@ func (c *cmd) Run(t *starlark.Thread, agent ssh.Agent, args Args) Result {
 		if err != nil {
 			errMsg = err.Error()
 		}
-		cmdResults = append(cmdResults, CmdResult{Error: errMsg, Host: host, Output: sshOutput})
+		cmdResults = append(cmdResults, RemoteProc{Error: errMsg, Host: host, Output: sshOutput})
 	}
-	return Result{CmdResults: cmdResults}
+	return Result{Procs: cmdResults}
 }

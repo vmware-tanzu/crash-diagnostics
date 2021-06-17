@@ -70,8 +70,47 @@ func (v *StarValue) Go(goPtr interface{}) error {
 func starlarkToGo(srcVal starlark.Value, goval reflect.Value) error {
 	gotype := goval.Type()
 
+	toStruct := func(starVal starlark.Value, goVal reflect.Value) error {
+		if gotype.Kind() != reflect.Struct {
+			return fmt.Errorf("target type must be a struct")
+		}
+		structVal, ok := srcVal.(*starlarkstruct.Struct)
+		if !ok {
+			return fmt.Errorf("failed to assert %T as starlark.Struct", srcVal)
+		}
+
+		attrs := structVal.AttrNames()
+		for _, attr := range attrs {
+			attrVal, err := structVal.Attr(attr)
+			if err != nil {
+				return fmt.Errorf("failed retrieve attr %T from starlarkstruct.Struct", attr)
+			}
+
+			// match starlarkstruct field name using gostruct field tag
+			// or, if not found, use the starlarkstruct field attr
+
+			var fieldName string
+			goStructField, goFieldVal, found := findFieldByTag(goval, "name", attr)
+			if found {
+				fieldName = goStructField.Name
+			} else {
+				fieldName = strings.Title(attr)
+				if goval.FieldByName(fieldName).IsValid() {
+					goFieldVal = reflect.New(goval.FieldByName(fieldName).Type()).Elem()
+				}
+			}
+			if err := starlarkToGo(attrVal, goFieldVal); err != nil {
+				return err
+			}
+			field := goval.FieldByName(fieldName)
+			field.Set(goFieldVal)
+		}
+		return nil
+	}
+
 	var starval reflect.Value
-	switch srcVal.Type() {
+	sourceType := srcVal.Type()
+	switch sourceType {
 	case "bool":
 		if gotype.Kind() != reflect.Bool && gotype.Kind() != reflect.Interface {
 			return fmt.Errorf("target type must be bool")
@@ -229,7 +268,9 @@ func starlarkToGo(srcVal starlark.Value, goval reflect.Value) error {
 				fieldName = goStructField.Name
 			} else {
 				fieldName = strings.Title(attr)
-				goFieldVal = reflect.New(goval.FieldByName(fieldName).Type()).Elem()
+				if goval.FieldByName(fieldName).IsValid() {
+					goFieldVal = reflect.New(goval.FieldByName(fieldName).Type()).Elem()
+				}
 			}
 			if err := starlarkToGo(attrVal, goFieldVal); err != nil {
 				return err
@@ -238,6 +279,8 @@ func starlarkToGo(srcVal starlark.Value, goval reflect.Value) error {
 			field.Set(goFieldVal)
 		}
 		return nil
+	default:
+		return fmt.Errorf("unsupported type: %s", sourceType)
 	}
 
 	startype := starval.Type()

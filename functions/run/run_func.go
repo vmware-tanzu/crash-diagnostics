@@ -5,6 +5,7 @@ package run
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/vmware-tanzu/crash-diagnostics/functions"
 	"github.com/vmware-tanzu/crash-diagnostics/functions/builtins"
@@ -45,16 +46,17 @@ func runFunc(thread *starlark.Thread, _ *starlark.Builtin, _ starlark.Tuple, kwa
 		return functions.Error(Name, fmt.Errorf("%s: missing command", Name))
 	}
 
-	if args.Resources == nil {
+	if reflect.ValueOf(args.Resources).IsZero() {
 		res, ok := providers.ResourcesFromThread(thread)
 		if !ok {
 			return functions.Error(Name, fmt.Errorf("%s: missing resources", Name))
 		}
-		args.Resources = &res
+		args.Resources = res
 	}
 
-	if args.SSHConfig == nil {
-		args.SSHConfig = sshconf.DefaultSSHConfig()
+	if reflect.ValueOf(args.SSHConfig).IsZero() {
+		conf := sshconf.DefaultConfig()
+		args.SSHConfig = conf
 	}
 
 	agent, ok := sshconf.SSHAgentFromThread(thread)

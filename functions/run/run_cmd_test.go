@@ -27,7 +27,8 @@ func TestCmd_Run(t *testing.T) {
 		{
 			name: "missing resources",
 			setup: func(t *testing.T) Args {
-				return Args{Cmd: "echo 'Hello World!'", SSHConfig: sshconf.DefaultSSHConfig()}
+				sshConf := sshconf.DefaultConfig()
+				return Args{Cmd: "echo 'Hello World!'", SSHConfig: sshConf}
 			},
 			eval: func(t *testing.T, args Args) {
 				result := newCmd().Run(&starlark.Thread{}, sshAgent, args)
@@ -39,7 +40,7 @@ func TestCmd_Run(t *testing.T) {
 		{
 			name: "missing SSHConfig",
 			setup: func(t *testing.T) Args {
-				return Args{Cmd: "echo 'Hello World!'", Resources: &providers.Resources{}}
+				return Args{Cmd: "echo 'Hello World!'", Resources: providers.Resources{}}
 			},
 			eval: func(t *testing.T, args Args) {
 				result := newCmd().Run(&starlark.Thread{}, sshAgent, args)
@@ -51,7 +52,8 @@ func TestCmd_Run(t *testing.T) {
 		{
 			name: "missing ssh-agent",
 			setup: func(t *testing.T) Args {
-				return Args{Cmd: "echo 'Hello World!'", SSHConfig: sshconf.DefaultSSHConfig(), Resources: &providers.Resources{}}
+				sshConf := sshconf.DefaultConfig()
+				return Args{Cmd: "echo 'Hello World!'", SSHConfig: sshConf, Resources: providers.Resources{}}
 			},
 			eval: func(t *testing.T, args Args) {
 				result := newCmd().Run(&starlark.Thread{}, nil, args)
@@ -63,26 +65,27 @@ func TestCmd_Run(t *testing.T) {
 		{
 			name: "simple cmd",
 			setup: func(t *testing.T) Args {
+				sshConf := sshconf.Config{
+					Username:       testSupport.CurrentUsername(),
+					Port:           testSupport.PortValue(),
+					PrivateKeyPath: testSupport.PrivateKeyPath(),
+					MaxRetries:     int64(testSupport.MaxConnectionRetries()),
+				}
 				return Args{
 					Cmd:       "echo 'Hello World!'",
-					Resources: &providers.Resources{Hosts: []string{"127.0.0.1"}},
-					SSHConfig: sshconf.DefaultSSHConfig(),
+					Resources: providers.Resources{Hosts: []string{"127.0.0.1"}},
+					SSHConfig: sshConf,
 				}
 			},
 			eval: func(t *testing.T, args Args) {
-				args.SSHConfig.Username = testSupport.CurrentUsername()
-				args.SSHConfig.Port = testSupport.PortValue()
-				args.SSHConfig.PrivateKeyPath = testSupport.PrivateKeyPath()
-				args.SSHConfig.MaxRetries = int64(testSupport.MaxConnectionRetries())
-
 				result := newCmd().Run(&starlark.Thread{}, sshAgent, args)
 				if result.Error != "" {
 					t.Error(result.Error)
 				}
-				if len(result.CmdResults) != 1 {
+				if len(result.Procs) != 1 {
 					t.Error("missing command result")
 				}
-				output := strings.TrimSpace(result.CmdResults[0].Output)
+				output := strings.TrimSpace(result.Procs[0].Output)
 				if output != "Hello World!" {
 					t.Error("unexpected result:", output)
 				}
