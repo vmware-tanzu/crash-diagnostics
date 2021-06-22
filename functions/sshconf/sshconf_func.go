@@ -76,7 +76,7 @@ func ConfigFromThread(t *starlark.Thread) (Config, bool) {
 
 func MakeConfigForThread(t *starlark.Thread) (Config, error) {
 	conf := makeDefaultSSHConfig()
-	args := Args {
+	args := Args{
 		Username:       conf.Username,
 		Port:           conf.Port,
 		PrivateKeyPath: conf.PrivateKeyPath,
@@ -88,6 +88,15 @@ func MakeConfigForThread(t *starlark.Thread) (Config, error) {
 		return Config{}, errors.New(result.Error)
 	}
 	return result, nil
+}
+
+func MakeSSHAgentForThread(t *starlark.Thread) (ssh.Agent, error) {
+	agent, err := ssh.StartAgent()
+	if err != nil {
+		return nil, err
+	}
+	t.SetLocal(AgentIdentifier, agent)
+	return agent, nil
 }
 
 func makeDefaultSSHConfig() Config {

@@ -13,7 +13,6 @@ import (
 	"go.starlark.net/starlark"
 
 	"github.com/vmware-tanzu/crash-diagnostics/functions"
-	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 	"github.com/vmware-tanzu/crash-diagnostics/util"
 )
 
@@ -36,11 +35,10 @@ func (c *confCmd) Run(t *starlark.Thread, args Args) Config {
 
 	// start local ssh-agent
 	if args.UseSSHAgent {
-		agent, err := ssh.StartAgent()
+		_, err := sshconf.MakeSSHAgentForThread(t)
 		if err != nil {
 			return Config{Error: errors.Wrap(err, "failed to start ssh agent").Error()}
 		}
-		t.SetLocal(sshconf.AgentIdentifier, agent)
 	}
 
 	return Config{

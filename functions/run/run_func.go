@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/sirupsen/logrus"
 	"github.com/vmware-tanzu/crash-diagnostics/functions"
 	"github.com/vmware-tanzu/crash-diagnostics/functions/builtins"
 	"github.com/vmware-tanzu/crash-diagnostics/functions/providers"
+	"github.com/vmware-tanzu/crash-diagnostics/functions/scriptconf"
 	"github.com/vmware-tanzu/crash-diagnostics/functions/sshconf"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 	"go.starlark.net/starlark"
@@ -59,9 +61,16 @@ func runFunc(thread *starlark.Thread, _ *starlark.Builtin, _ starlark.Tuple, kwa
 		args.SSHConfig = conf
 	}
 
+	// check for ssh-agent
 	agent, ok := sshconf.SSHAgentFromThread(thread)
 	if !ok {
-		return functions.Error(Name, fmt.Errorf("%s: missing ssh-agent instance", Name))
+		// is there a script config
+		conf, scOk := scriptconf.ConfigFromThread(thread)
+		if scOk && conf.UseSSHAgent { // no script config, bail
+			logrus.Errorf("%s: ssh-agent not found in thread", Name)
+		} else {
+			logrus.Warnf("%s: not using ssh-agent", Name)
+		}
 	}
 
 	result := newCmd().Run(thread, agent, args)

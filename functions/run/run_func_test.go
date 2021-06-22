@@ -13,6 +13,7 @@ import (
 	"github.com/vmware-tanzu/crash-diagnostics/functions/sshconf"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 	"go.starlark.net/starlark"
+	"go.starlark.net/starlarkstruct"
 )
 
 func TestRunFunc(t *testing.T) {
@@ -80,19 +81,16 @@ func TestRunFunc(t *testing.T) {
 		{
 			name: "simple cmd",
 			kwargs: func(t *testing.T) []starlark.Tuple {
-				sshConf := sshconf.DefaultConfig()
-				sshArg, err := functions.Result(sshconf.Name, sshConf)
-				if err != nil {
-					t.Fatal(err)
-				}
-				resources := providers.Resources{
-					Provider: string(hostlist.Name),
-					Hosts:    []string{"127.0.0.1"},
-				}
-				resArg, err := functions.Result(hostlist.Name, providers.Result{Resources: resources})
-				if err != nil {
-					t.Fatal(err)
-				}
+				sshArg := starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
+					"username":         starlark.String(testSupport.CurrentUsername()),
+					"port":             starlark.String(testSupport.PortValue()),
+					"private_key_path": starlark.String(testSupport.PrivateKeyPath()),
+					"max_retries":      starlark.MakeInt(testSupport.MaxConnectionRetries()),
+				})
+				resArg := starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
+					"provider": starlark.String(hostlist.Name),
+					"hosts":    starlark.NewList([]starlark.Value{starlark.String("127.0.0.1")}),
+				})
 				return []starlark.Tuple{
 					{starlark.String("cmd"), starlark.String("echo 'Hello World!'")},
 					{starlark.String("resources"), resArg},
@@ -100,16 +98,23 @@ func TestRunFunc(t *testing.T) {
 				}
 			},
 			eval: func(t *testing.T, kwargs []starlark.Tuple) {
-				res, err := Func(&starlark.Thread{}, nil, nil, kwargs)
+				thread := &starlark.Thread{}
+				if _, err := sshconf.MakeSSHAgentForThread(thread); err != nil {
+					t.Fatal(err)
+				}
+				res, err := Func(thread, nil, nil, kwargs)
 				if err != nil {
 					t.Fatal(err)
 				}
 				var result Result
-				if err := typekit.Starlark(res).Go(result); err != nil {
+				if err := typekit.Starlark(res).Go(&result); err != nil {
 					t.Fatal(err)
 				}
+				if result.Error != "" {
+					t.Fatalf("command failed: %s", result.Error)
+				}
 				if len(result.Procs) != 1 {
-					t.Error("missing command result")
+					t.Fatal("missing command result")
 				}
 				output := strings.TrimSpace(result.Procs[0].Output)
 				if output != "Hello World!" {

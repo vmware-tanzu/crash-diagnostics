@@ -4,7 +4,6 @@
 package copy_from
 
 import (
-	"github.com/vmware-tanzu/crash-diagnostics/functions"
 	"github.com/vmware-tanzu/crash-diagnostics/functions/scriptconf"
 	"go.starlark.net/starlark"
 )
@@ -25,7 +24,7 @@ func (c *cmd) Run(t *starlark.Thread, args Args) Result {
 		if conf, ok := scriptconf.ConfigFromThread(t); ok {
 			args.Workdir = conf.Workdir
 		} else {
-			args.Workdir = functions.DefaultValues.Workdir
+			args.Workdir = scriptconf.DefaultWorkdir()
 		}
 	}
 	return Result{}
