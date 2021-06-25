@@ -14,9 +14,17 @@ import (
 	"go.starlark.net/starlarkstruct"
 )
 
+func AsStarlarkStruct(value interface{}) (*starlarkstruct.Struct, error) {
+	starStruct := new(starlarkstruct.Struct)
+	if err := typekit.Go(value).Starlark(starStruct); err != nil {
+		return nil, err
+	}
+	return starStruct, nil
+}
+
 func Result(funcName FunctionName, result interface{}) (starlark.Value, error) {
-	starResult := new(starlarkstruct.Struct)
-	if err := typekit.Go(result).Starlark(starResult); err != nil {
+	starResult, err := AsStarlarkStruct(result)
+	if err != nil {
 		return Error(funcName, fmt.Errorf("conversion error: %v", err))
 	}
 	return starResult, nil

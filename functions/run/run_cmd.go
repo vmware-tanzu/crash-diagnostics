@@ -18,10 +18,6 @@ func newCmd() *cmd {
 }
 
 func (c *cmd) Run(t *starlark.Thread, agent ssh.Agent, args Args) Result {
-	if agent == nil {
-		return Result{Error: "missing ssh-agent"}
-	}
-
 	if reflect.ValueOf(args.SSHConfig).IsZero() {
 		return Result{Error: "missing SSH config"}
 	}

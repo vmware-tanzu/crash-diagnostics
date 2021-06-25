@@ -37,7 +37,7 @@ func init() {
 // Args:
 // - cmd: the command to run (required)
 // - ssh_config: ssh configuration
-// - resources: compute resources to run command
+// - resources: list of compute resources to run command
 func runFunc(thread *starlark.Thread, _ *starlark.Builtin, _ starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var args Args
 	if err := typekit.KwargsToGo(kwargs, &args); err != nil {
@@ -67,7 +67,7 @@ func runFunc(thread *starlark.Thread, _ *starlark.Builtin, _ starlark.Tuple, kwa
 		// is there a script config
 		conf, scOk := scriptconf.ConfigFromThread(thread)
 		if scOk && conf.UseSSHAgent { // no script config, bail
-			logrus.Errorf("%s: ssh-agent not found in thread", Name)
+			return functions.Error(Name, fmt.Errorf("%s: ssh-agent not found", Name))
 		} else {
 			logrus.Warnf("%s: not using ssh-agent", Name)
 		}

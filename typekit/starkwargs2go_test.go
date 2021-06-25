@@ -1,9 +1,11 @@
 package typekit
 
 import (
+	"fmt"
 	"testing"
 
 	"go.starlark.net/starlark"
+	"go.starlark.net/starlarkstruct"
 )
 
 func TestStarKwargs2Go(t *testing.T) {
@@ -144,5 +146,95 @@ func TestStarKwargs2Go(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			test.eval(t, test.kwargs)
 		})
+	}
+}
+
+func TestGoToKwargToGo(t *testing.T) {
+	type Desc struct {
+		Name string
+	}
+	type inarg struct {
+		Name  Desc  `name:"name"`
+		Count int64 `name:"count"`
+	}
+
+	// kwarg -> Go
+	var arg inarg
+	err := KwargsToGo(
+		[]starlark.Tuple{
+			{
+				starlark.String("name"),
+				starlarkstruct.FromStringDict(
+					starlarkstruct.Default,
+					starlark.StringDict{"name": starlark.String("Hello")},
+				),
+			},
+			{starlark.String("count"), starlark.MakeInt(266)},
+		},
+		&arg,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Go -> starlark struct
+	starOut := new(starlarkstruct.Struct)
+	if err := Go(arg).Starlark(starOut); err != nil {
+		t.Fatal(fmt.Errorf("conversion error: %v", err))
+	}
+
+	// starlark struct -> Go
+	var arg2 inarg
+	if err := Starlark(starOut).Go(&arg2); err != nil {
+		t.Fatal(fmt.Errorf("conversion error: %w", err))
+	}
+
+	if arg2.Name.Name != "Hello" {
+		t.Errorf("Unexpected value: %s", arg2.Name.Name)
+	}
+}
+
+func TestGoToKwargToGo2(t *testing.T) {
+	type Desc struct {
+		Name string
+	}
+	type inarg struct {
+		Name  Desc  `name:"name"`
+		Count int64 `name:"count"`
+		B     string
+	}
+
+	// kwarg -> Go
+	var arg inarg
+	desc := Desc{Name: "World"}
+	descArg := new(starlarkstruct.Struct)
+	if err := Go(desc).Starlark(descArg); err != nil {
+		t.Fatal(err)
+	}
+	err := KwargsToGo(
+		[]starlark.Tuple{
+			{starlark.String("name"), descArg},
+			{starlark.String("count"), starlark.MakeInt(266)},
+		},
+		&arg,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Go -> starlark struct
+	starOut := new(starlarkstruct.Struct)
+	if err := Go(arg).Starlark(starOut); err != nil {
+		t.Fatal(fmt.Errorf("conversion error: %v", err))
+	}
+
+	// starlark struct -> Go
+	var arg2 inarg
+	if err := Starlark(starOut).Go(&arg2); err != nil {
+		t.Fatal(fmt.Errorf("conversion error: %w", err))
+	}
+
+	if arg2.Name.Name != "World" {
+		t.Errorf("Unexpected value: %s", arg2.Name.Name)
 	}
 }

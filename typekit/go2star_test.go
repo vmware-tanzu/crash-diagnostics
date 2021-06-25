@@ -446,3 +446,40 @@ func TestGoToStarlark(t *testing.T) {
 		})
 	}
 }
+
+func TestGo2Star2Go(t *testing.T) {
+	data := struct {
+		Name  string `name:"name"`
+		Count int    `name:"count"`
+	}{
+		Name:  "test",
+		Count: 24,
+	}
+
+	// Go -> Starlark
+	var star starlarkstruct.Struct
+	if err := Go(data).Starlark(&star); err != nil {
+		t.Fatal(err)
+	}
+	nameVal, err := star.Attr("name")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if nameVal.String() != `"test"` {
+		t.Errorf("unexpected attr name value: %s", nameVal.String())
+	}
+
+	// Starlark -> Go
+	goData := struct {
+		Count int64  `name:"count"`
+		Name  string `name:"name"`
+	}{}
+
+	if err := Starlark(&star).Go(&goData); err != nil {
+		t.Errorf("conversion failed: %s", err)
+	}
+
+	if goData.Count != 24 {
+		t.Error("unexpected go struct field value")
+	}
+}
