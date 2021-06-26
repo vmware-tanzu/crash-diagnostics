@@ -7,11 +7,12 @@ import (
 	"os"
 	"testing"
 
+	"github.com/vmware-tanzu/crash-diagnostics/functions"
 	"github.com/vmware-tanzu/crash-diagnostics/functions/sshconf"
 	"go.starlark.net/starlark"
 )
 
-func TestConfCmd_Run(t *testing.T) {
+func TestScriptConfRun(t *testing.T) {
 	tests := []struct {
 		name   string
 		params Args
@@ -20,7 +21,7 @@ func TestConfCmd_Run(t *testing.T) {
 		{
 			name:   "default values",
 			params: Args{},
-			config: Config{Workdir: DefaultWorkdir(), Gid: getGid(), Uid: getUid()},
+			config: Config{Workdir: DefaultWorkdir(), Gid: functions.DefaultGid(), Uid: functions.DefaultUid()},
 		},
 		{
 			name:   "all values",
@@ -32,12 +33,12 @@ func TestConfCmd_Run(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			thread := &starlark.Thread{}
-			result := newCmd().Run(thread, test.params)
+			result := Run(thread, test.params)
 			if result.Error != "" {
 				t.Fatal(result.Error)
 			}
 
-			cfg := result
+			cfg := result.Conf
 			if cfg.Workdir != test.config.Workdir {
 				t.Errorf("unexpected workdir value %s", cfg.Workdir)
 			}

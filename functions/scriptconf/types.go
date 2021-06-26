@@ -15,7 +15,6 @@ var (
 // Args can also be used as output arguments to built-in function.
 //
 // The argument map follows:
-//   - error - used for output argument
 //   - workdir string - a path that can be used as work directory during script exec
 //   - gid string - the default group id to use when executing an OS command
 //   - uid string - a default userid to use when executing an OS command
@@ -34,11 +33,15 @@ type Args struct {
 
 // Config represent configuration returned by the function
 type Config struct {
-	Error        string   `name:"error"`
 	Workdir      string   `name:"workdir"`
 	Gid          string   `name:"gid"`
 	Uid          string   `name:"uid"`
 	DefaultShell string   `name:"default_shell"`
 	Requires     []string `name:"requires"`
 	UseSSHAgent  bool     `name:"use_ssh_agent"`
+}
+
+type Result struct {
+	Error string `name:"error"`
+	Conf  Config `name:"conf"`
 }

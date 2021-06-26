@@ -5,7 +5,9 @@ package archive
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/vmware-tanzu/crash-diagnostics/archiver"
 	"github.com/vmware-tanzu/crash-diagnostics/functions"
 	"github.com/vmware-tanzu/crash-diagnostics/functions/builtins"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
@@ -34,8 +36,30 @@ func archiveFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tup
 	}
 
 	// execute command
-	result := newCmd().Run(thread, params)
+	result := Run(thread, params)
 
 	// convert and return result
 	return functions.Result(Name, result)
+}
+
+// Run executes the command and returns a result
+func Run(t *starlark.Thread, params Args) Result {
+	if params.OutputFile == "" {
+		params.OutputFile = DefaultBundleName
+	}
+
+	if len(params.SourcePaths) == 0 {
+		return Result{Error: "no source path provided"}
+	}
+
+	if err := archiver.Tar(params.OutputFile, params.SourcePaths...); err != nil {
+		return Result{Error: fmt.Sprintf("%s failed: %s", Name, err)}
+	}
+
+	info, err := os.Stat(params.OutputFile)
+	if err != nil {
+		return Result{Error: fmt.Sprintf("%s: stat failed: %s", Name, err)}
+	}
+
+	return Result{Archive: Archive{Size: info.Size(), OutputFile: params.OutputFile}}
 }

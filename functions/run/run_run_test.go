@@ -31,7 +31,7 @@ func TestCmd_Run(t *testing.T) {
 				return Args{Cmd: "echo 'Hello World!'", SSHConfig: sshConf}
 			},
 			eval: func(t *testing.T, args Args) {
-				result := newCmd().Run(&starlark.Thread{}, sshAgent, args)
+				result := Run(&starlark.Thread{}, sshAgent, args)
 				if result.Error == "" {
 					t.Error("expecting error, got none")
 				}
@@ -43,7 +43,7 @@ func TestCmd_Run(t *testing.T) {
 				return Args{Cmd: "echo 'Hello World!'", Resources: providers.Resources{}}
 			},
 			eval: func(t *testing.T, args Args) {
-				result := newCmd().Run(&starlark.Thread{}, sshAgent, args)
+				result := Run(&starlark.Thread{}, sshAgent, args)
 				if result.Error == "" {
 					t.Error("expecting error, got none")
 				}
@@ -56,7 +56,7 @@ func TestCmd_Run(t *testing.T) {
 				return Args{Cmd: "echo 'Hello World!'", SSHConfig: sshConf, Resources: providers.Resources{}}
 			},
 			eval: func(t *testing.T, args Args) {
-				result := newCmd().Run(&starlark.Thread{}, nil, args)
+				result := Run(&starlark.Thread{}, nil, args)
 				if result.Error == "" {
 					t.Error("expecting error, got none")
 				}
@@ -78,7 +78,7 @@ func TestCmd_Run(t *testing.T) {
 				}
 			},
 			eval: func(t *testing.T, args Args) {
-				result := newCmd().Run(&starlark.Thread{}, sshAgent, args)
+				result := Run(&starlark.Thread{}, sshAgent, args)
 				if result.Error != "" {
 					t.Error(result.Error)
 				}

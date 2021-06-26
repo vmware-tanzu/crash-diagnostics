@@ -39,12 +39,12 @@ func TestConfCmd_Run(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			thread := &starlark.Thread{}
-			result := newCmd().Run(thread, test.args)
+			result := Run(thread, test.args)
 			if result.Error != "" && !test.shouldFail {
 				t.Fatal(result.Error)
 			}
 
-			cfg := result
+			cfg := result.Conf
 			if cfg.ConnTimeout != test.config.ConnTimeout {
 				t.Errorf("unexpected conntimeout value %d", cfg.ConnTimeout)
 			}

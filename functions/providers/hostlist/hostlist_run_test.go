@@ -31,8 +31,7 @@ func TestCmd_Run(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			cmd := newCmd()
-			result := cmd.Run(new(starlark.Thread), test.args)
+			result := Run(new(starlark.Thread), test.args)
 			if result.Error != "" && !test.shouldFail {
 				t.Fatal("unexpected error:", result.Error)
 			}

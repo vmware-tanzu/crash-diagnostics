@@ -8,6 +8,7 @@ import (
 
 	"github.com/vmware-tanzu/crash-diagnostics/functions"
 	"github.com/vmware-tanzu/crash-diagnostics/functions/builtins"
+	"github.com/vmware-tanzu/crash-diagnostics/functions/providers"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 	"go.starlark.net/starlark"
 )
@@ -36,8 +37,22 @@ func hostListProviderFunc(thread *starlark.Thread, b *starlark.Builtin, _ starla
 		return functions.Error(Name, fmt.Errorf("%s: %s", Name, err))
 	}
 
-	result := newCmd().Run(thread, args)
+	result := Run(thread, args)
 
 	// convert and return result
 	return functions.Result(Name, result)
+}
+
+// Run runs the command function
+func Run(t *starlark.Thread, args Args) providers.Result {
+	if len(args.Hosts) == 0 {
+		return providers.Result{Error: "host list is required"}
+	}
+
+	return providers.Result{
+		Resources: providers.Resources{
+			Provider: string(Name),
+			Hosts:    args.Hosts,
+		},
+	}
 }

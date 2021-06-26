@@ -44,10 +44,46 @@ func sshConfigFunc(thread *starlark.Thread, _ *starlark.Builtin, _ starlark.Tupl
 		return functions.Error(Name, fmt.Errorf("%s: %s", Name, err))
 	}
 
-	config := newCmd().Run(thread, args)
+	if args.Username == "" {
+		functions.Error(Name, fmt.Errorf("%s: username is empty", Name))
+	}
+
+	config := Run(thread, args)
 
 	// convert and return result
 	return functions.Result(Name, config)
+}
+
+// Run executes command function
+func Run(t *starlark.Thread, args Args) Result {
+	if args.Port == "" {
+		args.Port = DefaultPort()
+	}
+	if args.PrivateKeyPath == "" {
+		args.PrivateKeyPath = DefaultPKPath()
+	}
+	if args.ConnTimeout == 0 {
+		args.ConnTimeout = DefaultConnTimeout()
+	}
+
+	// add private key to agent if agent was saved in thread
+	if agent, ok := SSHAgentFromThread(t); ok {
+		if err := agent.AddKey(args.PrivateKeyPath); err != nil {
+			return Result{Error: fmt.Sprintf("unable to add private key to agent: %s", args.PrivateKeyPath)}
+		}
+	}
+
+	return Result{
+		Conf: Config{
+			Username:       args.Username,
+			Port:           args.Port,
+			PrivateKeyPath: args.PrivateKeyPath,
+			JumpUsername:   args.JumpUsername,
+			JumpHost:       args.JumpHost,
+			MaxRetries:     args.MaxRetries,
+			ConnTimeout:    args.ConnTimeout,
+		},
+	}
 }
 
 func SSHAgentFromThread(t *starlark.Thread) (ssh.Agent, bool) {
@@ -83,11 +119,11 @@ func MakeConfigForThread(t *starlark.Thread) (Config, error) {
 		MaxRetries:     conf.MaxRetries,
 		ConnTimeout:    conf.ConnTimeout,
 	}
-	result := newCmd().Run(t, args)
+	result := Run(t, args)
 	if result.Error != "" {
 		return Config{}, errors.New(result.Error)
 	}
-	return result, nil
+	return result.Conf, nil
 }
 
 func MakeSSHAgentForThread(t *starlark.Thread) (ssh.Agent, error) {

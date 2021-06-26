@@ -7,7 +7,7 @@ import (
 	"go.starlark.net/starlark"
 )
 
-func TestCmd_Run(t *testing.T) {
+func TestArchiveRun(t *testing.T) {
 	tests := []struct {
 		name       string
 		params     Args
@@ -44,7 +44,7 @@ func TestCmd_Run(t *testing.T) {
 				}
 			}
 
-			result := newCmd().Run(&starlark.Thread{}, test.params)
+			result := Run(&starlark.Thread{}, test.params)
 			if result.Error != "" && !test.shouldFail {
 				t.Errorf("unexpected error: %s", result.Error)
 			}

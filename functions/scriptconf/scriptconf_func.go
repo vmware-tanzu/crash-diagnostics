@@ -6,10 +6,13 @@ package scriptconf
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/vmware-tanzu/crash-diagnostics/functions"
 	"github.com/vmware-tanzu/crash-diagnostics/functions/builtins"
+	"github.com/vmware-tanzu/crash-diagnostics/functions/sshconf"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
+	"github.com/vmware-tanzu/crash-diagnostics/util"
 	"go.starlark.net/starlark"
 )
 
@@ -43,13 +46,44 @@ func scriptConfigFunc(thread *starlark.Thread, _ *starlark.Builtin, _ starlark.T
 		return functions.Error(Name, fmt.Errorf("%s: %s", Name, err))
 	}
 
-	result := newCmd().Run(thread, args)
+	result := Run(thread, args)
 
 	// save config result in thread
 	thread.SetLocal(string(Name), result)
 
 	// convert and return result
 	return functions.Result(Name, result)
+}
+
+// Run executes the command function
+func Run(t *starlark.Thread, args Args) Result {
+	if err := validateArgs(&args); err != nil {
+		return Result{Error: fmt.Sprintf("failed to validate configuration: %s", err)}
+	}
+
+	// create workdir if needed
+	if err := functions.MakeDir(args.Workdir, 0744); err != nil && !os.IsExist(err) {
+		return Result{Error: fmt.Sprintf("failed to create workdir: %s", err)}
+	}
+
+	// start local ssh-agent
+	if args.UseSSHAgent {
+		_, err := sshconf.MakeSSHAgentForThread(t)
+		if err != nil {
+			return Result{Error: fmt.Sprintf("%s: failed to start ssh agent: %s", string(Name), err)}
+		}
+	}
+
+	return Result{
+		Conf: Config{
+			Workdir:      args.Workdir,
+			Gid:          args.Gid,
+			Uid:          args.Uid,
+			DefaultShell: args.DefaultShell,
+			Requires:     args.Requires,
+			UseSSHAgent:  args.UseSSHAgent,
+		},
+	}
 }
 
 // ConfigFromThread retrieves script config result from provided
@@ -75,11 +109,11 @@ func MakeConfigForThread(t *starlark.Thread) (Config, error) {
 		Requires:     conf.Requires,
 		UseSSHAgent:  conf.UseSSHAgent,
 	}
-	cfg := newCmd().Run(t, args)
-	if cfg.Error != "" {
-		return Config{}, errors.New(cfg.Error)
+	result := Run(t, args)
+	if result.Error != "" {
+		return Config{}, errors.New(result.Error)
 	}
-	return cfg, nil
+	return result.Conf, nil
 }
 
 func makeDefaultConf() Config {
@@ -91,4 +125,25 @@ func makeDefaultConf() Config {
 		Requires:     []string{"/bin/ssh", "/bin/scp"},
 		UseSSHAgent:  false,
 	}
+}
+
+func validateArgs(params *Args) error {
+	if params.Workdir == "" {
+		params.Workdir = DefaultWorkdir()
+	}
+	wd, err := util.ExpandPath(params.Workdir)
+	if err != nil {
+		return err
+	}
+	params.Workdir = wd
+
+	if params.Gid == "" {
+		params.Gid = functions.DefaultGid()
+	}
+
+	if params.Uid == "" {
+		params.Uid = functions.DefaultUid()
+	}
+
+	return nil
 }

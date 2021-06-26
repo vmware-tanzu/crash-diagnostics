@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	crashlark "github.com/vmware-tanzu/crash-diagnostics/starlark"
+	"github.com/vmware-tanzu/crash-diagnostics/exec"
 	crashtest "github.com/vmware-tanzu/crash-diagnostics/testing"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 
@@ -33,8 +33,8 @@ func TestRunLocalFunc(t *testing.T) {
 					t.Fatalf("unable to convert result: %s", err)
 				}
 
-				if p.Result != "Hello World!" {
-					t.Errorf("unexpected result: %s", p.Result)
+				if p.Proc.Result != "Hello World!" {
+					t.Errorf("unexpected result: %s", p.Proc.Result)
 				}
 			},
 		},
@@ -56,27 +56,26 @@ func TestRunLocalScript(t *testing.T) {
 		{
 			name: "run local",
 			script: `
-result = run_local("""echo 'Hello World!'""")
+result = run_local(cmd="""echo 'Hello World!'""")
 `,
 			eval: func(t *testing.T, script string) {
-				exe := crashlark.New()
-				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
+				output, err := exec.Run("test.star", strings.NewReader(script), nil)
+				if err != nil {
 					t.Fatal(err)
 				}
 
-				resultVal := exe.Result()["result"]
+				resultVal := output["result"]
 				if resultVal == nil {
 					t.Fatal("run_local() should be assigned to a variable for test")
 				}
-				result, ok := resultVal.(starlark.String)
-				if !ok {
-					t.Fatal("run_local() should return a string")
+				var result Result
+				if err := typekit.Starlark(resultVal).Go(&result); err != nil {
+					t.Fatal(err)
 				}
 
-				if string(result) != "Hello World!" {
-					t.Fatalf("uneexpected result %s", result)
+				if result.Proc.Result != "Hello World!" {
+					t.Fatalf("uneexpected result %s", result.Proc.Result)
 				}
-
 			},
 		},
 	}

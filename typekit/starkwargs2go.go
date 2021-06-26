@@ -28,6 +28,9 @@ import (
 //
 // Supported annotation: `name:"arg_name" optional:"true|false" (default false)`
 func KwargsToGo(kwargs []starlark.Tuple, goStructPtr interface{}) error {
+	if kwargs == nil {
+		return fmt.Errorf("kwargs tuple is nil")
+	}
 	goval := reflect.ValueOf(goStructPtr)
 	gotype := goval.Type()
 	if gotype.Kind() != reflect.Ptr || goval.IsNil() {
