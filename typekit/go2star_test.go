@@ -31,7 +31,7 @@ func TestGoToStarlark(t *testing.T) {
 			},
 		},
 		{
-			name:  "Bool-Value",
+			name:  "Bool-Archive",
 			goVal: true,
 			eval: func(t *testing.T, goVal interface{}) {
 				var starval starlark.Value
@@ -91,7 +91,7 @@ func TestGoToStarlark(t *testing.T) {
 			},
 		},
 		{
-			name:  "String-Value",
+			name:  "String-Archive",
 			goVal: "Hello World!",
 			eval: func(t *testing.T, goVal interface{}) {
 				var starval starlark.Value
@@ -155,7 +155,7 @@ func TestGoToStarlark(t *testing.T) {
 			},
 		},
 		{
-			name:  "Tuple-Value",
+			name:  "Tuple-Archive",
 			goVal: []int{1, 2, math.MaxInt8},
 			eval: func(t *testing.T, goVal interface{}) {
 				var starval starlark.Value
@@ -217,7 +217,7 @@ func TestGoToStarlark(t *testing.T) {
 			},
 		},
 		{
-			name:  "Dict-Value",
+			name:  "Dict-Archive",
 			goVal: map[string]int{"one": 12, "two": math.MaxInt8, "three": math.MaxInt64},
 			eval: func(t *testing.T, goVal interface{}) {
 				var starval starlark.Value
@@ -282,7 +282,7 @@ func TestGoToStarlark(t *testing.T) {
 			},
 		},
 		{
-			name:  "Struct-Value",
+			name:  "Struct-Archive",
 			goVal: struct{ Msg, Target string }{Msg: "hello", Target: "world"},
 			eval: func(t *testing.T, goVal interface{}) {
 				var starval starlark.Value
@@ -302,7 +302,7 @@ func TestGoToStarlark(t *testing.T) {
 			},
 		},
 		{
-			name: "Struct-Value-Annotated",
+			name: "Struct-Archive-Annotated",
 			goVal: struct {
 				Msg    string
 				Target string `name:"tgt"`
@@ -377,7 +377,7 @@ func TestGoToStarlark(t *testing.T) {
 			},
 		},
 		{
-			name:  "List-Value",
+			name:  "List-Archive",
 			goVal: []int{1, 2, math.MaxInt8},
 			eval: func(t *testing.T, goVal interface{}) {
 				var starval starlark.Value

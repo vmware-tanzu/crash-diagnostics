@@ -9,7 +9,7 @@ import (
 	"os"
 
 	"github.com/vmware-tanzu/crash-diagnostics/functions"
-	"github.com/vmware-tanzu/crash-diagnostics/functions/builtins"
+	"github.com/vmware-tanzu/crash-diagnostics/functions/registrar"
 	"github.com/vmware-tanzu/crash-diagnostics/functions/sshconf"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 	"github.com/vmware-tanzu/crash-diagnostics/util"
@@ -24,7 +24,7 @@ var (
 
 // Register
 func init() {
-	builtins.Register(Name, Builtin)
+	registrar.Register(Name, Builtin)
 }
 
 // scriptConfigFunc implements a starlark built-in function that gathers and stores configuration
@@ -75,7 +75,7 @@ func Run(t *starlark.Thread, args Args) Result {
 	}
 
 	return Result{
-		Conf: Config{
+		Config: Config{
 			Workdir:      args.Workdir,
 			Gid:          args.Gid,
 			Uid:          args.Uid,
@@ -113,7 +113,7 @@ func MakeConfigForThread(t *starlark.Thread) (Config, error) {
 	if result.Error != "" {
 		return Config{}, errors.New(result.Error)
 	}
-	return result.Conf, nil
+	return result.Config, nil
 }
 
 func makeDefaultConf() Config {

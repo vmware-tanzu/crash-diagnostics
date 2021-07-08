@@ -9,7 +9,7 @@ import (
 
 	"github.com/vmware-tanzu/crash-diagnostics/archiver"
 	"github.com/vmware-tanzu/crash-diagnostics/functions"
-	"github.com/vmware-tanzu/crash-diagnostics/functions/builtins"
+	"github.com/vmware-tanzu/crash-diagnostics/functions/registrar"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 	"go.starlark.net/starlark"
 )
@@ -23,7 +23,7 @@ var (
 
 // Register
 func init() {
-	builtins.Register(Name, Builtin)
+	registrar.Register(Name, Builtin)
 }
 
 // archiveFunc implements a Starlark.Builtin function that can be used to bundle to create a

@@ -17,7 +17,7 @@ import (
 func AsStarlarkStruct(value interface{}) (*starlarkstruct.Struct, error) {
 	starStruct := new(starlarkstruct.Struct)
 	if err := typekit.Go(value).Starlark(starStruct); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("starlark type conversion failed: %w", err)
 	}
 	return starStruct, nil
 }

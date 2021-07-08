@@ -7,8 +7,8 @@ import (
 	"fmt"
 
 	"github.com/vmware-tanzu/crash-diagnostics/functions"
-	"github.com/vmware-tanzu/crash-diagnostics/functions/builtins"
 	"github.com/vmware-tanzu/crash-diagnostics/functions/providers"
+	"github.com/vmware-tanzu/crash-diagnostics/functions/registrar"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 	"go.starlark.net/starlark"
 )
@@ -21,7 +21,7 @@ var (
 
 // Register
 func init() {
-	builtins.Register(Name, Builtin)
+	registrar.Register(Name, Builtin)
 }
 
 // hostListProviderFunc is a built-in starlark function that enumerates host resources from a

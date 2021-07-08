@@ -7,9 +7,12 @@ package sshconf
 import (
 	"os"
 	"path/filepath"
+
+	"github.com/vmware-tanzu/crash-diagnostics/functions"
 )
 
 var (
+	DefaultUsername    = func() string { return functions.DefaultUsername() }
 	DefaultPort        = func() string { return "22" }
 	DefaultMaxRetries  = func() int64 { return 3 }
 	DefaultConnTimeout = func() int64 { return 30 }
@@ -56,6 +59,6 @@ type Config struct {
 }
 
 type Result struct {
-	Error string `name:"error"`
-	Conf  Config `name:"conf"`
+	Error  string `name:"error"`
+	Config Config `name:"config"`
 }

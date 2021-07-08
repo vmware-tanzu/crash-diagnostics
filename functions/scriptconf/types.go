@@ -31,7 +31,7 @@ type Args struct {
 	UseSSHAgent  bool     `name:"use_ssh_agent" optional:"true"`
 }
 
-// Config represent configuration returned by the function
+// Config represent script configuration
 type Config struct {
 	Workdir      string   `name:"workdir"`
 	Gid          string   `name:"gid"`
@@ -42,6 +42,6 @@ type Config struct {
 }
 
 type Result struct {
-	Error string `name:"error"`
-	Conf  Config `name:"conf"`
+	Error  string `name:"error"`
+	Config Config `name:"config"`
 }

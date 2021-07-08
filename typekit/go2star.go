@@ -67,7 +67,7 @@ func (v *GoValue) StarlarkList(starval interface{}) error {
 	case *starlark.List:
 		*val = *starlark.NewList(tuple)
 	default:
-		return fmt.Errorf("target type %T must be *starlark.List or *starlark.Value", starval)
+		return fmt.Errorf("target type %T must be *starlark.List or *starlark.Archive", starval)
 	}
 	return nil
 }
@@ -91,7 +91,7 @@ func (v *GoValue) StarlarkSet(starval interface{}) error {
 	case *starlark.Set:
 		*val = *starSet
 	default:
-		return fmt.Errorf("target type %T must be *starlark.List or *starlark.Value", starval)
+		return fmt.Errorf("target type %T must be *starlark.List or *starlark.Archive", starval)
 	}
 	return nil
 }
@@ -130,7 +130,7 @@ func goToStarlark(gov interface{}, starval interface{}) error {
 		case *starlark.Bool:
 			*val = starlark.Bool(goval.Bool())
 		default:
-			return fmt.Errorf("target type %T must be *starlark.Bool or *starlark.Value", starval)
+			return fmt.Errorf("target type %T must be *starlark.Bool or *starlark.Archive", starval)
 		}
 
 		return nil
@@ -142,7 +142,7 @@ func goToStarlark(gov interface{}, starval interface{}) error {
 		case *starlark.Int:
 			*val = starlark.MakeInt64(goval.Int())
 		default:
-			return fmt.Errorf("target type %T must be *starlark.Int or *starlark.Value", starval)
+			return fmt.Errorf("target type %T must be *starlark.Int or *starlark.Archive", starval)
 		}
 		return nil
 
@@ -153,7 +153,7 @@ func goToStarlark(gov interface{}, starval interface{}) error {
 		case *starlark.Int:
 			*val = starlark.MakeUint64(goval.Uint())
 		default:
-			return fmt.Errorf("target type %T must be *starlark.Int or *starlark.Value", starval)
+			return fmt.Errorf("target type %T must be *starlark.Int or *starlark.Archive", starval)
 		}
 		return nil
 
@@ -164,7 +164,7 @@ func goToStarlark(gov interface{}, starval interface{}) error {
 		case *starlark.Float:
 			*val = starlark.Float(goval.Float())
 		default:
-			return fmt.Errorf("target type %T must be *starlark.Float or *starlark.Value", starval)
+			return fmt.Errorf("target type %T must be *starlark.Float or *starlark.Archive", starval)
 		}
 		return nil
 
@@ -175,7 +175,7 @@ func goToStarlark(gov interface{}, starval interface{}) error {
 		case *starlark.String:
 			*val = starlark.String(goval.String())
 		default:
-			return fmt.Errorf("target type %T must be *starlark.String or *starlark.Value", starval)
+			return fmt.Errorf("target type %T must be *starlark.String or *starlark.Archive", starval)
 		}
 		return nil
 
@@ -203,7 +203,7 @@ func goToStarlark(gov interface{}, starval interface{}) error {
 		case *starlark.Tuple:
 			*val = result
 		default:
-			return fmt.Errorf("target type %T must be *starlark.Tuple or *starlark.Value", starval)
+			return fmt.Errorf("target type %T must be *starlark.Tuple or *starlark.Archive", starval)
 		}
 
 		return nil
@@ -245,7 +245,7 @@ func goToStarlark(gov interface{}, starval interface{}) error {
 		case *starlark.Dict:
 			*val = *result
 		default:
-			return fmt.Errorf("target type %T must be *starlark.Dict or *starlark.Value", starval)
+			return fmt.Errorf("target type %T must be *starlark.Dict or *starlark.Archive", starval)
 		}
 
 		return nil
@@ -268,7 +268,7 @@ func goToStarlark(gov interface{}, starval interface{}) error {
 		case *starlark.StringDict:
 			*val = dict
 		default:
-			return fmt.Errorf("target type %T must be *starlarkstruct.Struct or *starlark.Value", starval)
+			return fmt.Errorf("target type %T must be *starlarkstruct.Struct or *starlark.Archive", starval)
 		}
 
 		return nil

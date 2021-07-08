@@ -8,7 +8,7 @@ import (
 	"fmt"
 
 	"github.com/vmware-tanzu/crash-diagnostics/functions"
-	"github.com/vmware-tanzu/crash-diagnostics/functions/builtins"
+	"github.com/vmware-tanzu/crash-diagnostics/functions/registrar"
 	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 	"go.starlark.net/starlark"
@@ -22,7 +22,7 @@ var (
 
 // Register
 func init() {
-	builtins.Register(Name, Builtin)
+	registrar.Register(Name, Builtin)
 }
 
 // sshConfigFunc implements a starlark built-in function that gathers ssh connection configuration.
@@ -48,10 +48,10 @@ func sshConfigFunc(thread *starlark.Thread, _ *starlark.Builtin, _ starlark.Tupl
 		functions.Error(Name, fmt.Errorf("%s: username is empty", Name))
 	}
 
-	config := Run(thread, args)
+	result := Run(thread, args)
 
 	// convert and return result
-	return functions.Result(Name, config)
+	return functions.Result(Name, result)
 }
 
 // Run executes command function
@@ -74,7 +74,7 @@ func Run(t *starlark.Thread, args Args) Result {
 	}
 
 	return Result{
-		Conf: Config{
+		Config: Config{
 			Username:       args.Username,
 			Port:           args.Port,
 			PrivateKeyPath: args.PrivateKeyPath,
@@ -123,7 +123,7 @@ func MakeConfigForThread(t *starlark.Thread) (Config, error) {
 	if result.Error != "" {
 		return Config{}, errors.New(result.Error)
 	}
-	return result.Conf, nil
+	return result.Config, nil
 }
 
 func MakeSSHAgentForThread(t *starlark.Thread) (ssh.Agent, error) {

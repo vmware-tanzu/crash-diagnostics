@@ -8,7 +8,7 @@ import (
 
 	"github.com/vladimirvivien/echo"
 	"github.com/vmware-tanzu/crash-diagnostics/functions"
-	"github.com/vmware-tanzu/crash-diagnostics/functions/builtins"
+	"github.com/vmware-tanzu/crash-diagnostics/functions/registrar"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 	"go.starlark.net/starlark"
 )
@@ -21,7 +21,7 @@ var (
 
 // Register
 func init() {
-	builtins.Register(Name, Builtin)
+	registrar.Register(Name, Builtin)
 }
 
 // runLocalFunc is a built-in starlark function that runs a provided command on the local machine.

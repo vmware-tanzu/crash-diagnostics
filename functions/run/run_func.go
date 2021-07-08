@@ -9,8 +9,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/vmware-tanzu/crash-diagnostics/functions"
-	"github.com/vmware-tanzu/crash-diagnostics/functions/builtins"
 	"github.com/vmware-tanzu/crash-diagnostics/functions/providers"
+	"github.com/vmware-tanzu/crash-diagnostics/functions/registrar"
 	"github.com/vmware-tanzu/crash-diagnostics/functions/scriptconf"
 	"github.com/vmware-tanzu/crash-diagnostics/functions/sshconf"
 	"github.com/vmware-tanzu/crash-diagnostics/ssh"
@@ -26,7 +26,7 @@ var (
 
 // Register
 func init() {
-	builtins.Register(Name, Builtin)
+	registrar.Register(Name, Builtin)
 }
 
 // runFunc implements a starlark built-in function `run()` that can execute processes on remote
@@ -57,7 +57,7 @@ func runFunc(thread *starlark.Thread, _ *starlark.Builtin, _ starlark.Tuple, kwa
 		args.Resources = res
 	}
 
-	if reflect.ValueOf(args.SSHConfig).IsZero() {
+	if reflect.ValueOf(args.SSHConfig).IsZero() || reflect.ValueOf(args.SSHConfig).IsZero() {
 		conf := sshconf.DefaultConfig()
 		args.SSHConfig = conf
 	}

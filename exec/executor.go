@@ -4,12 +4,18 @@
 package exec
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
 
+	_ "github.com/vmware-tanzu/crash-diagnostics/functions/archive"
+	_ "github.com/vmware-tanzu/crash-diagnostics/functions/providers/hostlist"
+	_ "github.com/vmware-tanzu/crash-diagnostics/functions/run"
+
 	"github.com/vmware-tanzu/crash-diagnostics/functions/registrar"
-	starfunc "github.com/vmware-tanzu/crash-diagnostics/functions/starlark"
+	"github.com/vmware-tanzu/crash-diagnostics/functions/scriptconf"
+	"github.com/vmware-tanzu/crash-diagnostics/functions/sshconf"
 	starexec "github.com/vmware-tanzu/crash-diagnostics/starlark"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 	"go.starlark.net/starlark"
@@ -85,7 +91,7 @@ func Run(name string, source io.Reader, args ArgMap) (starlark.StringDict, error
 	}
 	thread := &starlark.Thread{Name: "crashd"}
 
-	if err := starfunc.SetupThreadDefaults(thread); err != nil {
+	if err := SetupThreadDefaults(thread); err != nil {
 		return nil, fmt.Errorf("thread defaults: %s", err)
 	}
 
@@ -98,4 +104,18 @@ func Run(name string, source io.Reader, args ArgMap) (starlark.StringDict, error
 	}
 
 	return starResult, err
+}
+
+func SetupThreadDefaults(thread *starlark.Thread) error {
+	if thread == nil {
+		return errors.New("thread defaults failed: nil thread")
+	}
+
+	if _, err := scriptconf.MakeConfigForThread(thread); err != nil {
+		return fmt.Errorf("default script config: failed: %w", err)
+	}
+	if _, err := sshconf.MakeConfigForThread(thread); err != nil {
+		return fmt.Errorf("default ssh config: failed: %w", err)
+	}
+	return nil
 }

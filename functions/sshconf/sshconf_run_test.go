@@ -17,9 +17,17 @@ func TestConfCmd_Run(t *testing.T) {
 		shouldFail bool
 	}{
 		{
-			name:       "zero values",
-			args:       Args{},
-			shouldFail: true,
+			name: "zero values",
+			args: Args{},
+			config: Config{
+				Username:       DefaultUsername(),
+				Port:           DefaultPort(),
+				PrivateKeyPath: DefaultPKPath(),
+				JumpUsername:   "",
+				JumpHost:       "",
+				MaxRetries:     0,
+				ConnTimeout:    DefaultConnTimeout(),
+			},
 		},
 		{
 			name: "default values",
@@ -44,7 +52,7 @@ func TestConfCmd_Run(t *testing.T) {
 				t.Fatal(result.Error)
 			}
 
-			cfg := result.Conf
+			cfg := result.Config
 			if cfg.ConnTimeout != test.config.ConnTimeout {
 				t.Errorf("unexpected conntimeout value %d", cfg.ConnTimeout)
 			}

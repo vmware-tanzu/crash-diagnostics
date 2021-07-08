@@ -55,7 +55,7 @@ func (v *StarValue) Go(goPtr interface{}) error {
 	return starlarkToGo(v.val, goval.Elem())
 }
 
-// starlarkToGo translates starlark.Value val to the provided Go value goval
+// starlarkToGo translates starlark.Archive val to the provided Go value goval
 // using the following type mapping:
 //
 //      starlark.Bool   	-- bool

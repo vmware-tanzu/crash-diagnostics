@@ -33,10 +33,12 @@ func TestSSHConfigFunc(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				var conf Config
-				if err := typekit.Starlark(val).Go(&conf); err != nil {
+
+				var result Result
+				if err := typekit.Starlark(val).Go(&result); err != nil {
 					t.Fatal(err)
 				}
+				conf := result.Config
 				if conf.Username != "foo" {
 					t.Errorf("unexpected username value: %s", conf.Username)
 				}
@@ -61,10 +63,12 @@ func TestSSHConfigFunc(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				var conf Config
-				if err := typekit.Starlark(val).Go(&conf); err != nil {
+				var result Result
+				if err := typekit.Starlark(val).Go(&result); err != nil {
 					t.Fatal(err)
 				}
+
+				conf := result.Config
 				if conf.Username != "foo" {
 					t.Errorf("unexpected username value: %s", conf.Username)
 				}

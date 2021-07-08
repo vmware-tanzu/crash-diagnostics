@@ -38,7 +38,7 @@ func TestScriptConfRun(t *testing.T) {
 				t.Fatal(result.Error)
 			}
 
-			cfg := result.Conf
+			cfg := result.Config
 			if cfg.Workdir != test.config.Workdir {
 				t.Errorf("unexpected workdir value %s", cfg.Workdir)
 			}
