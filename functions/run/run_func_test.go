@@ -36,8 +36,8 @@ func TestRunFunc(t *testing.T) {
 		{
 			name: "missing resources",
 			kwargs: func(t *testing.T) []starlark.Tuple {
-				sshConf := sshconf.DefaultConfig()
-				sshArg, err := functions.Result(sshconf.Name, sshConf)
+				sshConf := make_sshconf.DefaultConfig()
+				sshArg, err := functions.Result(make_sshconf.Name, sshConf)
 				if err != nil {
 					t.Fatal(err)
 				}

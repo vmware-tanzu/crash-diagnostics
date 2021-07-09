@@ -9,9 +9,15 @@ import (
 	"io"
 	"os"
 
-	_ "github.com/vmware-tanzu/crash-diagnostics/functions/archive"
+	_ "github.com/vmware-tanzu/crash-diagnostics/functions/archive/archive_alias"
+	_ "github.com/vmware-tanzu/crash-diagnostics/functions/archive/make_archive"
 	_ "github.com/vmware-tanzu/crash-diagnostics/functions/providers/hostlist"
+	_ "github.com/vmware-tanzu/crash-diagnostics/functions/providers/resources"
 	_ "github.com/vmware-tanzu/crash-diagnostics/functions/run"
+	_ "github.com/vmware-tanzu/crash-diagnostics/functions/scriptconf/make_scriptconf"
+	_ "github.com/vmware-tanzu/crash-diagnostics/functions/scriptconf/scriptconf_alias"
+	_ "github.com/vmware-tanzu/crash-diagnostics/functions/sshconf/make_sshconf"
+	_ "github.com/vmware-tanzu/crash-diagnostics/functions/sshconf/sshconf_alias"
 
 	"github.com/vmware-tanzu/crash-diagnostics/functions/registrar"
 	"github.com/vmware-tanzu/crash-diagnostics/functions/scriptconf"
@@ -111,10 +117,10 @@ func SetupThreadDefaults(thread *starlark.Thread) error {
 		return errors.New("thread defaults failed: nil thread")
 	}
 
-	if _, err := scriptconf.MakeConfigForThread(thread); err != nil {
+	if _, err := scriptconf.MakeDefaultConfigForThread(thread); err != nil {
 		return fmt.Errorf("default script config: failed: %w", err)
 	}
-	if _, err := sshconf.MakeConfigForThread(thread); err != nil {
+	if _, err := sshconf.MakeDefaultConfigForThread(thread); err != nil {
 		return fmt.Errorf("default ssh config: failed: %w", err)
 	}
 	return nil

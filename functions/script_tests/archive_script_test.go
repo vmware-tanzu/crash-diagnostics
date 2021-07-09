@@ -20,9 +20,9 @@ func TestArchiveScript(t *testing.T) {
 		eval   func(t *testing.T, script string)
 	}{
 		{
-			name: "archive defaults",
+			name: "make_archive",
 			script: `
-result = archive(output_file="/tmp/archive.tar.gz", source_paths=["/tmp/crashd"])
+result = make_archive(output_file="/tmp/archive.tar.gz", source_paths=["/tmp/crashd"])
 `,
 			eval: func(t *testing.T, script string) {
 				output, err := exec.Run("test.star", strings.NewReader(script), nil)
@@ -33,7 +33,7 @@ result = archive(output_file="/tmp/archive.tar.gz", source_paths=["/tmp/crashd"]
 				expected := "/tmp/archive.tar.gz"
 				resultVal := output["result"]
 				if resultVal == nil {
-					t.Fatal("archive() should be assigned to a variable for test")
+					t.Fatal("`make_archive()` should be assigned to a variable for test")
 				}
 				var result archive.Result
 				if err := typekit.Starlark(resultVal).Go(&result); err != nil {
@@ -47,6 +47,37 @@ result = archive(output_file="/tmp/archive.tar.gz", source_paths=["/tmp/crashd"]
 
 				if result.Archive.OutputFile != expected {
 					t.Errorf("unexpected result: %s", result.Archive.OutputFile)
+				}
+			},
+		},
+		{
+			name: "archive alias",
+			script: `
+result = archive(output_file="/tmp/archive.tar.gz", source_paths=["/tmp/crashd"])
+`,
+			eval: func(t *testing.T, script string) {
+				output, err := exec.Run("test.star", strings.NewReader(script), nil)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				expected := "/tmp/archive.tar.gz"
+				resultVal := output["result"]
+				if resultVal == nil {
+					t.Fatal("`archive()` should be assigned to a variable for test")
+				}
+				var arc archive.Archive
+				if err := typekit.Starlark(resultVal).Go(&arc); err != nil {
+					t.Fatal(err)
+				}
+
+				defer func() {
+					os.RemoveAll(expected)
+					os.RemoveAll("/tmp/crashd")
+				}()
+
+				if arc.OutputFile != expected {
+					t.Errorf("unexpected result: %s", arc.OutputFile)
 				}
 			},
 		},

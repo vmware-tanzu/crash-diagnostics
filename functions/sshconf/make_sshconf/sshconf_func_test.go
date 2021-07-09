@@ -1,11 +1,12 @@
 // Copyright (c) 2021 VMware, Inc. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package sshconf
+package make_sshconf
 
 import (
 	"testing"
 
+	"github.com/vmware-tanzu/crash-diagnostics/functions/sshconf"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 	"go.starlark.net/starlark"
 )
@@ -34,7 +35,7 @@ func TestSSHConfigFunc(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				var result Result
+				var result sshconf.Result
 				if err := typekit.Starlark(val).Go(&result); err != nil {
 					t.Fatal(err)
 				}
@@ -45,7 +46,7 @@ func TestSSHConfigFunc(t *testing.T) {
 				if conf.Port != "22" {
 					t.Errorf("unexpected port value: %s", conf.Port)
 				}
-				if conf.PrivateKeyPath != DefaultPKPath() {
+				if conf.PrivateKeyPath != sshconf.DefaultPKPath() {
 					t.Errorf("unexpected pk path value: %s", conf.PrivateKeyPath)
 				}
 			},
@@ -63,7 +64,7 @@ func TestSSHConfigFunc(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				var result Result
+				var result sshconf.Result
 				if err := typekit.Starlark(val).Go(&result); err != nil {
 					t.Fatal(err)
 				}

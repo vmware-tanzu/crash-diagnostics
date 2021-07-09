@@ -1,13 +1,14 @@
 // Copyright (c) 2021 VMware, Inc. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package archive
+package make_archive
 
 import (
 	"errors"
 	"os"
 	"testing"
 
+	"github.com/vmware-tanzu/crash-diagnostics/functions/archive"
 	"go.starlark.net/starlark"
 
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
@@ -38,7 +39,7 @@ func TestArchiveFunc(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				var result Result
+				var result archive.Result
 				if err := typekit.Starlark(val).Go(&result); err != nil {
 					t.Fatal(err)
 				}
@@ -79,7 +80,7 @@ func TestArchiveFunc(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				var result Result
+				var result archive.Result
 				if err := typekit.Starlark(val).Go(&result); err != nil {
 					t.Fatal(err)
 				}

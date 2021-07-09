@@ -21,7 +21,7 @@ var (
 	}
 	DefaultConfig = makeDefaultSSHConfig
 
-	Identifier      = string(Name)
+	Identifier      = "sshconfig"
 	AgentIdentifier = "crashd_ssh_agent"
 )
 

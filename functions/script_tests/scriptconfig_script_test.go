@@ -20,9 +20,9 @@ func TestScriptConfScript(t *testing.T) {
 		eval   func(t *testing.T, script string)
 	}{
 		{
-			name: "run local",
+			name: "make script",
 			script: `
-result = script_config(workdir="foo", use_ssh_agent=False)
+result = make_script_config(workdir="foo", use_ssh_agent=False)
 `,
 			eval: func(t *testing.T, script string) {
 				output, err := exec.Run("test.star", strings.NewReader(script), nil)
@@ -43,6 +43,34 @@ result = script_config(workdir="foo", use_ssh_agent=False)
 					t.Fatalf("unexpected workdir %s", result.Config.Workdir)
 				}
 				if err := os.RemoveAll(result.Config.Workdir); err != nil {
+					t.Error(err)
+				}
+			},
+		},
+		{
+			name: "script config alias",
+			script: `
+result = script_config(workdir="foo", use_ssh_agent=False)
+`,
+			eval: func(t *testing.T, script string) {
+				output, err := exec.Run("test.star", strings.NewReader(script), nil)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				resultVal := output["result"]
+				if resultVal == nil {
+					t.Fatal("script_conf() should be assigned to a variable for test")
+				}
+				var config scriptconf.Config
+				if err := typekit.Starlark(resultVal).Go(&config); err != nil {
+					t.Fatal(err)
+				}
+
+				if config.Workdir != "foo" {
+					t.Fatalf("unexpected workdir %s", config.Workdir)
+				}
+				if err := os.RemoveAll(config.Workdir); err != nil {
 					t.Error(err)
 				}
 			},

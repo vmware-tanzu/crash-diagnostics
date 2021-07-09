@@ -21,10 +21,10 @@ func (c *cmd) Run(t *starlark.Thread, args Args) Result {
 	}
 
 	if args.Workdir == "" {
-		if conf, ok := scriptconf.ConfigFromThread(t); ok {
+		if conf, ok := make_scriptconf.ConfigFromThread(t); ok {
 			args.Workdir = conf.Workdir
 		} else {
-			args.Workdir = scriptconf.DefaultWorkdir()
+			args.Workdir = make_scriptconf.DefaultWorkdir()
 		}
 	}
 	return Result{}

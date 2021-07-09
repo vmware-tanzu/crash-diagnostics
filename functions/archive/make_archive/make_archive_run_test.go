@@ -1,17 +1,18 @@
-package archive
+package make_archive
 
 import (
 	"os"
 	"testing"
 
+	"github.com/vmware-tanzu/crash-diagnostics/functions/archive"
 	"go.starlark.net/starlark"
 )
 
 func TestArchiveRun(t *testing.T) {
 	tests := []struct {
 		name       string
-		params     Args
-		arc        Result
+		params     archive.Args
+		arc        archive.Result
 		shouldFail bool
 	}{
 		{
@@ -20,18 +21,18 @@ func TestArchiveRun(t *testing.T) {
 		},
 		{
 			name:   "default archive name",
-			params: Args{SourcePaths: []string{"/tmp/crashd"}},
-			arc:    Result{Archive: Archive{OutputFile: DefaultBundleName}},
+			params: archive.Args{SourcePaths: []string{"/tmp/crashd"}},
+			arc:    archive.Result{Archive: archive.Archive{OutputFile: DefaultBundleName}},
 		},
 		{
 			name:   "archive name",
-			params: Args{SourcePaths: []string{"/tmp/crashd"}, OutputFile: "test.tar.gz"},
-			arc:    Result{Archive: Archive{OutputFile: "test.tar.gz"}},
+			params: archive.Args{SourcePaths: []string{"/tmp/crashd"}, OutputFile: "test.tar.gz"},
+			arc:    archive.Result{Archive: archive.Archive{OutputFile: "test.tar.gz"}},
 		},
 		{
 			name:   "multiple files",
-			params: Args{SourcePaths: []string{"/tmp/crashd0", "/tmp/crashd1"}, OutputFile: "test.tar.gz"},
-			arc:    Result{Archive: Archive{OutputFile: "test.tar.gz"}},
+			params: archive.Args{SourcePaths: []string{"/tmp/crashd0", "/tmp/crashd1"}, OutputFile: "test.tar.gz"},
+			arc:    archive.Result{Archive: archive.Archive{OutputFile: "test.tar.gz"}},
 		},
 	}
 

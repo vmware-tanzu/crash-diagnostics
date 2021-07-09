@@ -42,6 +42,33 @@ func TestHostlistProviderScript(t *testing.T) {
 				}
 			},
 		},
+		{
+			name:   "resources with hostlist_provider",
+			script: `result=resources(provider=hostlist_provider(hosts=["127.0.0.1", "localhost"]))`,
+			eval: func(t *testing.T, script string) {
+				output, err := exec.Run("test.star", strings.NewReader(script), nil)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				resultVal := output["result"]
+				if resultVal == nil {
+					t.Fatal("resources() should be assigned to a variable for testing")
+				}
+				var resources providers.Resources
+				if err := typekit.Starlark(resultVal).Go(&resources); err != nil {
+					t.Fatal(err)
+				}
+				if len(resources.Hosts) != 2 {
+					t.Errorf("unexpected host count %d", len(resources.Hosts))
+				}
+				for i := range resources.Hosts {
+					if resources.Hosts[i] != "127.0.0.1" && resources.Hosts[i] != "localhost" {
+						t.Errorf("unexpected resource hosts values %s", resources.Hosts[i])
+					}
+				}
+			},
+		},
 	}
 
 	for _, test := range tests {

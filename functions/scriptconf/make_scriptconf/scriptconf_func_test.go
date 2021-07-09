@@ -1,12 +1,13 @@
 // Copyright (c) 2021 VMware, Inc. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package scriptconf
+package make_scriptconf
 
 import (
 	"os"
 	"testing"
 
+	"github.com/vmware-tanzu/crash-diagnostics/functions/scriptconf"
 	"go.starlark.net/starlark"
 
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
@@ -26,11 +27,11 @@ func TestScriptConfFunc(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				var res Result
+				var res scriptconf.Result
 				if err := typekit.Starlark(val).Go(&res); err != nil {
 					t.Fatal(err)
 				}
-				if res.Config.Workdir != DefaultWorkdir() {
+				if res.Config.Workdir != scriptconf.DefaultWorkdir() {
 					t.Errorf("unexpected workdir value: %s", res.Config.Workdir)
 				}
 				if err := os.RemoveAll(res.Config.Workdir); err != nil {
@@ -46,7 +47,7 @@ func TestScriptConfFunc(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				var res Result
+				var res scriptconf.Result
 				if err := typekit.Starlark(val).Go(&res); err != nil {
 					t.Fatal(err)
 				}
@@ -69,7 +70,7 @@ func TestScriptConfFunc(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				var res Result
+				var res scriptconf.Result
 				if err := typekit.Starlark(val).Go(&res); err != nil {
 					t.Fatal(err)
 				}
@@ -94,7 +95,7 @@ func TestScriptConfFunc(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				var res Result
+				var res scriptconf.Result
 				if err := typekit.Starlark(val).Go(&res); err != nil {
 					t.Fatal(err)
 				}

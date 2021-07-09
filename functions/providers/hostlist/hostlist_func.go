@@ -24,13 +24,17 @@ func init() {
 	registrar.Register(Name, Builtin)
 }
 
-// hostListProviderFunc is a built-in starlark function that enumerates host resources from a
-// provided list of hosts addresses.
+// hostListProviderFunc is a built-in starlark function that implements a provider
+// that enumerates host resources from a provided list of hosts addresses.
 //
 // Args
 // - hosts: list of host addresses (required)
 //
-// Example: hostlist_provider(hosts=["host1", "host2"])
+// Returns
+// - Error: if one occurs
+// - Resources
+//
+// Script example: hostlist_provider(hosts=["host1", "host2"])
 func hostListProviderFunc(thread *starlark.Thread, b *starlark.Builtin, _ starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var args Args
 	if err := typekit.KwargsToGo(kwargs, &args); err != nil {

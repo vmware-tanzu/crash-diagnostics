@@ -7,8 +7,7 @@ package scriptconf
 var (
 	DefaultWorkdir = func() string { return "/tmp/crashd" }
 	DefaultConf    = makeDefaultConf
-
-	Identifier = string(Name)
+	Identifier     = "scriptconf"
 )
 
 // Args represent input arguments passed to starlark function.

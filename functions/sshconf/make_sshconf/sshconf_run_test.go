@@ -1,45 +1,46 @@
 // Copyright (c) 2021 VMware, Inc. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package sshconf
+package make_sshconf
 
 import (
 	"testing"
 
+	"github.com/vmware-tanzu/crash-diagnostics/functions/sshconf"
 	"go.starlark.net/starlark"
 )
 
 func TestConfCmd_Run(t *testing.T) {
 	tests := []struct {
 		name       string
-		args       Args
-		config     Config
+		args       sshconf.Args
+		config     sshconf.Config
 		shouldFail bool
 	}{
 		{
 			name: "zero values",
-			args: Args{},
-			config: Config{
-				Username:       DefaultUsername(),
-				Port:           DefaultPort(),
-				PrivateKeyPath: DefaultPKPath(),
+			args: sshconf.Args{},
+			config: sshconf.Config{
+				Username:       sshconf.DefaultUsername(),
+				Port:           sshconf.DefaultPort(),
+				PrivateKeyPath: sshconf.DefaultPKPath(),
 				JumpUsername:   "",
 				JumpHost:       "",
 				MaxRetries:     0,
-				ConnTimeout:    DefaultConnTimeout(),
+				ConnTimeout:    sshconf.DefaultConnTimeout(),
 			},
 		},
 		{
 			name: "default values",
-			args: Args{Username: "testuser"},
-			config: Config{
+			args: sshconf.Args{Username: "testuser"},
+			config: sshconf.Config{
 				Username:       "testuser",
 				Port:           "22",
-				PrivateKeyPath: DefaultPKPath(),
+				PrivateKeyPath: sshconf.DefaultPKPath(),
 				JumpUsername:   "",
 				JumpHost:       "",
 				MaxRetries:     0,
-				ConnTimeout:    DefaultConnTimeout(),
+				ConnTimeout:    sshconf.DefaultConnTimeout(),
 			},
 		},
 	}

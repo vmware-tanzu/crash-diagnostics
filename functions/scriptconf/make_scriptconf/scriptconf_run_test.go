@@ -1,13 +1,14 @@
 // Copyright (c) 2021 VMware, Inc. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package scriptconf
+package make_scriptconf
 
 import (
 	"os"
 	"testing"
 
 	"github.com/vmware-tanzu/crash-diagnostics/functions"
+	"github.com/vmware-tanzu/crash-diagnostics/functions/scriptconf"
 	"github.com/vmware-tanzu/crash-diagnostics/functions/sshconf"
 	"go.starlark.net/starlark"
 )
@@ -15,18 +16,18 @@ import (
 func TestScriptConfRun(t *testing.T) {
 	tests := []struct {
 		name   string
-		params Args
-		config Config
+		params scriptconf.Args
+		config scriptconf.Config
 	}{
 		{
 			name:   "default values",
-			params: Args{},
-			config: Config{Workdir: DefaultWorkdir(), Gid: functions.DefaultGid(), Uid: functions.DefaultUid()},
+			params: scriptconf.Args{},
+			config: scriptconf.Config{Workdir: scriptconf.DefaultWorkdir(), Gid: functions.DefaultGid(), Uid: functions.DefaultUid()},
 		},
 		{
 			name:   "all values",
-			params: Args{Workdir: "foo", Gid: "00", Uid: "01", UseSSHAgent: true, Requires: []string{"a/b"}},
-			config: Config{Workdir: "foo", Gid: "00", Uid: "01", UseSSHAgent: true, Requires: []string{"a/b"}},
+			params: scriptconf.Args{Workdir: "foo", Gid: "00", Uid: "01", UseSSHAgent: true, Requires: []string{"a/b"}},
+			config: scriptconf.Config{Workdir: "foo", Gid: "00", Uid: "01", UseSSHAgent: true, Requires: []string{"a/b"}},
 		},
 	}
 
@@ -55,7 +56,7 @@ func TestScriptConfRun(t *testing.T) {
 				t.Errorf("unexpected UseSSHAgent: %t", cfg.UseSSHAgent)
 			}
 			if cfg.UseSSHAgent {
-				if thread.Local(sshconf.AgentIdentifier) == nil {
+				if thread.Local(make_sshconf.AgentIdentifier) == nil {
 					t.Errorf("ssh_agent was not stored in thread_local")
 				}
 			}
