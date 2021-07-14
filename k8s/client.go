@@ -5,10 +5,12 @@ package k8s
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -17,6 +19,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -29,6 +32,7 @@ type Client struct {
 	Client      dynamic.Interface
 	Disco       discovery.DiscoveryInterface
 	CoreRest    rest.Interface
+	Mapper      meta.RESTMapper
 	JsonPrinter printers.JSONPrinter
 }
 
@@ -54,6 +58,12 @@ func New(kubeconfig string) (*Client, error) {
 		return nil, err
 	}
 
+	resources, err := restmapper.GetAPIGroupResources(disco)
+	if err != nil {
+		return nil, err
+	}
+	mapper := restmapper.NewDiscoveryRESTMapper(resources)
+
 	restCfg, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
 		return nil, err
@@ -64,7 +74,7 @@ func New(kubeconfig string) (*Client, error) {
 		return nil, err
 	}
 
-	return &Client{Client: client, Disco: disco, CoreRest: restc}, nil
+	return &Client{Client: client, Disco: disco, CoreRest: restc, Mapper: mapper}, nil
 }
 
 func (k8sc *Client) Search(ctx context.Context, params SearchParams) ([]SearchResult, error) {
@@ -79,9 +89,9 @@ func (k8sc *Client) Search(ctx context.Context, params SearchParams) ([]SearchRe
 }
 
 // Search does a drill-down search from group, version, resourceList, to resources.  The following rules are applied
-// 1) Legacy core group (api/v1) can be specified as "core"
+// 1) Legacy core group can be specified as "core" instead of empty string.
 // 2) All specified search params will use AND operator for match (i.e. groups=core AND kinds=pods AND versions=v1 AND ... etc)
-// 3) kinds will match resource.Kind or resource.Name
+// 3) kinds (resources) will match resource.Kind or resource.Name
 // 4) All search params are passed as comma- or space-separated sets that are matched using OR (i.e. kinds=pods services
 //    will match resouces of type pods or services)
 func (k8sc *Client) _search(ctx context.Context, groups, categories, kinds, namespaces, versions, names, labels, containers string) ([]SearchResult, error) {
@@ -89,7 +99,7 @@ func (k8sc *Client) _search(ctx context.Context, groups, categories, kinds, name
 	// normalize params
 	groups = strings.ToLower(groups)
 	categories = strings.ToLower(categories)
-	kinds = strings.ToLower(kinds)
+	kinds = strings.ToLower(kinds) // means resources in K8s API term (i.e. pods, services, etc)
 	namespaces = strings.ToLower(namespaces)
 	versions = strings.ToLower(versions)
 	labels = strings.ToLower(labels)
@@ -100,133 +110,194 @@ func (k8sc *Client) _search(ctx context.Context, groups, categories, kinds, name
 		groups, categories, kinds, namespaces, versions, names, labels, containers,
 	)
 
-	grpList, err := k8sc.Disco.ServerGroups()
-	if err != nil {
-		return nil, err
+	// Build a groups-resource Map that maps each
+	// selected group to its associated resources.
+	groupResMap := make(map[schema.GroupVersion]*metav1.APIResourceList)
+	switch {
+	case groups == "" && kinds == "" && versions == "" && categories == "":
+		// no groups, no kinds (resources), no versions, no categories provided
+		return nil, fmt.Errorf("search: at least one of {groups, kinds, versions, or categories} is required")
+	case groups == "" && kinds == "" && versions != "" && categories == "":
+		// only versions provided
+		return nil, fmt.Errorf("search: versions must be provided with at least one of {groups, kinds, or categories}")
+	default:
+		// build a group-to-resources map, based on the passed parameters.
+		// first, extract groups needed to build the map
+		var groupList *metav1.APIGroupList
+		if groups != "" {
+			groupList = &metav1.APIGroupList{}
+			groupSlice := splitParamList(groups)
+
+			// adjust for legacy group name "core" -> "" empty
+			for i := 0; i < len(groupSlice); i++ {
+				groupSlice[i] = toLegacyGrpName(groupSlice[i])
+			}
+
+			serverGroups, err := k8sc.Disco.ServerGroups()
+			if err != nil {
+				return nil, fmt.Errorf("search: failed to get server groups: %w", err)
+			}
+			// for each server group, match specified group name from param
+			for _, grp := range serverGroups.Groups {
+				if sliceContains(groupSlice, grp.Name) {
+					groupList.Groups = append(groupList.Groups, grp)
+				}
+			}
+		} else {
+			serverGroups, err := k8sc.Disco.ServerGroups()
+			if err != nil {
+				return nil, fmt.Errorf("search: failed to get server groups: %w", err)
+			}
+			groupList = serverGroups
+		}
+
+		// extract resources names (kinds param) and versions params
+		verSlice := splitParamList(versions)
+		resSlice := splitParamList(kinds)
+		catSlice := splitParamList(categories)
+
+		// next, for each groupVersion pair
+		// retrieve a set of resources associated with it
+		for _, grp := range groupList.Groups {
+			for _, ver := range grp.Versions {
+				// only select ver if it can be matched, otherwise continue to next ver
+				if versions != "" && !sliceContains(verSlice, ver.Version) {
+					continue
+				}
+
+				// grab all available resources for group/ver
+				groupVersion := schema.GroupVersion{Group: grp.Name, Version: ver.Version}
+				resList, err := k8sc.Disco.ServerResourcesForGroupVersion(groupVersion.String())
+				if err != nil {
+					return nil, fmt.Errorf("search: failed to get resources for groups: %w", err)
+				}
+
+				// for each resource in group/ver
+				// attempt to match it with provided resources name (kinds)
+				resultList := &metav1.APIResourceList{GroupVersion: groupVersion.String()}
+				for _, resource := range resList.APIResources {
+					// filter resources on names if provided (kinds param)
+					if kinds != "" && !sliceContains(resSlice, resource.Kind) && !sliceContains(resSlice, resource.Name) {
+						continue
+					}
+					// filter resources on categories if specified
+					if categories != "" && !sliceContains(catSlice, resource.Categories...) {
+						continue
+					}
+					resultList.APIResources = append(resultList.APIResources, resource)
+				}
+				groupResMap[groupVersion] = resultList
+			}
+		}
 	}
 
-	// if namespace filters not provided, assume all namespaces
-	if len(namespaces) == 0 {
+	// prepare namespaces
+	var nsList []string
+	if namespaces != "" {
+		nsList = splitParamList(namespaces)
+	} else {
 		nsNames, err := getNamespaces(ctx, k8sc)
 		if err != nil {
 			return nil, err
 		}
-		namespaces = strings.Join(nsNames, " ")
+		nsList = nsNames
 	}
 
+	// Collect resource objects using the grou-to-resources map
 	var finalResults []SearchResult
-	logrus.Debugf("Searching in %d groups", len(grpList.Groups))
-	for _, grp := range grpList.Groups {
-		// filter by group
-		grpName := strings.TrimSpace(grp.Name)
-		grpName = getLegacyGrpName(grpName)
-		if len(groups) > 0 && !strings.Contains(groups, strings.ToLower(grpName)) {
-			continue
-		}
-
-		// filter by group version
-		logrus.Debugf("Searching resources in Group %s", grpName)
-		for _, discoGV := range grp.Versions {
-			if len(versions) > 0 && !strings.Contains(versions, strings.ToLower(discoGV.Version)) {
-				continue
+	logrus.Debugf("searching through %d groups", len(groupResMap))
+	for groupVer, resourceList := range groupResMap {
+		for _, resource := range resourceList.APIResources {
+			listOptions := metav1.ListOptions{
+				LabelSelector: labels,
 			}
-
-			// adjust version for legacy group
-			grpVersion := discoGV.GroupVersion
-			if grpName == LegacyGroupName {
-				grpVersion = discoGV.Version
-			}
-
-			logrus.Debugf("Searching resources in GroupVersion %s", discoGV.GroupVersion)
-			resources, err := k8sc.Disco.ServerResourcesForGroupVersion(grpVersion)
-			if err != nil {
-				logrus.Errorf("K8s.Search failed to get resources for %s: %s", discoGV.GroupVersion, err)
-				continue
-			}
-
-			// filter by resource kind and categories
-			for _, res := range resources.APIResources {
-				if len(kinds) > 0 && !strings.Contains(kinds, strings.ToLower(res.Kind)) {
-					continue
-				}
-
-				if len(categories) > 0 && !sliceContains(splitParamList(categories), res.Categories...) {
-					continue
-				}
-
-				gvr := schema.GroupVersionResource{
-					Group:    toLegacyGrpName(grpName),
-					Version:  discoGV.Version,
-					Resource: res.Name,
-				}
-				logrus.Debugf(`Searching for GroupResource %#v`, gvr)
-
-				// retrieve API objects based on GroupVersionResource and
-				// filter by namespaces and names
-				listOptions := metav1.ListOptions{
-					LabelSelector: labels,
-				}
-
-				// gather found resources
-				var results []SearchResult
-				if res.Namespaced {
-					for _, ns := range splitParamList(namespaces) {
-						logrus.Debugf("Searching for %s in namespace %s [GroupRes: %v]", res.Name, ns, gvr)
-						list, err := k8sc.Client.Resource(gvr).Namespace(ns).List(ctx, listOptions)
-						if err != nil {
-							logrus.Debugf(
-								"WARN: K8s.Search failed to get %s in %s [GroupRes: %s][labels: %v]: %s",
-								res.Name, ns, discoGV.GroupVersion, listOptions.LabelSelector, err,
-							)
-							continue
-						}
-						logrus.Debugf("Found %d %s in namespace [%s]", len(list.Items), res.Name, ns)
-						result := SearchResult{
-							ListKind:             list.GetKind(),
-							ResourceName:         res.Name,
-							ResourceKind:         res.Kind,
-							Namespaced:           res.Namespaced,
-							Namespace:            ns,
-							GroupVersionResource: gvr,
-							List:                 list,
-						}
-						results = append(results, result)
-					}
-				} else {
-					logrus.Debugf("Searching for resource %s (non-namespaced)", res.Name)
-					list, err := k8sc.Client.Resource(gvr).List(ctx, listOptions)
+			gvr := schema.GroupVersionResource{Group: groupVer.Group, Version: groupVer.Version, Resource: resource.Name}
+			// gather found resources
+			var results []SearchResult
+			if resource.Namespaced {
+				for _, ns := range nsList {
+					logrus.Debugf("searching for %s objects in [group=%s; namespace=%s; labels=%v]",
+						resource.Name, groupVer, ns, listOptions.LabelSelector,
+					)
+					list, err := k8sc.Client.Resource(gvr).Namespace(ns).List(ctx, listOptions)
 					if err != nil {
 						logrus.Debugf(
-							"WARN: K8s.Search failed to get %s: [GroupRes: %s] [labels: %v]: %s",
-							res.Name, discoGV.GroupVersion, listOptions.LabelSelector, err,
+							"WARN: failed to get %s objects in [group=%s; namespace=%s; labels=%v]: %s",
+							resource.Name, groupVer, ns, listOptions.LabelSelector, err,
 						)
 						continue
 					}
-					logrus.Debugf("Found %d %s (non-namespaced)", len(list.Items), res.Name)
+					if len(list.Items) == 0 {
+						logrus.Debugf(
+							"WARN: found 0 %s in [group=%s; namespace=%s; labels=%v]",
+							resource.Name, groupVer, ns, listOptions.LabelSelector,
+						)
+						continue
+					}
+
+					logrus.Debugf("found %d %s in [group=%s; namespace=%s; labels=%v]",
+						len(list.Items), resource.Name, groupVer, ns, listOptions.LabelSelector,
+					)
 					result := SearchResult{
 						ListKind:             list.GetKind(),
-						ResourceKind:         res.Kind,
-						ResourceName:         res.Name,
-						Namespaced:           res.Namespaced,
+						ResourceName:         resource.Name,
+						ResourceKind:         resource.Kind,
+						Namespaced:           resource.Namespaced,
+						Namespace:            ns,
 						GroupVersionResource: gvr,
 						List:                 list,
 					}
 					results = append(results, result)
 				}
+			} else {
+				logrus.Debugf("searching for %s objects in [group=%s; non-namespced; labels=%v]",
+					resource.Name, groupVer, listOptions.LabelSelector,
+				)
 
-				// apply name filters
-				for _, result := range results {
-					filteredResult := result
-					if len(containers) > 0 && result.ListKind == "PodList" {
-						filteredResult = filterPodsByContainers(result, containers)
-						logrus.Debugf("Found %d %s with container filter [%s]", len(filteredResult.List.Items), filteredResult.ResourceName, containers)
-					}
-					if len(names) > 0 {
-						filteredResult = filterByNames(result, names)
-						logrus.Debugf("Found %d %s with name filter [%s]", len(filteredResult.List.Items), filteredResult.ResourceName, names)
-					}
-					finalResults = append(finalResults, filteredResult)
+				list, err := k8sc.Client.Resource(gvr).List(ctx, listOptions)
+				if err != nil {
+					logrus.Debugf(
+						"WARN: failed to get %s objects in [group=%s; non-namespaced; labels=%v]: %s",
+						resource.Name, groupVer, listOptions.LabelSelector, err,
+					)
+					continue
 				}
+				if len(list.Items) == 0 {
+					logrus.Debugf(
+						"WARN: found 0 %s in [group=%s; non-namespaced; labels=%v]",
+						resource.Name, groupVer, listOptions.LabelSelector,
+					)
+					continue
+				}
+
+				logrus.Debugf("found %d %s in [group=%s; non-namespaced; labels=%v]",
+					len(list.Items), resource.Name, groupVer, listOptions.LabelSelector,
+				)
+
+				result := SearchResult{
+					ListKind:             list.GetKind(),
+					ResourceKind:         resource.Kind,
+					ResourceName:         resource.Name,
+					Namespaced:           resource.Namespaced,
+					GroupVersionResource: gvr,
+					List:                 list,
+				}
+				results = append(results, result)
+			}
+
+			// apply name filters
+			logrus.Debugf("applying filters on %d results", len(results))
+			for _, result := range results {
+				filteredResult := result
+				if len(containers) > 0 && result.ListKind == "PodList" {
+					filteredResult = filterPodsByContainers(result, containers)
+					logrus.Debugf("found %d %s with container filter [%s]", len(filteredResult.List.Items), filteredResult.ResourceName, containers)
+				}
+				if len(names) > 0 {
+					filteredResult = filterByNames(result, names)
+					logrus.Debugf("found %d %s with name filter [%s]", len(filteredResult.List.Items), filteredResult.ResourceName, names)
+				}
+				finalResults = append(finalResults, filteredResult)
 			}
 		}
 	}
@@ -245,21 +316,14 @@ func setCoreDefaultConfig(config *rest.Config) {
 }
 
 func toLegacyGrpName(str string) string {
-	if str == "core" {
+	if strings.EqualFold(str, "core") {
 		return ""
 	}
 	return str
 }
 
-func getLegacyGrpName(str string) string {
-	if str == "" {
-		return "core"
-	}
-	return str
-}
-
 func splitParamList(nses string) []string {
-	if len(nses) == 0 {
+	if nses == "" {
 		return []string{}
 	}
 	if strings.Contains(nses, ",") {

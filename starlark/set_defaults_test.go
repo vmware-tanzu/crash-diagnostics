@@ -76,10 +76,10 @@ set_defaults(resources = resources(hosts=["127.0.0.1","localhost"]), ssh_config 
 		Expect(err).To(HaveOccurred())
 
 		kubeConfig := e.thread.Local(identifiers.kubeCfg)
-		Expect(kubeConfig).To(BeNil())
+		Expect(kubeConfig).NotTo(BeNil())
 
 		sshConfig := e.thread.Local(identifiers.sshCfg)
-		Expect(sshConfig).To(BeNil())
+		Expect(sshConfig).NotTo(BeNil())
 	}, Entry("no input", `
 kube_cfg = kube_config(path="/foo/bar")
 ssh_cfg = ssh_config(username="baz")
