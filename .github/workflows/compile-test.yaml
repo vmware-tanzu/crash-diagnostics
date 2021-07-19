@@ -31,3 +31,4 @@ jobs:
       with:
         version: v1.29
         only-new-issues: true
+        args: --timeout 5m
