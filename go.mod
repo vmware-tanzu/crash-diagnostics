@@ -15,15 +15,13 @@ require (
 	github.com/vladimirvivien/echo v0.0.1-alpha.6
 	go.starlark.net v0.0.0-20201006213952-227f4aabceb5
 	golang.org/x/crypto v0.0.0-20201012173705-84dcc777aaee
-	golang.org/x/net v0.0.0-20201010224723-4f7140c49acb // indirect
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43 // indirect
-	golang.org/x/sys v0.0.0-20201013132646-2da7054afaeb // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	k8s.io/api v0.19.2
-	k8s.io/apimachinery v0.19.2
-	k8s.io/cli-runtime v0.19.0
-	k8s.io/client-go v0.19.0
+	k8s.io/api v0.19.12
+	k8s.io/apimachinery v0.19.12
+	k8s.io/cli-runtime v0.19.12
+	k8s.io/client-go v0.19.12
 	k8s.io/klog/v2 v2.3.0 // indirect
 	k8s.io/utils v0.0.0-20201005171033-6301aaf42dc7 // indirect
 )
