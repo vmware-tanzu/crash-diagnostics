@@ -146,7 +146,7 @@ func (k8sc *Client) _search(ctx context.Context, groups, categories, kinds, name
 
 			// filter by resource kind and categories
 			for _, res := range resources.APIResources {
-				if len(kinds) > 0 && !strings.Contains(kinds, strings.ToLower(res.Kind)) {
+				if len(kinds) > 0 && !sliceContains(splitParamList(kinds), strings.ToLower(res.Kind)){
 					continue
 				}
 
