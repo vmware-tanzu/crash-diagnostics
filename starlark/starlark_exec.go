@@ -117,5 +117,6 @@ func newPredeclareds() starlark.StringDict {
 		identifiers.capvProvider:      starlark.NewBuiltin(identifiers.capvProvider, CapvProviderFn),
 		identifiers.capaProvider:      starlark.NewBuiltin(identifiers.capaProvider, CapaProviderFn),
 		identifiers.setDefaults:       starlark.NewBuiltin(identifiers.setDefaults, SetDefaultsFunc),
+		identifiers.log:               starlark.NewBuiltin(identifiers.log, logFunc),
 	}
 }
