@@ -74,6 +74,9 @@ func setupLocalDefaults(thread *starlark.Thread) error {
 	ctx := context.Background()
 	thread.SetLocal(identifiers.scriptCtx, ctx)
 
+	// add default logger
+	addDefaultLogger(thread)
+
 	if err := addDefaultCrashdConf(thread); err != nil {
 		return err
 	}

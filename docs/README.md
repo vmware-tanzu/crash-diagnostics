@@ -523,6 +523,25 @@ hosts=resources(
 
 copy_from(path="/var/log/kube*.log", resources=hosts)
 ```
+
+### `log()`
+This function prints a log message on the terminal.
+
+#### Parameters
+| Param | Description | Required |
+| -------- | -------- | -------- |
+| `msg`|The message to print on the screen.|Yes|
+| `prefix`|An optional prefix that is printed prior to the message.|No|
+
+#### Output
+None
+
+#### Example
+```python
+log(msg="Hello World!")
+log(msg="Failed to reach server", prefix="ERROR")
+```
+
 ### `run()`
 This function executes its specified command string on all provided compute resources automatically.  It then returns a list of result objects containing information about the remote compute resource, where the command was executed, and the result of the command. 
 

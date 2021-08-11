@@ -45,6 +45,7 @@ var (
 		archive          string
 		os               string
 		setDefaults      string
+		log              string
 
 		kubeCapture       string
 		kubeGet           string
@@ -80,6 +81,7 @@ var (
 		archive:          "archive",
 		os:               "os",
 		setDefaults:      "set_defaults",
+		log:              "log",
 
 		kubeCapture:       "kube_capture",
 		kubeGet:           "kube_get",

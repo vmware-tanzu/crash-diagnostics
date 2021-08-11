@@ -1,0 +1,67 @@
+// Copyright (c) 2020 VMware, Inc. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+package starlark
+
+import (
+	"bytes"
+	"log"
+	"strings"
+	"testing"
+
+	"go.starlark.net/starlark"
+)
+
+func TestLogFunc(t *testing.T) {
+	tests := []struct {
+		name   string
+		kwargs []starlark.Tuple
+		test   func(*testing.T, []starlark.Tuple)
+	}{
+		{
+			name: "logging with no prefix",
+			kwargs: []starlark.Tuple{
+				[]starlark.Value{starlark.String("msg"), starlark.String("Logging from starlark")},
+			},
+			test: func(t *testing.T, kwargs []starlark.Tuple) {
+				var buf bytes.Buffer
+				logger := log.New(&buf, "", log.Lshortfile)
+				thread := newTestThreadLocal(t)
+				thread.SetLocal(identifiers.log, logger)
+
+				if _, err := logFunc(thread, nil, nil, kwargs); err != nil {
+					t.Fatal(err)
+				}
+				if !strings.Contains(buf.String(), "Logging from starlark") {
+					t.Error("logger has unexpected log msg: ", buf.String())
+				}
+			},
+		},
+		{
+			name: "logging with prefix",
+			kwargs: []starlark.Tuple{
+				[]starlark.Value{starlark.String("msg"), starlark.String("Logging from starlark with prefix")},
+				[]starlark.Value{starlark.String("prefix"), starlark.String("INFO")},
+			},
+			test: func(t *testing.T, kwargs []starlark.Tuple) {
+				var buf bytes.Buffer
+				logger := log.New(&buf, "", log.Lshortfile)
+				thread := newTestThreadLocal(t)
+				thread.SetLocal(identifiers.log, logger)
+
+				if _, err := logFunc(thread, nil, nil, kwargs); err != nil {
+					t.Fatal(err)
+				}
+				if !strings.Contains(buf.String(), "INFO: Logging from starlark with prefix") {
+					t.Error("logger has unexpected log prefix and msg: ", buf.String())
+				}
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.test(t, test.kwargs)
+		})
+	}
+}
