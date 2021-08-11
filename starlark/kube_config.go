@@ -71,11 +71,11 @@ func addDefaultKubeConf(thread *starlark.Thread) error {
 		{starlark.String("path"), starlark.String(defaults.kubeconfig)},
 	}
 
-	_, err := KubeConfigFn(thread, nil, nil, args)
+	conf, err := KubeConfigFn(thread, nil, nil, args)
 	if err != nil {
 		return err
 	}
-
+	thread.SetLocal(identifiers.kubeCfg, conf)
 	return nil
 }
 

@@ -17,10 +17,11 @@ import (
 // ssh_config configuration data
 func addDefaultSSHConf(thread *starlark.Thread) error {
 	args := makeDefaultSSHConfig()
-	_, err := SshConfigFn(thread, nil, nil, args)
+	conf, err := SshConfigFn(thread, nil, nil, args)
 	if err != nil {
 		return err
 	}
+	thread.SetLocal(identifiers.sshCfg, conf)
 	return nil
 }
 

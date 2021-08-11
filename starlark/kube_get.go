@@ -15,7 +15,7 @@ import (
 
 // KubeGetFn is a starlark built-in for the fetching kubernetes objects
 func KubeGetFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	var objects *starlark.List
+	objects := starlark.NewList([]starlark.Value{})
 	var groups, categories, kinds, namespaces, versions, names, labels, containers *starlark.List
 	var kubeConfig *starlarkstruct.Struct
 
@@ -62,14 +62,12 @@ func KubeGetFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple
 		Labels:     toSlice(labels),
 		Containers: toSlice(containers),
 	}
-	searchResults, err := client.Search(ctx, searchParams)
-	if err == nil {
-		objects = starlark.NewList([]starlark.Value{})
+	searchResults, searchErr := client.Search(ctx, searchParams)
+	if searchErr == nil {
 		for _, searchResult := range searchResults {
 			srValue := searchResult.ToStarlarkValue()
-			err = objects.Append(srValue)
-			if err != nil {
-				err = errors.Wrap(err, "could not collect kube_get() results")
+			if err := objects.Append(srValue); err != nil {
+				searchErr = errors.Wrap(err, "could not collect kube_get() results")
 				break
 			}
 		}
@@ -80,8 +78,8 @@ func KubeGetFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple
 		starlark.StringDict{
 			"objs": objects,
 			"error": func() starlark.String {
-				if err != nil {
-					return starlark.String(err.Error())
+				if searchErr != nil {
+					return starlark.String(searchErr.Error())
 				}
 				return ""
 			}(),

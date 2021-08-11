@@ -6,122 +6,300 @@ package starlark
 import (
 	"fmt"
 	"strings"
+	"testing"
 
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("kube_get", func() {
+func TestKubeGet(t *testing.T) {
+	tests := []struct {
+		name   string
+		kwargs func(t *testing.T) []starlark.Tuple
+		eval   func(t *testing.T, kwargs []starlark.Tuple)
+	}{
+		{
+			name: "list of services as starlark objects",
+			kwargs: func(t *testing.T) []starlark.Tuple {
+				return []starlark.Tuple{
+					[]starlark.Value{starlark.String("groups"), starlark.NewList([]starlark.Value{starlark.String("core")})},
+					[]starlark.Value{starlark.String("kinds"), starlark.NewList([]starlark.Value{starlark.String("services")})},
+					[]starlark.Value{starlark.String("namespaces"), starlark.NewList([]starlark.Value{starlark.String("default"), starlark.String("kube-system")})},
+				}
+			},
+			eval: func(t *testing.T, kwargs []starlark.Tuple) {
+				val, err := KubeGetFn(newTestThreadLocal(t), nil, nil, kwargs)
+				if err != nil {
+					t.Fatalf("failed to execute: %s", err)
+				}
+				resultStruct, ok := val.(*starlarkstruct.Struct)
+				if !ok {
+					t.Fatalf("expecting type *starlarkstruct.Struct, got %T", val)
+				}
 
-	var (
-		executor *Executor
-		err      error
-	)
+				errVal, err := resultStruct.Attr("error")
+				if err != nil {
+					t.Error(err)
+				}
+				resultErr := errVal.(starlark.String).GoString()
+				if resultErr != "" {
+					t.Fatalf("starlark func failed: %s", resultErr)
+				}
 
-	execSetup := func(crashdScript string) {
-		executor = New()
-		err = executor.Exec("test.kube.get", strings.NewReader(crashdScript))
+				objVal, err := resultStruct.Attr("objs")
+				if err != nil {
+					t.Error(err)
+				}
+				objList, ok := objVal.(*starlark.List)
+				if !ok {
+					t.Fatalf("unexpected type for starlark value")
+				}
+				if objList.Len() != 2 {
+					t.Errorf("unexpected object list returned: %d", objList.Len())
+				}
+			},
+		},
+		{
+			name: "list of nodes as starlark objects",
+			kwargs: func(t *testing.T) []starlark.Tuple {
+				return []starlark.Tuple{
+					[]starlark.Value{starlark.String("groups"), starlark.NewList([]starlark.Value{starlark.String("core")})},
+					[]starlark.Value{starlark.String("kinds"), starlark.NewList([]starlark.Value{starlark.String("nodes")})},
+				}
+			},
+			eval: func(t *testing.T, kwargs []starlark.Tuple) {
+				val, err := KubeGetFn(newTestThreadLocal(t), nil, nil, kwargs)
+				if err != nil {
+					t.Fatalf("failed to execute: %s", err)
+				}
+				resultStruct, ok := val.(*starlarkstruct.Struct)
+				if !ok {
+					t.Fatalf("expecting type *starlarkstruct.Struct, got %T", val)
+				}
+
+				errVal, err := resultStruct.Attr("error")
+				if err != nil {
+					t.Error(err)
+				}
+				resultErr := errVal.(starlark.String).GoString()
+				if resultErr != "" {
+					t.Fatalf("starlark func failed: %s", resultErr)
+				}
+
+				objVal, err := resultStruct.Attr("objs")
+				if err != nil {
+					t.Error(err)
+				}
+				objList, ok := objVal.(*starlark.List)
+				if !ok {
+					t.Fatalf("unexpected type for starlark value")
+				}
+				if objList.Len() != 1 {
+					t.Errorf("unexpected object list returned: %d", objList.Len())
+				}
+			},
+		},
+		{
+			name: "different categories of objects as starlark objects",
+			kwargs: func(t *testing.T) []starlark.Tuple {
+				return []starlark.Tuple{
+					[]starlark.Value{starlark.String("categories"), starlark.NewList([]starlark.Value{starlark.String("all")})},
+				}
+			},
+			eval: func(t *testing.T, kwargs []starlark.Tuple) {
+				val, err := KubeGetFn(newTestThreadLocal(t), nil, nil, kwargs)
+				if err != nil {
+					t.Fatalf("failed to execute: %s", err)
+				}
+				resultStruct, ok := val.(*starlarkstruct.Struct)
+				if !ok {
+					t.Fatalf("expecting type *starlarkstruct.Struct, got %T", val)
+				}
+
+				errVal, err := resultStruct.Attr("error")
+				if err != nil {
+					t.Error(err)
+				}
+				resultErr := errVal.(starlark.String).GoString()
+				if resultErr != "" {
+					t.Fatalf("starlark func failed: %s", resultErr)
+				}
+
+				objVal, err := resultStruct.Attr("objs")
+				if err != nil {
+					t.Error(err)
+				}
+				objList, ok := objVal.(*starlark.List)
+				if !ok {
+					t.Fatalf("unexpected type for starlark value")
+				}
+				if objList.Len() <= 1 {
+					t.Errorf("unexpected object list returned: %d", objList.Len())
+				}
+			},
+		},
 	}
 
-	It("returns a list of k8s services as starlark objects", func() {
-		crashdScript := fmt.Sprintf(`
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.eval(t, test.kwargs(t))
+		})
+	}
+}
+
+func TestKubeGetScript(t *testing.T) {
+	k8sconfig := testSupport.KindKubeConfigFile()
+
+	execute := func(t *testing.T, script string) *starlarkstruct.Struct {
+		executor := New()
+		if err := executor.Exec("test.kube.capture", strings.NewReader(script)); err != nil {
+			t.Fatalf("failed to exec: %s", err)
+		}
+		if !executor.result.Has("kube_data") {
+			t.Fatalf("script result must be assigned to a value")
+		}
+
+		data, ok := executor.result["kube_data"].(*starlarkstruct.Struct)
+		if !ok {
+			t.Fatal("script result is not a struct")
+		}
+		return data
+	}
+
+	tests := []struct {
+		name   string
+		script string
+		eval   func(t *testing.T, script string)
+	}{
+		{
+			name: "namespaced objects as starlark objects",
+			script: fmt.Sprintf(`
 set_defaults(kube_config(path="%s"))
-kube_get_data = kube_get(groups=["core"], kinds=["services"], namespaces=["default", "kube-system"])
-		`, k8sconfig)
-		execSetup(crashdScript)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(executor.result.Has("kube_get_data")).NotTo(BeNil())
+kube_data = kube_get(groups=["core"], kinds=["services"], namespaces=["default", "kube-system"])
+`, k8sconfig),
+			eval: func(t *testing.T, script string) {
+				data := execute(t, script)
 
-		data := executor.result["kube_get_data"]
-		Expect(data).NotTo(BeNil())
+				errVal, err := data.Attr("error")
+				if err != nil {
+					t.Error(err)
+				}
+				resultErr := errVal.(starlark.String).GoString()
+				if resultErr != "" {
+					t.Fatalf("starlark func failed: %s", resultErr)
+				}
 
-		dataStruct, ok := data.(*starlarkstruct.Struct)
-		Expect(ok).To(BeTrue())
-
-		objects, err := dataStruct.Attr("objs")
-		Expect(err).NotTo(HaveOccurred())
-
-		getDataList, _ := objects.(*starlark.List)
-		Expect(getDataList.Len()).To(Equal(2))
-	})
-
-	It("returns a list of k8s nodes as starlark objects", func() {
-		crashdScript := fmt.Sprintf(`
-cfg = kube_config(path="%s")
-kube_get_data = kube_get(groups=["core"], kinds=["nodes"], kube_config = cfg)
-			`, k8sconfig)
-		execSetup(crashdScript)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(executor.result.Has("kube_get_data")).NotTo(BeNil())
-
-		data := executor.result["kube_get_data"]
-		Expect(data).NotTo(BeNil())
-
-		dataStruct, ok := data.(*starlarkstruct.Struct)
-		Expect(ok).To(BeTrue())
-
-		objects, err := dataStruct.Attr("objs")
-		Expect(err).NotTo(HaveOccurred())
-
-		getDataList, _ := objects.(*starlark.List)
-		Expect(getDataList.Len()).To(Equal(1))
-	})
-
-	It("returns a list of etcd containers as starlark objects", func() {
-		crashdScript := fmt.Sprintf(`
-kube_get_data = kube_get(namespaces=["kube-system"], containers=["etcd"], kube_config = kube_config(path="%s"))
-			`, k8sconfig)
-		execSetup(crashdScript)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(executor.result.Has("kube_get_data")).NotTo(BeNil())
-
-		data := executor.result["kube_get_data"]
-		Expect(data).NotTo(BeNil())
-
-		dataStruct, ok := data.(*starlarkstruct.Struct)
-		Expect(ok).To(BeTrue())
-
-		objects, err := dataStruct.Attr("objs")
-		Expect(err).NotTo(HaveOccurred())
-
-		getDataList, _ := objects.(*starlark.List)
-		Expect(getDataList.Len()).To(BeNumerically(">=", 1))
-	})
-
-	It("returns a list of objects under different namespaces using categories as starlark objects", func() {
-		crashdScript := fmt.Sprintf(`
-kube_get_data = kube_get(categories=["all"], kube_config = kube_config(path="%s"))
-			`, k8sconfig)
-		execSetup(crashdScript)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(executor.result.Has("kube_get_data")).NotTo(BeNil())
-
-		data := executor.result["kube_get_data"]
-		Expect(data).NotTo(BeNil())
-
-		dataStruct, ok := data.(*starlarkstruct.Struct)
-		Expect(ok).To(BeTrue())
-
-		objects, err := dataStruct.Attr("objs")
-		Expect(err).NotTo(HaveOccurred())
-
-		getDataList, _ := objects.(*starlark.List)
-		Expect(getDataList.Len()).To(BeNumerically(">=", 1))
-	})
-
-	DescribeTable("Incorrect kubeconfig", func(crashdScript string) {
-		execSetup(crashdScript)
-		Expect(err).To(HaveOccurred())
-	},
-		Entry("in global thread", fmt.Sprintf(`
+				objVal, err := data.Attr("objs")
+				if err != nil {
+					t.Error(err)
+				}
+				objList, ok := objVal.(*starlark.List)
+				if !ok {
+					t.Fatalf("unexpected type for starlark value")
+				}
+				if objList.Len() != 2 {
+					t.Errorf("unexpected object list returned: %d", objList.Len())
+				}
+			},
+		},
+		{
+			name: "non-namespaced objects as starlark objects",
+			script: fmt.Sprintf(`
 set_defaults(kube_config(path="%s"))
-kube_get(namespaces=["kube-system"], containers=["etcd"])`, "/foo/bar")),
-		Entry("in function call", fmt.Sprintf(`
-cfg = kube_config(path="%s")
-kube_get(namespaces=["kube-system"], containers=["etcd"], kube_config=cfg)`, "/foo/bar")),
-	)
-})
+kube_data = kube_get(groups=["core"], kinds=["nodes"])
+`, k8sconfig),
+			eval: func(t *testing.T, script string) {
+				data := execute(t, script)
+
+				errVal, err := data.Attr("error")
+				if err != nil {
+					t.Error(err)
+				}
+				resultErr := errVal.(starlark.String).GoString()
+				if resultErr != "" {
+					t.Fatalf("starlark func failed: %s", resultErr)
+				}
+
+				objVal, err := data.Attr("objs")
+				if err != nil {
+					t.Error(err)
+				}
+				objList, ok := objVal.(*starlark.List)
+				if !ok {
+					t.Fatalf("unexpected type for starlark value")
+				}
+				if objList.Len() != 1 {
+					t.Errorf("unexpected object list returned: %d", objList.Len())
+				}
+			},
+		},
+		{
+			name: "different categories of objects as starlark objects",
+			script: fmt.Sprintf(`
+set_defaults(kube_config(path="%s"))
+kube_data = kube_get(categories=["all"])
+`, k8sconfig),
+			eval: func(t *testing.T, script string) {
+				data := execute(t, script)
+
+				errVal, err := data.Attr("error")
+				if err != nil {
+					t.Error(err)
+				}
+				resultErr := errVal.(starlark.String).GoString()
+				if resultErr != "" {
+					t.Fatalf("starlark func failed: %s", resultErr)
+				}
+
+				objVal, err := data.Attr("objs")
+				if err != nil {
+					t.Error(err)
+				}
+				objList, ok := objVal.(*starlark.List)
+				if !ok {
+					t.Fatalf("unexpected type for starlark value")
+				}
+				if objList.Len() < 3 {
+					t.Errorf("unexpected object list returned: %d", objList.Len())
+				}
+			},
+		},
+		{
+			name: "retrieve containers as starlark objects",
+			script: fmt.Sprintf(`
+set_defaults(kube_config(path="%s"))
+kube_data = kube_get(kinds=["pods"], namespaces=["kube-system"], containers=["etcd"])
+`, k8sconfig),
+			eval: func(t *testing.T, script string) {
+				data := execute(t, script)
+
+				errVal, err := data.Attr("error")
+				if err != nil {
+					t.Error(err)
+				}
+				resultErr := errVal.(starlark.String).GoString()
+				if resultErr != "" {
+					t.Fatalf("starlark func failed: %s", resultErr)
+				}
+
+				objVal, err := data.Attr("objs")
+				if err != nil {
+					t.Error(err)
+				}
+				objList, ok := objVal.(*starlark.List)
+				if !ok {
+					t.Fatalf("unexpected type for starlark value")
+				}
+				if objList.Len() < 1 {
+					t.Errorf("unexpected object list returned: %d", objList.Len())
+				}
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.eval(t, test.script)
+		})
+	}
+}

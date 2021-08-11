@@ -26,6 +26,11 @@ func TestMain(m *testing.M) {
 	}
 	testSupport = test
 
+	// precaution
+	if testSupport == nil {
+		logrus.Fatal("failed to setup test support")
+	}
+
 	if err := testSupport.SetupSSHServer(); err != nil {
 		logrus.Fatal(err)
 	}
@@ -34,9 +39,8 @@ func TestMain(m *testing.M) {
 		logrus.Fatal(err)
 	}
 
-	// precaution
-	if testSupport == nil {
-		logrus.Fatal("failed to setup test support")
+	if _, err := testSupport.SetupKindKubeConfig(); err != nil {
+		logrus.Fatal(err)
 	}
 
 	result := m.Run()

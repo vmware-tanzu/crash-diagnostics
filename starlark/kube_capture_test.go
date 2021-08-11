@@ -6,186 +6,602 @@ package starlark
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
+	"testing"
 
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("kube_capture", func() {
+func TestKubeCapture(t *testing.T) {
+	tests := []struct {
+		name   string
+		kwargs func(t *testing.T) []starlark.Tuple
+		eval   func(t *testing.T, kwargs []starlark.Tuple)
+	}{
+		{
+			name: "simple test with namespaced objects",
+			kwargs: func(t *testing.T) []starlark.Tuple {
+				return []starlark.Tuple{
+					[]starlark.Value{starlark.String("what"), starlark.String("objects")},
+					[]starlark.Value{starlark.String("groups"), starlark.NewList([]starlark.Value{starlark.String("core")})},
+					[]starlark.Value{starlark.String("kinds"), starlark.NewList([]starlark.Value{starlark.String("services")})},
+					[]starlark.Value{starlark.String("namespaces"), starlark.NewList([]starlark.Value{starlark.String("default"), starlark.String("kube-system")})},
+				}
+			},
+			eval: func(t *testing.T, kwargs []starlark.Tuple) {
+				val, err := KubeCaptureFn(newTestThreadLocal(t), nil, nil, kwargs)
+				if err != nil {
+					t.Fatalf("failed to execute: %s", err)
+				}
+				resultStruct, ok := val.(*starlarkstruct.Struct)
+				if !ok {
+					t.Fatalf("expecting type *starlarkstruct.Struct, got %T", val)
+				}
 
-	var (
-		executor *Executor
-		err      error
-	)
+				errVal, err := resultStruct.Attr("error")
+				if err != nil {
+					t.Error(err)
+				}
+				resultErr := errVal.(starlark.String).GoString()
+				if resultErr != "" {
+					t.Fatalf("starlark func failed: %s", resultErr)
+				}
 
-	execSetup := func(crashdScript string) {
-		executor = New()
-		err = executor.Exec("test.kube.capture", strings.NewReader(crashdScript))
+				fileVal, err := resultStruct.Attr("file")
+				if err != nil {
+					t.Error(err)
+				}
+				fileValStr, ok := fileVal.(starlark.String)
+				if !ok {
+					t.Fatalf("unexpected type for starlark value")
+				}
+
+				workDir := fileValStr.GoString()
+				fileInfo, err := os.Stat(workDir)
+				if err != nil {
+					t.Fatalf("stat(%s) failed: %s", workDir, err)
+				}
+				if !fileInfo.IsDir() {
+					t.Fatalf("expecting starlark function to return a dir")
+				}
+				defer os.RemoveAll(workDir)
+
+				path := filepath.Join(workDir, "core_v1", "kube-system")
+				if _, err := os.Stat(path); err != nil {
+					t.Fatalf("expecting %s to be a directory", path)
+				}
+				files, err := os.ReadDir(path)
+				if err != nil {
+					t.Fatalf("ReadeDir(%s) failed: %s", path, err)
+				}
+				if len(files) < 1 {
+					t.Errorf("directory should have at least 1 file but has none: %s:", path)
+				}
+
+				path = filepath.Join(workDir, "core_v1", "default")
+				if _, err := os.Stat(path); err != nil {
+					t.Fatalf("expecting %s to exist: %s", path, err)
+				}
+				files, err = os.ReadDir(path)
+				if err != nil {
+					t.Fatalf("ReadeDir(%s) failed: %s", path, err)
+				}
+				if len(files) < 1 {
+					t.Errorf("directory should have at least 1 file but has none: %s:", path)
+				}
+			},
+		},
+		{
+			name: "test for non-namespaced objects",
+			kwargs: func(t *testing.T) []starlark.Tuple {
+				return []starlark.Tuple{
+					[]starlark.Value{starlark.String("what"), starlark.String("objects")},
+					[]starlark.Value{starlark.String("groups"), starlark.NewList([]starlark.Value{starlark.String("core")})},
+					[]starlark.Value{starlark.String("kinds"), starlark.NewList([]starlark.Value{starlark.String("nodes")})},
+				}
+			},
+			eval: func(t *testing.T, kwargs []starlark.Tuple) {
+				val, err := KubeCaptureFn(newTestThreadLocal(t), nil, nil, kwargs)
+				if err != nil {
+					t.Fatalf("failed to execute: %s", err)
+				}
+				resultStruct, ok := val.(*starlarkstruct.Struct)
+				if !ok {
+					t.Fatalf("expecting type *starlarkstruct.Struct, got %T", val)
+				}
+
+				errVal, err := resultStruct.Attr("error")
+				if err != nil {
+					t.Error(err)
+				}
+				resultErr := errVal.(starlark.String).GoString()
+				if resultErr != "" {
+					t.Fatalf("starlark func failed: %s", resultErr)
+				}
+
+				fileVal, err := resultStruct.Attr("file")
+				if err != nil {
+					t.Error(err)
+				}
+				fileValStr, ok := fileVal.(starlark.String)
+				if !ok {
+					t.Fatalf("unexpected type for starlark value")
+				}
+
+				captureDir := fileValStr.GoString()
+				defer os.RemoveAll(captureDir)
+
+				path := filepath.Join(captureDir, "core_v1")
+				if _, err := os.Stat(path); err != nil {
+					t.Fatalf("expecting %s file to exist: %s", path, err)
+				}
+				files, err := os.ReadDir(path)
+				if err != nil {
+					t.Fatalf("ReadeDir(%s) failed: %s", path, err)
+				}
+				if len(files) != 1 {
+					t.Errorf("directory should have at least 1 file but has none: %s:", path)
+				}
+				if files[0].IsDir() {
+					t.Errorf("expecting to find a regular file, but found dir: %s", files[0].Name())
+				}
+				if !strings.Contains(files[0].Name(), "nodes-") {
+					t.Errorf("expecting to find a node output file, but fond: %s", files[0].Name())
+				}
+
+			},
+		},
+		{
+			name: "simple test with objects in categories",
+			kwargs: func(t *testing.T) []starlark.Tuple {
+				return []starlark.Tuple{
+					[]starlark.Value{starlark.String("what"), starlark.String("objects")},
+					[]starlark.Value{starlark.String("groups"), starlark.NewList([]starlark.Value{starlark.String("core")})},
+					[]starlark.Value{starlark.String("categories"), starlark.NewList([]starlark.Value{starlark.String("all")})},
+					[]starlark.Value{starlark.String("namespaces"), starlark.NewList([]starlark.Value{starlark.String("default"), starlark.String("kube-system")})},
+				}
+			},
+			eval: func(t *testing.T, kwargs []starlark.Tuple) {
+				val, err := KubeCaptureFn(newTestThreadLocal(t), nil, nil, kwargs)
+				if err != nil {
+					t.Fatalf("failed to execute: %s", err)
+				}
+				resultStruct, ok := val.(*starlarkstruct.Struct)
+				if !ok {
+					t.Fatalf("expecting type *starlarkstruct.Struct, got %T", val)
+				}
+
+				errVal, err := resultStruct.Attr("error")
+				if err != nil {
+					t.Error(err)
+				}
+				resultErr := errVal.(starlark.String).GoString()
+				if resultErr != "" {
+					t.Fatalf("starlark func failed: %s", resultErr)
+				}
+
+				fileVal, err := resultStruct.Attr("file")
+				if err != nil {
+					t.Error(err)
+				}
+				fileValStr, ok := fileVal.(starlark.String)
+				if !ok {
+					t.Fatalf("unexpected type for starlark value")
+				}
+
+				captureDir := fileValStr.GoString()
+				defer os.RemoveAll(captureDir)
+
+				fileInfo, err := os.Stat(captureDir)
+				if err != nil {
+					t.Fatalf("stat(%s) failed: %s", captureDir, err)
+				}
+				if !fileInfo.IsDir() {
+					t.Fatalf("expecting starlark function to return a dir")
+				}
+				path := filepath.Join(captureDir, "core_v1", "kube-system")
+				if _, err := os.Stat(path); err != nil {
+					t.Fatalf("expecting %s to be a directory", path)
+				}
+
+				path = filepath.Join(captureDir, "core_v1", "default")
+				if _, err := os.Stat(path); err != nil {
+					t.Fatalf("expecting %s to exist: %s", path, err)
+				}
+
+				files, err := os.ReadDir(path)
+				if err != nil {
+					t.Fatalf("ReadeDir(%s) failed: %s", path, err)
+				}
+				if len(files) < 1 {
+					t.Errorf("directory should have at least 1 file but has none: %s:", path)
+				}
+			},
+		},
+		{
+			name: "search for all logs in a namespace",
+			kwargs: func(t *testing.T) []starlark.Tuple {
+				return []starlark.Tuple{
+					[]starlark.Value{starlark.String("what"), starlark.String("logs")},
+					[]starlark.Value{starlark.String("namespaces"), starlark.NewList([]starlark.Value{starlark.String("kube-system")})},
+				}
+			},
+			eval: func(t *testing.T, kwargs []starlark.Tuple) {
+				val, err := KubeCaptureFn(newTestThreadLocal(t), nil, nil, kwargs)
+				if err != nil {
+					t.Fatalf("failed to execute: %s", err)
+				}
+				resultStruct, ok := val.(*starlarkstruct.Struct)
+				if !ok {
+					t.Fatalf("expecting type *starlarkstruct.Struct, got %T", val)
+				}
+
+				errVal, err := resultStruct.Attr("error")
+				if err != nil {
+					t.Error(err)
+				}
+				resultErr := errVal.(starlark.String).GoString()
+				if resultErr != "" {
+					t.Fatalf("starlark func failed: %s", resultErr)
+				}
+
+				fileVal, err := resultStruct.Attr("file")
+				if err != nil {
+					t.Error(err)
+				}
+				fileValStr, ok := fileVal.(starlark.String)
+				if !ok {
+					t.Fatalf("unexpected type for starlark value")
+				}
+
+				captureDir := fileValStr.GoString()
+				if _, err := os.Stat(captureDir); err != nil {
+					t.Fatalf("stat(%s) failed: %s", captureDir, err)
+				}
+				defer os.RemoveAll(captureDir)
+
+				path := filepath.Join(captureDir, "core_v1", "kube-system")
+				if _, err := os.Stat(path); err != nil {
+					t.Fatalf("expecting %s to be a directory", path)
+				}
+
+				files, err := ioutil.ReadDir(path)
+				if err != nil {
+					t.Fatalf("ReadeDir(%s) failed: %s", path, err)
+				}
+				if len(files) < 3 {
+					t.Error("unexpected number of log files for namespace kube-system:", len(files))
+				}
+			},
+		},
+		{
+			name: "search for logs for a specific container",
+			kwargs: func(t *testing.T) []starlark.Tuple {
+				return []starlark.Tuple{
+					[]starlark.Value{starlark.String("what"), starlark.String("logs")},
+					[]starlark.Value{starlark.String("namespaces"), starlark.NewList([]starlark.Value{starlark.String("kube-system")})},
+					[]starlark.Value{starlark.String("containers"), starlark.NewList([]starlark.Value{starlark.String("etcd")})},
+				}
+			},
+			eval: func(t *testing.T, kwargs []starlark.Tuple) {
+				val, err := KubeCaptureFn(newTestThreadLocal(t), nil, nil, kwargs)
+				if err != nil {
+					t.Fatalf("failed to execute: %s", err)
+				}
+				resultStruct, ok := val.(*starlarkstruct.Struct)
+				if !ok {
+					t.Fatalf("expecting type *starlarkstruct.Struct, got %T", val)
+				}
+
+				errVal, err := resultStruct.Attr("error")
+				if err != nil {
+					t.Error(err)
+				}
+				resultErr := errVal.(starlark.String).GoString()
+				if resultErr != "" {
+					t.Fatalf("starlark func failed: %s", resultErr)
+				}
+
+				fileVal, err := resultStruct.Attr("file")
+				if err != nil {
+					t.Error(err)
+				}
+				fileValStr, ok := fileVal.(starlark.String)
+				if !ok {
+					t.Fatalf("unexpected type for starlark value")
+				}
+
+				captureDir := fileValStr.GoString()
+				if _, err := os.Stat(captureDir); err != nil {
+					t.Fatalf("stat(%s) failed: %s", captureDir, err)
+				}
+				defer os.RemoveAll(captureDir)
+
+				path := filepath.Join(captureDir, "core_v1", "kube-system")
+				if _, err := os.Stat(path); err != nil {
+					t.Fatalf("expecting %s to be a directory", path)
+				}
+
+				files, err := ioutil.ReadDir(path)
+				if err != nil {
+					t.Fatalf("ReadeDir(%s) failed: %s", path, err)
+				}
+				if len(files) == 0 {
+					t.Error("unexpected number of log files for namespace kube-system:", len(files))
+				}
+			},
+		},
 	}
 
-	It("creates a directory and files for namespaced objects", func() {
-		crashdScript := fmt.Sprintf(`
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.eval(t, test.kwargs(t))
+		})
+	}
+}
+
+func TestKubeCaptureScript(t *testing.T) {
+	workdir := testSupport.TmpDirRoot()
+	k8sconfig := testSupport.KindKubeConfigFile()
+
+	execute := func(t *testing.T, script string) *starlarkstruct.Struct {
+		executor := New()
+		if err := executor.Exec("test.kube.capture", strings.NewReader(script)); err != nil {
+			t.Fatalf("failed to exec: %s", err)
+		}
+		if !executor.result.Has("kube_data") {
+			t.Fatalf("script result must be assigned to a value")
+		}
+
+		data, ok := executor.result["kube_data"].(*starlarkstruct.Struct)
+		if !ok {
+			t.Fatal("script result is not a struct")
+		}
+		return data
+	}
+
+	tests := []struct {
+		name   string
+		script string
+		eval   func(t *testing.T, script string)
+	}{
+		{
+			name: "simple search with namespaced objects",
+			script: fmt.Sprintf(`
 crashd_config(workdir="%s")
 set_defaults(kube_config(path="%s"))
-kube_data = kube_capture(what="objects", groups=["core"], kinds=["services"], namespaces=["default", "kube-system"])
-		`, workdir, k8sconfig)
-		execSetup(crashdScript)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(executor.result.Has("kube_data")).NotTo(BeNil())
+kube_data = kube_capture(what="objects", groups=["core"], kinds=["services"], namespaces=["default", "kube-system"])`, workdir, k8sconfig),
+			eval: func(t *testing.T, script string) {
+				data := execute(t, script)
 
-		data := executor.result["kube_data"]
-		Expect(data).NotTo(BeNil())
+				fileVal, err := data.Attr("file")
+				if err != nil {
+					t.Error(err)
+				}
 
-		dataStruct, ok := data.(*starlarkstruct.Struct)
-		Expect(ok).To(BeTrue())
+				fileValStr, ok := fileVal.(starlark.String)
+				if !ok {
+					t.Fatalf("unexpected type for starlark value")
+				}
 
-		fileVal, err := dataStruct.Attr("file")
-		Expect(err).NotTo(HaveOccurred())
+				workDir := fileValStr.GoString()
+				fileInfo, err := os.Stat(workDir)
+				if err != nil {
+					t.Fatalf("stat(%s) failed: %s", workDir, err)
+				}
+				if !fileInfo.IsDir() {
+					t.Fatalf("expecting starlark function to return a dir")
+				}
+				defer os.RemoveAll(workDir)
 
-		fileValStr, ok := fileVal.(starlark.String)
-		Expect(ok).To(BeTrue())
+				path := filepath.Join(workDir, "core_v1", "kube-system")
+				if _, err := os.Stat(path); err != nil {
+					t.Fatalf("expecting %s to be a directory", path)
+				}
+				files, err := os.ReadDir(path)
+				if err != nil {
+					t.Fatalf("ReadeDir(%s) failed: %s", path, err)
+				}
+				if len(files) < 1 {
+					t.Errorf("directory should have at least 1 file but has none: %s:", path)
+				}
 
-		kubeCaptureDir := fileValStr.GoString()
-		Expect(kubeCaptureDir).To(BeADirectory())
-		Expect(filepath.Join(kubeCaptureDir, "kube-system")).To(BeADirectory())
-
-		Expect(filepath.Join(kubeCaptureDir, "default", "services.json")).To(BeARegularFile())
-		Expect(filepath.Join(kubeCaptureDir, "kube-system", "services.json")).To(BeARegularFile())
-	})
-
-	It("creates a directory and files for non-namespaced objects", func() {
-		crashdScript := fmt.Sprintf(`
+				path = filepath.Join(workDir, "core_v1", "default")
+				if _, err := os.Stat(path); err != nil {
+					t.Fatalf("expecting %s to exist", path)
+				}
+				files, err = os.ReadDir(path)
+				if err != nil {
+					t.Fatalf("ReadeDir(%s) failed: %s", path, err)
+				}
+				if len(files) < 1 {
+					t.Errorf("directory should have at least 1 file but has none: %s:", path)
+				}
+			},
+		},
+		{
+			name: "search with non-namespaced objects",
+			script: fmt.Sprintf(`
 crashd_config(workdir="%s")
-cfg = kube_config(path="%s")
-kube_data = kube_capture(what="objects", groups=["core"], kinds=["nodes"], kube_config = cfg)
-		`, workdir, k8sconfig)
-		execSetup(crashdScript)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(executor.result.Has("kube_data")).NotTo(BeNil())
+set_defaults(kube_config(path="%s"))
+kube_data = kube_capture(what="objects", groups=["core"], kinds=["nodes"])`, workdir, k8sconfig),
+			eval: func(t *testing.T, script string) {
+				data := execute(t, script)
 
-		data := executor.result["kube_data"]
-		Expect(data).NotTo(BeNil())
+				fileVal, err := data.Attr("file")
+				if err != nil {
+					t.Error(err)
+				}
 
-		dataStruct, ok := data.(*starlarkstruct.Struct)
-		Expect(ok).To(BeTrue())
+				fileValStr, ok := fileVal.(starlark.String)
+				if !ok {
+					t.Fatalf("unexpected type for starlark value")
+				}
 
-		fileVal, err := dataStruct.Attr("file")
-		Expect(err).NotTo(HaveOccurred())
+				captureDir := fileValStr.GoString()
+				defer os.RemoveAll(captureDir)
 
-		fileValStr, ok := fileVal.(starlark.String)
-		Expect(ok).To(BeTrue())
-
-		kubeCaptureDir := fileValStr.GoString()
-		Expect(kubeCaptureDir).To(BeADirectory())
-		Expect(filepath.Join(kubeCaptureDir, "nodes.json")).To(BeARegularFile())
-	})
-
-	It("creates a directories and files for objects in a category", func() {
-		crashdScript := fmt.Sprintf(`
+				path := filepath.Join(captureDir, "core_v1")
+				if _, err := os.Stat(path); err != nil {
+					t.Fatalf("expecting %s file to exist", path)
+				}
+				files, err := os.ReadDir(path)
+				if err != nil {
+					t.Fatalf("ReadeDir(%s) failed: %s", path, err)
+				}
+				if len(files) != 1 {
+					t.Errorf("directory should have at least 1 file but has none: %s:", path)
+				}
+				if files[0].IsDir() {
+					t.Errorf("expecting to find a regular file, but found dir: %s", files[0].Name())
+				}
+				if !strings.Contains(files[0].Name(), "nodes-") {
+					t.Errorf("expecting to find a node output file, but fond: %s", files[0].Name())
+				}
+			},
+		},
+		{
+			name: "search with objects in categories",
+			script: fmt.Sprintf(`
 crashd_config(workdir="%s")
-kube_data = kube_capture(what="objects", categories=["all"], kube_config = kube_config(path="%s"))
-		`, workdir, k8sconfig)
-		execSetup(crashdScript)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(executor.result.Has("kube_data")).NotTo(BeNil())
+set_defaults(kube_config(path="%s"))
+kube_data = kube_capture(what="objects", groups=["core"], categories=["all"], namespaces=["default","kube-system"])`, workdir, k8sconfig),
+			eval: func(t *testing.T, script string) {
+				data := execute(t, script)
 
-		data := executor.result["kube_data"]
-		Expect(data).NotTo(BeNil())
+				fileVal, err := data.Attr("file")
+				if err != nil {
+					t.Error(err)
+				}
 
-		dataStruct, ok := data.(*starlarkstruct.Struct)
-		Expect(ok).To(BeTrue())
+				fileValStr, ok := fileVal.(starlark.String)
+				if !ok {
+					t.Fatalf("unexpected type for starlark value")
+				}
+				captureDir := fileValStr.GoString()
+				defer os.RemoveAll(captureDir)
 
-		fileVal, err := dataStruct.Attr("file")
-		Expect(err).NotTo(HaveOccurred())
+				fileInfo, err := os.Stat(captureDir)
+				if err != nil {
+					t.Fatalf("stat(%s) failed: %s", captureDir, err)
+				}
+				if !fileInfo.IsDir() {
+					t.Fatalf("expecting starlark function to return a dir")
+				}
+				path := filepath.Join(captureDir, "core_v1", "kube-system")
+				if _, err := os.Stat(path); err != nil {
+					t.Fatalf("expecting %s to be a directory", path)
+				}
 
-		fileValStr, ok := fileVal.(starlark.String)
-		Expect(ok).To(BeTrue())
+				path = filepath.Join(captureDir, "core_v1", "default")
+				if _, err := os.Stat(path); err != nil {
+					t.Fatalf("expecting %s to exist", path)
+				}
 
-		kubeCaptureDir := fileValStr.GoString()
-		Expect(kubeCaptureDir).To(BeADirectory())
-		Expect(filepath.Join(kubeCaptureDir, "kube-system")).To(BeADirectory())
-		Expect(filepath.Join(kubeCaptureDir, "default")).To(BeADirectory())
-
-		Expect(filepath.Join(kubeCaptureDir, "kube-system", "pods.json")).To(BeARegularFile())
-		Expect(filepath.Join(kubeCaptureDir, "default", "pods.json")).To(BeARegularFile())
-	})
-
-	It("creates a directory and log files for all objects in a namespace", func() {
-		crashdScript := fmt.Sprintf(`
+				files, err := os.ReadDir(path)
+				if err != nil {
+					t.Fatalf("ReadeDir(%s) failed: %s", path, err)
+				}
+				if len(files) < 1 {
+					t.Errorf("directory should have at least 1 file but has none: %s:", path)
+				}
+			},
+		},
+		{
+			name: "search for all logs in a namespace",
+			script: fmt.Sprintf(`
 crashd_config(workdir="%s")
-kube_data = kube_capture(what="logs", namespaces=["kube-system"], kube_config = kube_config(path="%s"))
-		`, workdir, k8sconfig)
-		execSetup(crashdScript)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(executor.result.Has("kube_data")).NotTo(BeNil())
+set_defaults(kube_config(path="%s"))
+kube_data = kube_capture(what="logs", namespaces=["kube-system"])`, workdir, k8sconfig),
+			eval: func(t *testing.T, script string) {
+				data := execute(t, script)
 
-		data := executor.result["kube_data"]
-		Expect(data).NotTo(BeNil())
+				fileVal, err := data.Attr("file")
+				if err != nil {
+					t.Error(err)
+				}
 
-		dataStruct, ok := data.(*starlarkstruct.Struct)
-		Expect(ok).To(BeTrue())
+				fileValStr, ok := fileVal.(starlark.String)
+				if !ok {
+					t.Fatalf("unexpected type for starlark value")
+				}
+				captureDir := fileValStr.GoString()
+				if _, err := os.Stat(captureDir); err != nil {
+					t.Fatalf("stat(%s) failed: %s", captureDir, err)
+				}
+				defer os.RemoveAll(captureDir)
 
-		fileVal, err := dataStruct.Attr("file")
-		Expect(err).NotTo(HaveOccurred())
+				path := filepath.Join(captureDir, "core_v1", "kube-system")
+				if _, err := os.Stat(path); err != nil {
+					t.Fatalf("expecting %s to be a directory", path)
+				}
 
-		fileValStr, ok := fileVal.(starlark.String)
-		Expect(ok).To(BeTrue())
-
-		kubeCaptureDir := fileValStr.GoString()
-		Expect(kubeCaptureDir).To(BeADirectory())
-		Expect(filepath.Join(kubeCaptureDir, "kube-system")).To(BeADirectory())
-
-		files, err := ioutil.ReadDir(filepath.Join(kubeCaptureDir, "kube-system"))
-		Expect(err).NotTo(HaveOccurred())
-		Expect(len(files)).NotTo(BeNumerically("<", 3))
-	})
-
-	It("creates a log file for specific container in a namespace", func() {
-		crashdScript := fmt.Sprintf(`
+				files, err := ioutil.ReadDir(path)
+				if err != nil {
+					t.Fatalf("ReadeDir(%s) failed: %s", path, err)
+				}
+				if len(files) < 3 {
+					t.Error("unexpected number of log files for namespace kube-system:", len(files))
+				}
+			},
+		},
+		{
+			name: "search for logs in specific container",
+			script: fmt.Sprintf(`
 crashd_config(workdir="%s")
-cfg = kube_config(path="%s")
-kube_data = kube_capture(what="logs", namespaces=["kube-system"], containers=["etcd"], kube_config = cfg)
-		`, workdir, k8sconfig)
-		execSetup(crashdScript)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(executor.result.Has("kube_data")).NotTo(BeNil())
+set_defaults(kube_config(path="%s"))
+kube_data = kube_capture(what="logs", namespaces=["kube-system"], containers=["etcd"])`, workdir, k8sconfig),
+			eval: func(t *testing.T, script string) {
+				data := execute(t, script)
 
-		data := executor.result["kube_data"]
-		Expect(data).NotTo(BeNil())
+				fileVal, err := data.Attr("file")
+				if err != nil {
+					t.Error(err)
+				}
 
-		dataStruct, ok := data.(*starlarkstruct.Struct)
-		Expect(ok).To(BeTrue())
+				fileValStr, ok := fileVal.(starlark.String)
+				if !ok {
+					t.Fatalf("unexpected type for starlark value")
+				}
+				captureDir := fileValStr.GoString()
+				if _, err := os.Stat(captureDir); err != nil {
+					t.Fatalf("stat(%s) failed: %s", captureDir, err)
+				}
+				defer os.RemoveAll(captureDir)
 
-		fileVal, err := dataStruct.Attr("file")
-		Expect(err).NotTo(HaveOccurred())
+				path := filepath.Join(captureDir, "core_v1", "kube-system")
+				if _, err := os.Stat(path); err != nil {
+					t.Fatalf("expecting %s to be a directory", path)
+				}
 
-		fileValStr, ok := fileVal.(starlark.String)
-		Expect(ok).To(BeTrue())
+				files, err := ioutil.ReadDir(path)
+				if err != nil {
+					t.Fatalf("ReadeDir(%s) failed: %s", path, err)
+				}
+				if len(files) == 0 {
+					t.Error("unexpected number of log files for namespace kube-system:", len(files))
+				}
+			},
+		},
+	}
 
-		kubeCaptureDir := fileValStr.GoString()
-		Expect(kubeCaptureDir).To(BeADirectory())
-		Expect(filepath.Join(kubeCaptureDir, "kube-system")).To(BeADirectory())
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.eval(t, test.script)
+		})
+	}
+}
 
-		files, err := ioutil.ReadDir(filepath.Join(kubeCaptureDir, "kube-system"))
-		Expect(err).NotTo(HaveOccurred())
-		Expect(files).NotTo(HaveLen(0))
-	})
-
-	DescribeTable("Incorrect kubeconfig", func(crashdScript string) {
-		execSetup(crashdScript)
-		Expect(err).To(HaveOccurred())
-	},
-		Entry("in global thread", fmt.Sprintf(`
-cfg = kube_config(path="%s")
-kube_capture(what="logs", namespaces=["kube-system"], containers=["etcd"], kube_config = cfg)`, "/foo/bar")),
-		Entry("in function call", fmt.Sprintf(`
-cfg = kube_config(path="%s")
-kube_capture(what="logs", namespaces=["kube-system"], containers=["etcd"], kube_config=cfg)`, "/foo/bar")),
-	)
-})
+func TestKubeCapture_WithBadKubeconfig(t *testing.T) {
+	script := `
+cfg = kube_config(path="/foo/bar")
+kube_capture(what="logs", namespaces=["kube-system"], containers=["etcd"], kube_config=cfg)
+`
+	executor := New()
+	if err := executor.Exec("test.kube.capture", strings.NewReader(script)); err == nil {
+		t.Fatalf("expected failure, but did not get it")
+	}
+}

@@ -84,8 +84,8 @@ func TestSSHConfigFunc(t *testing.T) {
 					t.Fatal(err)
 				}
 				data := exe.thread.Local(identifiers.sshCfg)
-				if data != nil {
-					t.Fatal("default ssh_config present in thread local")
+				if data == nil {
+					t.Fatal("default ssh_config is not present in thread local")
 				}
 			},
 		},

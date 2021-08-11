@@ -75,7 +75,7 @@ var _ = Describe("kube_config", func() {
 
 			It("does not set the kube_config in the starlark thread", func() {
 				kubeConfigData := executor.thread.Local(identifiers.kubeCfg)
-				Expect(kubeConfigData).To(BeNil())
+				Expect(kubeConfigData).NotTo(BeNil())
 			})
 		})
 	})
@@ -89,7 +89,7 @@ var _ = Describe("kube_config", func() {
 
 		It("does not set the default kube_config in the starlark thread", func() {
 			kubeConfigData := executor.thread.Local(identifiers.kubeCfg)
-			Expect(kubeConfigData).To(BeNil())
+			Expect(kubeConfigData).NotTo(BeNil())
 		})
 	})
 })
