@@ -23,9 +23,10 @@ func runLocalFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tu
 	}
 
 	p := echo.New().RunProc(cmdStr)
+	result := p.Result()
 	if p.Err() != nil {
-		return starlark.None, fmt.Errorf("%s: %s: %s", identifiers.runLocal, p.Err(), p.Result())
+		result = fmt.Sprintf("%s error: %s: %s", identifiers.runLocal, p.Err(), p.Result())
 	}
 
-	return starlark.String(p.Result()), nil
+	return starlark.String(result), nil
 }
