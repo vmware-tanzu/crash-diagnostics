@@ -145,6 +145,7 @@ This configuration function declares and stores configuration needed to connect 
 | Param | Description | Required |
 | -------- | -------- | ------- |
 | `path`  | Path to the local Kubernetes config file. Default: `$HOME/.kube/config`| No |
+| `cluster_context`  | The name of a context to use when accessing the cluster. Default: (empty) | No |
 | `capi_provider` | A Cluster-API provider (see providers below) to obtain Kubernetes configurations | No |
 
 #### Output
@@ -153,11 +154,12 @@ This configuration function declares and stores configuration needed to connect 
 | Field | Description |
 | --------| --------- |
 | `path` | The path to the local Kubernetes config that was set |
+| `cluster_context` | The name of a context that was set for the cluster |
 | `capi_provider`|A provider that was set for Cluster-API usage|
 
 #### Example
 ```python
-kube_config(path=args.kube_conf)
+kube_config(path=args.kube_conf, cluster_context="my-cluster")
 ```
 ### `ssh_config()`
 This function creates configuration that can be used to connect via SSH to remote machines.

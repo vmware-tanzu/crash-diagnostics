@@ -39,7 +39,7 @@ func KubeNodesProviderFn(thread *starlark.Thread, _ *starlark.Builtin, args star
 	if kubeConfig == nil {
 		kubeConfig = thread.Local(identifiers.kubeCfg).(*starlarkstruct.Struct)
 	}
-	path, err := getKubeConfigFromStruct(kubeConfig)
+	path, err := getKubeConfigPathFromStruct(kubeConfig)
 	if err != nil {
 		return starlark.None, errors.Wrap(err, "failed to kubeconfig")
 	}

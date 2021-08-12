@@ -36,11 +36,17 @@ type Client struct {
 	JsonPrinter printers.JSONPrinter
 }
 
-// New returns a *Client
-func New(kubeconfig string) (*Client, error) {
+// New returns a *Client built with the kubecontext file path
+// and an optional (at most one) K8s CLI context name.
+func New(kubeconfig string, clusterContextOptions ...string) (*Client, error) {
+	var clusterCtxName string
+	if len(clusterContextOptions) > 0 {
+		clusterCtxName = clusterContextOptions[0]
+	}
+
 	// creating cfg for each client type because each
-	// setup its own cfg default which may not be compatible
-	dynCfg, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	// setup needs its own cfg default which may not be compatible
+	dynCfg, err := makeRESTConfig(kubeconfig, clusterCtxName)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +55,7 @@ func New(kubeconfig string) (*Client, error) {
 		return nil, err
 	}
 
-	discoCfg, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	discoCfg, err := makeRESTConfig(kubeconfig, clusterCtxName)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +70,7 @@ func New(kubeconfig string) (*Client, error) {
 	}
 	mapper := restmapper.NewDiscoveryRESTMapper(resources)
 
-	restCfg, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	restCfg, err := makeRESTConfig(kubeconfig, clusterCtxName)
 	if err != nil {
 		return nil, err
 	}
@@ -75,6 +81,27 @@ func New(kubeconfig string) (*Client, error) {
 	}
 
 	return &Client{Client: client, Disco: disco, CoreRest: restc, Mapper: mapper}, nil
+}
+
+// makeRESTConfig creates a new *rest.Config with a k8s context name if one is provided.
+func makeRESTConfig(fileName, contextName string) (*rest.Config, error) {
+	if fileName == "" {
+		return nil, fmt.Errorf("kubeconfig file path required")
+	}
+
+	if contextName != "" {
+		// create the config object from k8s config path and context
+		return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+			&clientcmd.ClientConfigLoadingRules{ExplicitPath: fileName},
+			&clientcmd.ConfigOverrides{
+				CurrentContext: contextName,
+			}).ClientConfig()
+	}
+
+	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+		&clientcmd.ClientConfigLoadingRules{ExplicitPath: fileName},
+		&clientcmd.ConfigOverrides{},
+	).ClientConfig()
 }
 
 func (k8sc *Client) Search(ctx context.Context, params SearchParams) ([]SearchResult, error) {

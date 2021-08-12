@@ -346,6 +346,7 @@ func TestKubeCapture(t *testing.T) {
 func TestKubeCaptureScript(t *testing.T) {
 	workdir := testSupport.TmpDirRoot()
 	k8sconfig := testSupport.KindKubeConfigFile()
+	clusterCtxName := testSupport.KindClusterContextName()
 
 	execute := func(t *testing.T, script string) *starlarkstruct.Struct {
 		executor := New()
@@ -369,11 +370,11 @@ func TestKubeCaptureScript(t *testing.T) {
 		eval   func(t *testing.T, script string)
 	}{
 		{
-			name: "simple search with namespaced objects",
+			name: "simple search with namespaced objects with cluster context",
 			script: fmt.Sprintf(`
 crashd_config(workdir="%s")
-set_defaults(kube_config(path="%s"))
-kube_data = kube_capture(what="objects", groups=["core"], kinds=["services"], namespaces=["default", "kube-system"])`, workdir, k8sconfig),
+set_defaults(kube_config(path="%s", cluster_context="%s"))
+kube_data = kube_capture(what="objects", groups=["core"], kinds=["services"], namespaces=["default", "kube-system"])`, workdir, k8sconfig, clusterCtxName),
 			eval: func(t *testing.T, script string) {
 				data := execute(t, script)
 
@@ -511,11 +512,11 @@ kube_data = kube_capture(what="objects", groups=["core"], categories=["all"], na
 			},
 		},
 		{
-			name: "search for all logs in a namespace",
+			name: "search for all logs in a namespace with cluster context",
 			script: fmt.Sprintf(`
 crashd_config(workdir="%s")
-set_defaults(kube_config(path="%s"))
-kube_data = kube_capture(what="logs", namespaces=["kube-system"])`, workdir, k8sconfig),
+set_defaults(kube_config(path="%s", cluster_context="%s"))
+kube_data = kube_capture(what="logs", namespaces=["kube-system"])`, workdir, k8sconfig, clusterCtxName),
 			eval: func(t *testing.T, script string) {
 				data := execute(t, script)
 

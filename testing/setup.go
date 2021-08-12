@@ -200,6 +200,10 @@ func (t *TestSupport) KindKubeConfigFile() string {
 	return t.kindKubeCfg
 }
 
+func (t *TestSupport) KindClusterContextName() string {
+	return t.kindCluster.GetKubeCtlContext()
+}
+
 func (t *TestSupport) TearDown() error {
 	var errs []error
 

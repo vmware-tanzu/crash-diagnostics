@@ -14,13 +14,14 @@ import (
 
 // KubeConfigFn is built-in starlark function that wraps the kwargs into a dictionary value.
 // The result is also added to the thread for other built-in to access.
-// Starlark: kube_config(path=kubecf/path)
+// Starlark: kube_config(path=kubecf/path, [cluster_context=context_name])
 func KubeConfigFn(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	var path string
+	var path, clusterCtxName string
 	var provider *starlarkstruct.Struct
 
 	if err := starlark.UnpackArgs(
 		identifiers.kubeCfg, args, kwargs,
+		"cluster_context?", &clusterCtxName,
 		"path?", &path,
 		"capi_provider?", &provider,
 	); err != nil {
@@ -58,7 +59,8 @@ func KubeConfigFn(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, 
 	}
 
 	structVal := starlarkstruct.FromStringDict(starlark.String(identifiers.kubeCfg), starlark.StringDict{
-		"path": starlark.String(path),
+		"cluster_context": starlark.String(clusterCtxName),
+		"path":            starlark.String(path),
 	})
 
 	return structVal, nil
@@ -79,14 +81,29 @@ func addDefaultKubeConf(thread *starlark.Thread) error {
 	return nil
 }
 
-func getKubeConfigFromStruct(kubeConfigStructVal *starlarkstruct.Struct) (string, error) {
+func getKubeConfigPathFromStruct(kubeConfigStructVal *starlarkstruct.Struct) (string, error) {
 	kvPathVal, err := kubeConfigStructVal.Attr("path")
 	if err != nil {
 		return "", errors.Wrap(err, "failed to extract kubeconfig path")
 	}
 	kvPathStrVal, ok := kvPathVal.(starlark.String)
 	if !ok {
-		return "", errors.New("failed to extract management kubeconfig")
+		return "", errors.New("failed to extract kubeconfig")
 	}
 	return kvPathStrVal.GoString(), nil
+}
+
+// getKubeConfigContextNameFromStruct returns the cluster name from the KubeConfig struct
+// provided. If filed cluster_context not provided or unable to convert, it is returned
+// as an empty context.
+func getKubeConfigContextNameFromStruct(kubeConfigStructVal *starlarkstruct.Struct) string {
+	ctxVal, err := kubeConfigStructVal.Attr("cluster_context")
+	if err != nil {
+		return ""
+	}
+	ctxName, ok := ctxVal.(starlark.String)
+	if !ok {
+		return ""
+	}
+	return ctxName.GoString()
 }

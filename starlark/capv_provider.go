@@ -47,7 +47,7 @@ func CapvProviderFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.
 	if mgmtKubeConfig == nil {
 		mgmtKubeConfig = thread.Local(identifiers.kubeCfg).(*starlarkstruct.Struct)
 	}
-	mgmtKubeConfigPath, err := getKubeConfigFromStruct(mgmtKubeConfig)
+	mgmtKubeConfigPath, err := getKubeConfigPathFromStruct(mgmtKubeConfig)
 	if err != nil {
 		return starlark.None, errors.Wrap(err, "failed to extract management kubeconfig")
 	}
