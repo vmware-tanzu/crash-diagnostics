@@ -43,5 +43,8 @@ func logFunc(t *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwarg
 }
 
 func addDefaultLogger(t *starlark.Thread) {
-	t.SetLocal(identifiers.log, log.Default())
+	loggerLocal := t.Local(identifiers.log)
+	if loggerLocal == nil {
+		t.SetLocal(identifiers.log, log.Default())
+	}
 }
