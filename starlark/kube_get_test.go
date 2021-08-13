@@ -149,6 +149,7 @@ func TestKubeGet(t *testing.T) {
 
 func TestKubeGetScript(t *testing.T) {
 	k8sconfig := testSupport.KindKubeConfigFile()
+	clusterName := testSupport.KindClusterContextName()
 
 	execute := func(t *testing.T, script string) *starlarkstruct.Struct {
 		executor := New()
@@ -172,11 +173,11 @@ func TestKubeGetScript(t *testing.T) {
 		eval   func(t *testing.T, script string)
 	}{
 		{
-			name: "namespaced objects as starlark objects",
+			name: "namespaced objects as starlark objects with context",
 			script: fmt.Sprintf(`
-set_defaults(kube_config(path="%s"))
+set_defaults(kube_config(path="%s", cluster_context="%s"))
 kube_data = kube_get(groups=["core"], kinds=["services"], namespaces=["default", "kube-system"])
-`, k8sconfig),
+`, k8sconfig, clusterName),
 			eval: func(t *testing.T, script string) {
 				data := execute(t, script)
 
@@ -234,11 +235,11 @@ kube_data = kube_get(groups=["core"], kinds=["nodes"])
 			},
 		},
 		{
-			name: "different categories of objects as starlark objects",
+			name: "different categories of objects as starlark objects with context",
 			script: fmt.Sprintf(`
-set_defaults(kube_config(path="%s"))
+set_defaults(kube_config(path="%s", cluster_context="%s"))
 kube_data = kube_get(categories=["all"])
-`, k8sconfig),
+`, k8sconfig, clusterName),
 			eval: func(t *testing.T, script string) {
 				data := execute(t, script)
 

@@ -47,11 +47,13 @@ func KubeCaptureFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.T
 	if kubeConfig == nil {
 		kubeConfig = thread.Local(identifiers.kubeCfg).(*starlarkstruct.Struct)
 	}
-	path, err := getKubeConfigFromStruct(kubeConfig)
+	path, err := getKubeConfigPathFromStruct(kubeConfig)
 	if err != nil {
 		return starlark.None, errors.Wrap(err, "failed to kubeconfig")
 	}
-	client, err := k8s.New(path)
+	clusterCtxName := getKubeConfigContextNameFromStruct(kubeConfig)
+
+	client, err := k8s.New(path, clusterCtxName)
 	if err != nil {
 		return starlark.None, errors.Wrap(err, "could not initialize search client")
 	}

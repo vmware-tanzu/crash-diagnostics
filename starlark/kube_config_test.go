@@ -44,7 +44,6 @@ var _ = Describe("kube_config", func() {
 				Expect(kubeConfigData).To(BeAssignableToTypeOf(&starlarkstruct.Struct{}))
 
 				cfg, _ := kubeConfigData.(*starlarkstruct.Struct)
-				Expect(cfg.AttrNames()).To(HaveLen(1))
 
 				val, err := cfg.Attr("path")
 				Expect(err).To(BeNil())
@@ -66,7 +65,6 @@ var _ = Describe("kube_config", func() {
 				Expect(kubeConfigData).NotTo(BeNil())
 
 				cfg, _ := kubeConfigData.(*starlarkstruct.Struct)
-				Expect(cfg.AttrNames()).To(HaveLen(1))
 
 				val, err := cfg.Attr("path")
 				Expect(err).To(BeNil())
@@ -111,7 +109,6 @@ var _ = Describe("KubeConfigFn", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			cfg, _ := val.(*starlarkstruct.Struct)
-			Expect(cfg.AttrNames()).To(HaveLen(1))
 
 			path, err := cfg.Attr("path")
 			Expect(err).To(BeNil())

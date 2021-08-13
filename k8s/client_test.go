@@ -8,6 +8,56 @@ import (
 	"testing"
 )
 
+func TestClientNew(t *testing.T) {
+	tests := []struct {
+		name string
+		test func(*testing.T)
+	}{
+		{
+			name: "client with no cluster context",
+			test: func(t *testing.T) {
+				client, err := New(support.KindKubeConfigFile())
+				if err != nil {
+					t.Fatal(err)
+				}
+				results, err := client.Search(context.TODO(), SearchParams{Kinds: []string{"pods"}})
+				if err != nil {
+					t.Fatal(err)
+				}
+				count := 0
+				for _, result := range results {
+					count = len(result.List.Items) + count
+				}
+				t.Logf("found %d objects", count)
+			},
+		},
+		{
+			name: "client with cluster context",
+			test: func(t *testing.T) {
+				client, err := New(support.KindKubeConfigFile(), support.KindClusterContextName())
+				if err != nil {
+					t.Fatal(err)
+				}
+				results, err := client.Search(context.TODO(), SearchParams{Kinds: []string{"pods"}})
+				if err != nil {
+					t.Fatal(err)
+				}
+				count := 0
+				for _, result := range results {
+					count = len(result.List.Items) + count
+				}
+				t.Logf("found %d objects", count)
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.test(t)
+		})
+	}
+}
+
 func TestClient_Search(t *testing.T) {
 	tests := []struct {
 		name       string
