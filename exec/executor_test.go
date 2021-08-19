@@ -17,7 +17,7 @@ var (
 	support *testcrashd.TestSupport
 )
 
-func TestMain(m *testing.M) {
+func setupTestSupport() {
 	test, err := testcrashd.Init()
 	if err != nil {
 		logrus.Fatal(err)
@@ -36,17 +36,17 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		logrus.Fatal(err)
 	}
+}
 
-	result := m.Run()
-
+func teardownTestSupport() {
 	if err := support.TearDown(); err != nil {
 		logrus.Fatal(err)
 	}
-
-	os.Exit(result)
 }
 
-func TestKindScript(t *testing.T) {
+func TestExampleScripts(t *testing.T) {
+	setupTestSupport()
+
 	tests := []struct {
 		name       string
 		scriptPath string
@@ -80,16 +80,6 @@ func TestKindScript(t *testing.T) {
 				"ssh_port":    support.PortValue(),
 			},
 		},
-		//{
-		//	name:       "kube-nodes provider",
-		//	scriptPath: "../examples/kube-nodes-provider.crsh",
-		//	args: ArgMap{
-		//		"kubecfg":  getTestKubeConf(),
-		//		"ssh_port": testSSHPort,
-		//		"username": getUsername(),
-		//		"key_path": getPrivateKey(),
-		//	},
-		//},
 		{
 			name:       "kind-capi-bootstrap",
 			scriptPath: "../examples/kind-capi-bootstrap.crsh",
@@ -109,6 +99,7 @@ func TestKindScript(t *testing.T) {
 			}
 		})
 	}
+	teardownTestSupport()
 }
 
 func TestExecute(t *testing.T) {
@@ -118,10 +109,27 @@ func TestExecute(t *testing.T) {
 		exec   func(t *testing.T, script string)
 	}{
 		{
-			name:   "run_local",
+			name:   "execute single script",
 			script: `result = run_local("echo 'Hello World!'")`,
 			exec: func(t *testing.T, script string) {
 				if err := Execute("run_local", strings.NewReader(script), ArgMap{}); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+		{
+			name:   "execute with modules",
+			script: `result = multiply(2, 3)`,
+			exec: func(t *testing.T, script string) {
+				mod := `
+def multiply(x, y):
+    log (msg="{} * {} = {}".format(x,y,x*y))
+`
+				if err := ExecuteWithModules(
+					"multiply",
+					strings.NewReader(script),
+					ArgMap{},
+					StarlarkModule{Name: "lib", Source: strings.NewReader(mod)}); err != nil {
 					t.Fatal(err)
 				}
 			},
