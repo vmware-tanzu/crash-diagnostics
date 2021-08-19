@@ -4,6 +4,7 @@
 package exec
 
 import (
+	"fmt"
 	"io"
 	"os"
 
@@ -35,4 +36,36 @@ func Execute(name string, source io.Reader, args ArgMap) error {
 
 func ExecuteFile(file *os.File, args ArgMap) error {
 	return Execute(file.Name(), file, args)
+}
+
+type StarlarkModule struct {
+	Name   string
+	Source io.Reader
+}
+
+func ExecuteWithModules(name string, source io.Reader, args ArgMap, modules ...StarlarkModule) error {
+	star := starlark.New()
+
+	if args != nil {
+		starStruct, err := starlark.NewGoValue(args).ToStarlarkStruct("args")
+		if err != nil {
+			return err
+		}
+
+		star.AddPredeclared("args", starStruct)
+	}
+
+	// load modules
+	for _, mod := range modules {
+		if err := star.Preload(mod.Name, mod.Source); err != nil {
+			return fmt.Errorf("module load: %w", err)
+		}
+	}
+
+	err := star.Exec(name, source)
+	if err != nil {
+		return fmt.Errorf("exec failed: %w", err)
+	}
+
+	return nil
 }

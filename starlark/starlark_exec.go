@@ -34,6 +34,27 @@ func (e *Executor) AddPredeclared(name string, value starlark.Value) {
 	}
 }
 
+// Preload loads parse and load code modules to be used in other scripts.
+// This call should take place prior to calling the Exec call for main script execution.
+// The result of the loaded module are added to the global predeclared
+// values used in Exec call.
+func (e *Executor) Preload(name string, source io.Reader) error {
+	result, err := starlark.ExecFile(e.thread, name, source, e.predecs)
+	if err != nil {
+		if evalErr, ok := err.(*starlark.EvalError); ok {
+			return fmt.Errorf(evalErr.Backtrace())
+		}
+		return err
+	}
+
+	// add result to predeclared
+	for k, v := range result {
+		e.predecs[k] = v
+	}
+
+	return nil
+}
+
 func (e *Executor) Exec(name string, source io.Reader) error {
 	if err := setupLocalDefaults(e.thread); err != nil {
 		return fmt.Errorf("failed to setup defaults: %s", err)
