@@ -27,7 +27,7 @@ func TestCmd_Run(t *testing.T) {
 		{
 			name: "missing resources",
 			setup: func(t *testing.T) Args {
-				sshConf := make_sshconf.DefaultConfig()
+				sshConf := sshconf.DefaultConfig()
 				return Args{Cmd: "echo 'Hello World!'", SSHConfig: sshConf}
 			},
 			eval: func(t *testing.T, args Args) {
@@ -52,7 +52,7 @@ func TestCmd_Run(t *testing.T) {
 		{
 			name: "missing ssh-agent",
 			setup: func(t *testing.T) Args {
-				sshConf := make_sshconf.DefaultConfig()
+				sshConf := sshconf.DefaultConfig()
 				return Args{Cmd: "echo 'Hello World!'", SSHConfig: sshConf, Resources: providers.Resources{}}
 			},
 			eval: func(t *testing.T, args Args) {
@@ -65,7 +65,7 @@ func TestCmd_Run(t *testing.T) {
 		{
 			name: "simple cmd",
 			setup: func(t *testing.T) Args {
-				sshConf := make_sshconf.Config{
+				sshConf := sshconf.Config{
 					Username:       testSupport.CurrentUsername(),
 					Port:           testSupport.PortValue(),
 					PrivateKeyPath: testSupport.PrivateKeyPath(),

@@ -1,10 +1,12 @@
 // Copyright (c) 2021 VMware, Inc. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package run
+package copy_from
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 
 	"github.com/sirupsen/logrus"
@@ -19,36 +21,44 @@ import (
 )
 
 var (
-	Name    = functions.FunctionName("run")
-	Func    = runFunc
+	Name    = functions.FunctionName("copy_from")
+	Func    = copyFromFunc
 	Builtin = starlark.NewBuiltin(string(Name), Func)
 )
 
-// Register
+// Register Starlark built-in
 func init() {
 	registrar.Register(Name, Builtin)
 }
 
-// runFunc implements a starlark built-in function `run()` that can execute processes on remote
-// compute resource.
-//
-// Example:
-//    run(cmd="echo 'hello'", resources=hostlist_provider(hosts=["host1","host2"]))
+// copyFromFunc is a built-in starlark function that copies specified resources from a remote machine.
+// Starlark format: result = copy_from(path=<file-path>, ssh_config=<ssh-configuration>, resources=<resource-list>, workdir=<workdir-path>)
 //
 // Args:
-// - cmd: the command to run (required)
+// - path: path of file resource to copy
 // - ssh_config: ssh configuration
-// - resources: list of compute resources to run command
-func runFunc(thread *starlark.Thread, _ *starlark.Builtin, _ starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+// - resources: list of compute resources from which to copy
+// - workdir: path to the work directory
+//
+func copyFromFunc(thread *starlark.Thread, b *starlark.Builtin, _ starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var args Args
 	if err := typekit.KwargsToGo(kwargs, &args); err != nil {
 		return functions.Error(Name, fmt.Errorf("%s: %s", Name, err))
 	}
 
-	if args.Cmd == "" {
-		return functions.Error(Name, fmt.Errorf("%s: missing command", Name))
+	if args.Path == "" {
+		return functions.Error(Name, fmt.Errorf("%s: missing path", Name))
 	}
 
+	if args.Workdir == "" {
+		if conf, ok := scriptconf.ConfigFromThread(thread); ok {
+			args.Workdir = conf.Workdir
+		} else {
+			args.Workdir = scriptconf.DefaultWorkdir()
+		}
+	}
+
+	// retrieve resources from thread if none is provided
 	if reflect.ValueOf(args.Resources).IsZero() {
 		res, ok := providers.ResourcesFromThread(thread)
 		if !ok {
@@ -57,7 +67,8 @@ func runFunc(thread *starlark.Thread, _ *starlark.Builtin, _ starlark.Tuple, kwa
 		args.Resources = res
 	}
 
-	if reflect.ValueOf(args.SSHConfig).IsZero() {
+	if reflect.ValueOf(args.SSHConfig).IsZero() || reflect.ValueOf(args.SSHConfig).IsZero() {
+		// attempt to get it from thread, else return default
 		conf, ok := sshconf.ConfigFromThread(thread)
 		if !ok || reflect.ValueOf(conf).IsZero() {
 			conf = sshconf.DefaultConfig()
@@ -83,7 +94,6 @@ func runFunc(thread *starlark.Thread, _ *starlark.Builtin, _ starlark.Tuple, kwa
 	return functions.Result(Name, result)
 }
 
-// Run runs the command function
 func Run(_ *starlark.Thread, agent ssh.Agent, args Args) Result {
 	sshConf := args.SSHConfig
 	hosts := args.Resources.Hosts
@@ -91,15 +101,17 @@ func Run(_ *starlark.Thread, agent ssh.Agent, args Args) Result {
 		return Result{Error: fmt.Sprintf("%s provided no host", args.Resources.Provider)}
 	}
 
-	var cmdResults []RemoteProc
-	for _, host := range hosts {
-		var jumpProxy *ssh.ProxyJumpArgs
-		if sshConf.JumpHost != "" && sshConf.JumpUsername != "" {
-			jumpProxy = &ssh.ProxyJumpArgs{
-				User: sshConf.JumpUsername,
-				Host: sshConf.JumpHost,
-			}
+	var jumpProxy *ssh.ProxyJumpArgs
+	if sshConf.JumpHost != "" && sshConf.JumpUsername != "" {
+		jumpProxy = &ssh.ProxyJumpArgs{
+			User: sshConf.JumpUsername,
+			Host: sshConf.JumpHost,
 		}
+	}
+
+	var copies []RemoteCopy
+	for _, host := range hosts {
+
 		sshArgs := ssh.SSHArgs{
 			User:           sshConf.Username,
 			Host:           host,
@@ -109,12 +121,19 @@ func Run(_ *starlark.Thread, agent ssh.Agent, args Args) Result {
 			PrivateKeyPath: sshConf.PrivateKeyPath,
 		}
 
+		copyTargetDir := filepath.Join(args.Workdir, functions.SanitizeNameString(host))
+		if err := os.MkdirAll(copyTargetDir, 0744); err != nil && !os.IsExist(err) {
+			return Result{Error: fmt.Sprintf("%s: %s", Name, err)}
+		}
+
 		var errMsg string
-		sshOutput, err := ssh.Run(sshArgs, agent, args.Cmd)
+		err := ssh.CopyFrom(sshArgs, agent, copyTargetDir, args.Path)
 		if err != nil {
 			errMsg = err.Error()
 		}
-		cmdResults = append(cmdResults, RemoteProc{Error: errMsg, Host: host, Output: sshOutput})
+
+		copies = append(copies, RemoteCopy{Error: errMsg, Host: host, Path: filepath.Join(copyTargetDir, args.Path)})
 	}
-	return Result{Procs: cmdResults}
+
+	return Result{Copies: copies}
 }

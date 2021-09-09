@@ -8,11 +8,19 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"regexp"
 
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
+
+var nameSanitizeRegex = regexp.MustCompile(`[^a-zA-Z0-9]`)
+
+func SanitizeNameString(str string) string {
+	return nameSanitizeRegex.ReplaceAllString(str, "_")
+}
+
 
 func AsStarlarkStruct(value interface{}) (*starlarkstruct.Struct, error) {
 	starStruct := new(starlarkstruct.Struct)

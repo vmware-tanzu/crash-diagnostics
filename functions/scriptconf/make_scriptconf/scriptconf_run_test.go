@@ -56,7 +56,7 @@ func TestScriptConfRun(t *testing.T) {
 				t.Errorf("unexpected UseSSHAgent: %t", cfg.UseSSHAgent)
 			}
 			if cfg.UseSSHAgent {
-				if thread.Local(make_sshconf.AgentIdentifier) == nil {
+				if thread.Local(sshconf.AgentIdentifier) == nil {
 					t.Errorf("ssh_agent was not stored in thread_local")
 				}
 			}

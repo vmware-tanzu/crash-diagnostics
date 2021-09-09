@@ -11,6 +11,7 @@ import (
 	"github.com/vmware-tanzu/crash-diagnostics/functions/providers"
 	"github.com/vmware-tanzu/crash-diagnostics/functions/providers/hostlist"
 	"github.com/vmware-tanzu/crash-diagnostics/functions/sshconf"
+	"github.com/vmware-tanzu/crash-diagnostics/functions/sshconf/make_sshconf"
 	"github.com/vmware-tanzu/crash-diagnostics/typekit"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
@@ -36,7 +37,7 @@ func TestRunFunc(t *testing.T) {
 		{
 			name: "missing resources",
 			kwargs: func(t *testing.T) []starlark.Tuple {
-				sshConf := make_sshconf.DefaultConfig()
+				sshConf := sshconf.DefaultConfig()
 				sshArg, err := functions.Result(make_sshconf.Name, sshConf)
 				if err != nil {
 					t.Fatal(err)
