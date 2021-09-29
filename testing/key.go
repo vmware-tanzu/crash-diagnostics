@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	"github.com/vladimirvivien/echo"
+	"github.com/vladimirvivien/gexe"
 	"golang.org/x/crypto/ssh"
 
 	"github.com/pkg/errors"
@@ -94,10 +94,10 @@ func generatePublicKey(privatekey *rsa.PublicKey) ([]byte, error) {
 }
 
 func AddKeyToAgent(keyPath string) error {
-	e := echo.New()
+	e := gexe.New()
 
 	logrus.Info("Starting ssh-agent if needed...")
-	sshAgentCmd := e.Prog.Avail("ssh-agent")
+	sshAgentCmd := e.Prog().Avail("ssh-agent")
 	if len(sshAgentCmd) == 0 {
 		return fmt.Errorf("ssh-agent not found")
 	}
@@ -115,7 +115,7 @@ func AddKeyToAgent(keyPath string) error {
 		logrus.Infof("ssh-agent pid found: %s", aid)
 	}
 
-	sshAddCmd := e.Prog.Avail("ssh-add")
+	sshAddCmd := e.Prog().Avail("ssh-add")
 	if len(sshAddCmd) == 0 {
 		return fmt.Errorf("ssh-add not found")
 	}
@@ -132,8 +132,8 @@ func AddKeyToAgent(keyPath string) error {
 }
 
 func RemoveKeyFromAgent(keyPath string) error {
-	e := echo.New()
-	sshAddCmd := e.Prog.Avail("ssh-add")
+	e := gexe.New()
+	sshAddCmd := e.Prog().Avail("ssh-add")
 	if len(sshAddCmd) == 0 {
 		return fmt.Errorf("ssh-add not found")
 	}
@@ -148,7 +148,7 @@ func RemoveKeyFromAgent(keyPath string) error {
 
 func WriteKeys(rootPath string) error {
 	pkPath := filepath.Join(rootPath, "id_rsa")
-	pkFile, err := os.OpenFile(pkPath, os.O_RDWR|os.O_CREATE, 0644)
+	pkFile, err := os.OpenFile(pkPath, os.O_RDWR|os.O_CREATE, 0444)
 	if err != nil {
 		return err
 	}
@@ -159,7 +159,7 @@ func WriteKeys(rootPath string) error {
 	}
 
 	pubPath := filepath.Join(rootPath, "id_rsa.pub")
-	pubFile, err := os.OpenFile(pubPath, os.O_RDWR|os.O_CREATE, 0644)
+	pubFile, err := os.OpenFile(pubPath, os.O_RDWR|os.O_CREATE, 0444)
 	if err != nil {
 		return err
 	}

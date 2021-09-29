@@ -11,7 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/vladimirvivien/echo"
+	"github.com/vladimirvivien/gexe"
 )
 
 // ssh-agent constant identifiers
@@ -44,13 +44,13 @@ type agent struct {
 
 // AddKey adds a key to the ssh-agent process
 func (agent *agent) AddKey(keyPath string) error {
-	e := echo.New()
-	sshAddCmd := e.Prog.Avail("ssh-add")
+	e := gexe.New()
+	sshAddCmd := e.Prog().Avail("ssh-add")
 	if len(sshAddCmd) == 0 {
 		return errors.New("ssh-add not found")
 	}
 
-	p := e.Env(agent.GetEnvVariables()).
+	p := e.Envs(agent.GetEnvVariables()).
 		RunProc(fmt.Sprintf("%s %s", sshAddCmd, keyPath))
 	if err := p.Err(); err != nil {
 		return errors.Wrapf(err, "could not add key %s to ssh-agent", keyPath)
@@ -61,13 +61,13 @@ func (agent *agent) AddKey(keyPath string) error {
 
 // RemoveKey removes a key from the ssh-agent process
 func (agent *agent) RemoveKey(keyPath string) error {
-	e := echo.New()
-	sshAddCmd := e.Prog.Avail("ssh-add")
+	e := gexe.New()
+	sshAddCmd := e.Prog().Avail("ssh-add")
 	if len(sshAddCmd) == 0 {
 		return errors.New("ssh-add not found")
 	}
 
-	p := e.Env(agent.GetEnvVariables()).
+	p := e.Envs(agent.GetEnvVariables()).
 		RunProc(fmt.Sprintf("%s -d %s", sshAddCmd, keyPath))
 	if err := p.Err(); err != nil {
 		return errors.Wrapf(err, "could not add key %s to ssh-agent", keyPath)
@@ -88,7 +88,7 @@ func (agent *agent) Stop() error {
 	}
 
 	logrus.Debugf("stopping the ssh-agent with Pid: %s", agent.Pid)
-	p := echo.New().Env(agent.GetEnvVariables()).RunProc("ssh-agent -k")
+	p := gexe.Envs(agent.GetEnvVariables()).RunProc("ssh-agent -k")
 	logrus.Debugf("ssh-agent stopped: %s", p.Result())
 
 	return p.Err()
@@ -101,14 +101,14 @@ func (agent *agent) GetEnvVariables() string {
 
 // StartAgent starts the ssh-agent process and returns the SSH authentication parameters.
 func StartAgent() (Agent, error) {
-	e := echo.New()
-	sshAgentCmd := e.Prog.Avail("ssh-agent")
+	e := gexe.New()
+	sshAgentCmd := e.Prog().Avail("ssh-agent")
 	if len(sshAgentCmd) == 0 {
 		return nil, fmt.Errorf("ssh-agent not found")
 	}
 
 	logrus.Debugf("starting %s", sshAgentCmd)
-	p := e.RunProc(fmt.Sprintf("%s -s", sshAgentCmd))
+	p := e.StartProc(fmt.Sprintf("%s -s", sshAgentCmd))
 	if p.Err() != nil {
 		return nil, errors.Wrap(p.Err(), "failed to start ssh agent")
 	}

@@ -16,7 +16,7 @@ func TestClientNew(t *testing.T) {
 		{
 			name: "client with no cluster context",
 			test: func(t *testing.T) {
-				client, err := New(support.KindKubeConfigFile())
+				client, err := New(support.KindKubeConfigFile(), support.KindClusterContextName())
 				if err != nil {
 					t.Fatal(err)
 				}

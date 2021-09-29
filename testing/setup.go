@@ -131,17 +131,6 @@ func (t *TestSupport) MaxConnectionRetries() int {
 
 func (t *TestSupport) SetupSSHServer() error {
 	if t.sshServer == nil {
-		//privKeyPath := filepath.Join(t.workdirRoot, t.sshPKFileName)
-		//if err := GenerateRSAKeyFiles(t.workdirRoot, t.sshPKFileName); err != nil {
-		//	return err
-		//}
-		//
-		//if err := AddKeyToAgent(privKeyPath); err != nil {
-		//	logrus.Errorf("Failed to add private key to SSH agent: %s", err)
-		//} else {
-		//	logrus.Infof("Added private key to ssh-agent: %s ", privKeyPath)
-		//}
-
 		server, err := NewSSHServer(t.resourceName, t.username, t.portValue, t.workdirRoot)
 		if err != nil {
 			return err
@@ -152,6 +141,10 @@ func (t *TestSupport) SetupSSHServer() error {
 		}
 
 		t.sshServer = server
+
+		// wait for SSH server to settle
+		logrus.Info("Waiting for SSH server to be ready ...")
+		time.Sleep(11 * time.Second)
 	}
 	return nil
 }
@@ -214,12 +207,6 @@ func (t *TestSupport) TearDown() error {
 			errs = append(errs, err)
 		}
 	}
-
-	//privKeyPath := filepath.Join(t.workdirRoot, t.sshPKFileName)
-	//logrus.Infof("Removing private key from agent: %s", privKeyPath)
-	//if err := RemoveKeyFromAgent(privKeyPath); err != nil {
-	//	logrus.Errorf("Unable to remove private key from SSH agent: %s", err)
-	//}
 
 	if t.sshServer != nil {
 		logrus.Infof("Stopping SSH server container....")

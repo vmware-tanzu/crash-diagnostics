@@ -11,15 +11,15 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/vladimirvivien/echo"
+	"github.com/vladimirvivien/gexe"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // CopyFrom copies one or more files using SCP from remote host
 // and returns the paths of files that were successfully copied.
 func CopyFrom(args SSHArgs, agent Agent, rootDir string, sourcePath string) error {
-	e := echo.New()
-	prog := e.Prog.Avail("scp")
+	e := gexe.New()
+	prog := e.Prog().Avail("scp")
 	if len(prog) == 0 {
 		return fmt.Errorf("scp program not found")
 	}
@@ -46,7 +46,7 @@ func CopyFrom(args SSHArgs, agent Agent, rootDir string, sourcePath string) erro
 
 	if agent != nil {
 		logrus.Debugf("scp: copyFrom: adding agent info: %s", agent.GetEnvVariables())
-		e = e.Env(agent.GetEnvVariables())
+		e = e.Envs(agent.GetEnvVariables())
 	}
 
 	maxRetries := args.MaxRetries
@@ -72,8 +72,8 @@ func CopyFrom(args SSHArgs, agent Agent, rootDir string, sourcePath string) erro
 // CopyTo copies one or more files using SCP from local machine to
 // remote host.
 func CopyTo(args SSHArgs, agent Agent, sourcePath, targetPath string) error {
-	e := echo.New()
-	prog := e.Prog.Avail("scp")
+	e := gexe.New()
+	prog := e.Prog().Avail("scp")
 	if len(prog) == 0 {
 		return fmt.Errorf("scp program not found")
 	}
@@ -96,7 +96,7 @@ func CopyTo(args SSHArgs, agent Agent, sourcePath, targetPath string) error {
 
 	if agent != nil {
 		logrus.Debugf("scp: adding agent info: %s", agent.GetEnvVariables())
-		e = e.Env(agent.GetEnvVariables())
+		e = e.Envs(agent.GetEnvVariables())
 	}
 
 	maxRetries := args.MaxRetries

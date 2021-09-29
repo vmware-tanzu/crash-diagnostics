@@ -6,7 +6,7 @@ package starlark
 import (
 	"fmt"
 
-	"github.com/vladimirvivien/echo"
+	"github.com/vladimirvivien/gexe"
 	"go.starlark.net/starlark"
 )
 
@@ -22,6 +22,6 @@ func progAvailLocalFunc(thread *starlark.Thread, b *starlark.Builtin, args starl
 		return starlark.None, fmt.Errorf("%s: %s", identifiers.progAvailLocal, err)
 	}
 
-	p := echo.New().Prog.Avail(progStr)
+	p := gexe.Prog().Avail(progStr)
 	return starlark.String(p), nil
 }

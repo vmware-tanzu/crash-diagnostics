@@ -3,7 +3,7 @@ package common
 import (
 	"fmt"
 
-	"github.com/vladimirvivien/echo"
+	"github.com/vladimirvivien/gexe"
 )
 
 var (
@@ -16,7 +16,7 @@ var (
 )
 
 func init() {
-	e := echo.New()
+	e := gexe.New()
 	PkgRoot = "github.com/vmware-tanzu/crash-diagnostics"
 	Version = fmt.Sprintf("%s-unreleased", e.Run("git rev-parse --abbrev-ref HEAD"))
 	GitSHA = e.Run("git rev-parse HEAD")

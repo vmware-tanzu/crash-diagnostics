@@ -6,7 +6,7 @@ package starlark
 import (
 	"fmt"
 
-	"github.com/vladimirvivien/echo"
+	"github.com/vladimirvivien/gexe"
 	"go.starlark.net/starlark"
 )
 
@@ -22,7 +22,7 @@ func runLocalFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tu
 		return starlark.None, fmt.Errorf("%s: %s", identifiers.run, err)
 	}
 
-	p := echo.New().RunProc(cmdStr)
+	p := gexe.RunProc(cmdStr)
 	result := p.Result()
 	if p.Err() != nil {
 		result = fmt.Sprintf("%s error: %s: %s", identifiers.runLocal, p.Err(), p.Result())

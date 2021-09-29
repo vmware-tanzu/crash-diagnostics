@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	"github.com/vladimirvivien/echo"
+	"github.com/vladimirvivien/gexe"
 )
 
 type SSHServer struct {
@@ -17,7 +17,7 @@ type SSHServer struct {
 	port     string
 	mountDir string
 	username string
-	e        *echo.Echo
+	e        *gexe.Echo
 }
 
 func NewSSHServer(serverName, username, port, sshMountDir string) (*SSHServer, error) {
@@ -26,7 +26,7 @@ func NewSSHServer(serverName, username, port, sshMountDir string) (*SSHServer, e
 		port:     port,
 		mountDir: sshMountDir,
 		username: username,
-		e:        echo.New(),
+		e:        gexe.New(),
 	}, nil
 }
 
@@ -45,7 +45,7 @@ docker create \
 
 */
 func (s *SSHServer) Start() error {
-	if len(s.e.Prog.Avail("docker")) == 0 {
+	if len(s.e.Prog().Avail("docker")) == 0 {
 		return fmt.Errorf("docker command not found")
 	}
 
@@ -75,7 +75,7 @@ func (s *SSHServer) Start() error {
 }
 
 func (s *SSHServer) Stop() error {
-	if len(s.e.Prog.Avail("docker")) == 0 {
+	if len(s.e.Prog().Avail("docker")) == 0 {
 		return fmt.Errorf("docker command not found")
 	}
 
