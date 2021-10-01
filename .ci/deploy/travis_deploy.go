@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/vladimirvivien/echo"
+	"github.com/vladimirvivien/gexe"
 )
 
 func main() {
-	e := echo.New()
+	e := gexe.New()
 	fmt.Println("Running binary release...")
 
 	//ensure we're travis and configuree

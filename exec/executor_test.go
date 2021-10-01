@@ -7,46 +7,9 @@ import (
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/sirupsen/logrus"
-
-	testcrashd "github.com/vmware-tanzu/crash-diagnostics/testing"
 )
-
-var (
-	support *testcrashd.TestSupport
-)
-
-func setupTestSupport() {
-	test, err := testcrashd.Init()
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	support = test
-
-	if err := support.SetupSSHServer(); err != nil {
-		logrus.Fatal(err)
-	}
-
-	if err := support.SetupKindCluster(); err != nil {
-		logrus.Fatal(err)
-	}
-
-	_, err = support.SetupKindKubeConfig()
-	if err != nil {
-		logrus.Fatal(err)
-	}
-}
-
-func teardownTestSupport() {
-	if err := support.TearDown(); err != nil {
-		logrus.Fatal(err)
-	}
-}
 
 func TestExampleScripts(t *testing.T) {
-	setupTestSupport()
-
 	tests := []struct {
 		name       string
 		scriptPath string
@@ -99,7 +62,6 @@ func TestExampleScripts(t *testing.T) {
 			}
 		})
 	}
-	teardownTestSupport()
 }
 
 func TestExecute(t *testing.T) {

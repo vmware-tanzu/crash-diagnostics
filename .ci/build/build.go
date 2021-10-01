@@ -6,7 +6,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/vladimirvivien/echo"
+	"github.com/vladimirvivien/gexe"
 	ci "github.com/vmware-tanzu/crash-diagnostics/.ci/common"
 )
 
@@ -14,7 +14,7 @@ func main() {
 	arches := []string{"amd64"}
 	oses := []string{"darwin", "linux"}
 
-	e := echo.New()
+	e := gexe.New()
 	e.SetEnv("PKG_ROOT", ci.PkgRoot)
 	e.SetEnv("VERSION", ci.Version)
 	e.SetEnv("GIT_SHA", ci.GitSHA)
@@ -29,14 +29,14 @@ func main() {
 }
 
 func gobuild(arch, os, ldflags, binary string) {
-	b := echo.New()
+	b := gexe.New()
 	b.Conf.SetPanicOnErr(true)
 	b.SetVar("arch", arch)
 	b.SetVar("os", os)
 	b.SetVar("ldflags", ldflags)
 	b.SetVar("binary", binary)
-	result := b.Env("CGO_ENABLED=0 GOOS=$os GOARCH=$arch").Run("go build -o $binary -ldflags $ldflags .")
-	if !b.Empty(result) {
+	result := b.Envs("CGO_ENABLED=0 GOOS=$os GOARCH=$arch").Run("go build -o $binary -ldflags $ldflags .")
+	if result != "" {
 		fmt.Printf("Build for %s/%s failed: %s\n", arch, os, result)
 		return
 	}

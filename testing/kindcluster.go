@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	"github.com/vladimirvivien/echo"
+	"github.com/vladimirvivien/gexe"
 )
 
 var (
@@ -20,11 +20,11 @@ var (
 type KindCluster struct {
 	name   string
 	config string
-	e      *echo.Echo
+	e      *gexe.Echo
 }
 
 func NewKindCluster(config, name string) *KindCluster {
-	return &KindCluster{name: name, config: config, e: echo.New()}
+	return &KindCluster{name: name, config: config, e: gexe.New()}
 }
 
 func (k *KindCluster) Create() error {
@@ -52,15 +52,6 @@ func (k *KindCluster) Create() error {
 	return nil
 }
 
-func (k *KindCluster) GetKubeConfig() (io.Reader, error) {
-	logrus.Infof("Retrieving kind kubeconfig for cluster: %s", k.name)
-	p := k.e.RunProc(fmt.Sprintf(`kind get kubeconfig --name %s`, k.name))
-	if p.Err() != nil {
-		return nil, p.Err()
-	}
-	return p.Out(), nil
-}
-
 func (k *KindCluster) MakeKubeConfigFile(path string) error {
 	logrus.Infof("Creating kind kubeconfig file: %s", path)
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0644)
@@ -69,13 +60,17 @@ func (k *KindCluster) MakeKubeConfigFile(path string) error {
 	}
 	defer f.Close()
 
-	reader, err := k.GetKubeConfig()
-	if err != nil {
-		return fmt.Errorf("failed to generate kind kubeconfig: %s", err)
+	logrus.Infof("Retrieving kind kubeconfig for cluster: kind get kubeconfig --name %s", k.name)
+	p := k.e.StartProc(fmt.Sprintf(`kind get kubeconfig --name %s`, k.name))
+	if p.Err() != nil {
+		return fmt.Errorf("failed to generate kind kubeconfig: %s: %s", p.Result(), p.Err())
 	}
-	if _, err := io.Copy(f, reader); err != nil {
+
+	if _, err := io.Copy(f, p.Out()); err != nil {
 		return fmt.Errorf("failed to write kind kubeconfig file: %s", err)
 	}
+
+	logrus.Infof("kind kubeconfig file created: %s", f.Name())
 	return nil
 }
 
@@ -102,8 +97,8 @@ func (k *KindCluster) Destroy() error {
 	return nil
 }
 
-func findOrInstallKind(e *echo.Echo) error {
-	if len(e.Prog.Avail("kind")) == 0 {
+func findOrInstallKind(e *gexe.Echo) error {
+	if len(e.Prog().Avail("kind")) == 0 {
 		logrus.Info(`kind not found, installing with GO111MODULE="on" go get sigs.k8s.io/kind@v0.7.0`)
 		if err := installKind(e); err != nil {
 			return err
@@ -111,7 +106,7 @@ func findOrInstallKind(e *echo.Echo) error {
 	}
 	return nil
 }
-func installKind(e *echo.Echo) error {
+func installKind(e *gexe.Echo) error {
 	logrus.Infof("installing: go get sigs.k8s.io/kind@%s", kindVersion)
 	p := e.SetEnv("GO111MODULE", "on").RunProc(fmt.Sprintf("go get sigs.k8s.io/kind@%s", kindVersion))
 	if p.Err() != nil {

@@ -26,7 +26,7 @@ func MakeLocalTestFile(t *testing.T, filePath, content string) {
 		makeLocalTestDir(t, srcDir)
 	}
 
-	t.Logf("creating test file: %s", filePath)
+	t.Logf("creating local test file: %s", filePath)
 	file, err := os.Create(filePath)
 	if err != nil {
 		t.Fatalf("MakeLocalTestFile: failed to create file: %s", err)
@@ -36,6 +36,7 @@ func MakeLocalTestFile(t *testing.T, filePath, content string) {
 	if _, err := buf.WriteTo(file); err != nil {
 		t.Fatal(err)
 	}
+	t.Logf("local test file created: %s", file.Name())
 }
 
 func RemoveLocalTestFile(t *testing.T, fileName string) {
@@ -46,17 +47,13 @@ func RemoveLocalTestFile(t *testing.T, fileName string) {
 }
 
 func makeRemoteTestSSHDir(t *testing.T, args SSHArgs, dir string) {
-	t.Logf("creating test dir over SSH: %s", dir)
-	if result, err := Run(args, nil, fmt.Sprintf("stat %s", dir)); err == nil {
-		t.Logf("remote dir already exist: %s", result)
-		return // already there
-	}
+	t.Logf("creating remote test dir over SSH: %s", dir)
 	_, err := Run(args, nil, fmt.Sprintf(`mkdir -p %s`, dir))
 	if err != nil {
 		t.Fatalf("makeRemoteTestSSHDir: failed: %s", err)
 	}
 	// validate
-	result, err := Run(args, nil, fmt.Sprintf(`ls %s`, dir))
+	result, err := Run(args, nil, fmt.Sprintf(`stat %s`, dir))
 	if err != nil {
 		t.Fatalf("makeRemoteTestSSHDir %s", err)
 	}

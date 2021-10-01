@@ -11,7 +11,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/vladimirvivien/echo"
+	"github.com/vladimirvivien/gexe"
+	"github.com/vladimirvivien/gexe/exec"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -48,8 +49,8 @@ func RunRead(args SSHArgs, agent Agent, cmd string) (io.Reader, error) {
 }
 
 func sshRunProc(args SSHArgs, agent Agent, cmd string) (io.Reader, error) {
-	e := echo.New()
-	prog := e.Prog.Avail("ssh")
+	e := gexe.New()
+	prog := e.Prog().Avail("ssh")
 	if len(prog) == 0 {
 		return nil, fmt.Errorf("ssh program not found")
 	}
@@ -63,20 +64,20 @@ func sshRunProc(args SSHArgs, agent Agent, cmd string) (io.Reader, error) {
 
 	if agent != nil {
 		logrus.Debugf("Adding agent info: %s", agent.GetEnvVariables())
-		e = e.Env(agent.GetEnvVariables())
+		e = e.Envs(agent.GetEnvVariables())
 	}
 
-	var proc *echo.Proc
+	var proc *exec.Proc
 	maxRetries := args.MaxRetries
 	if maxRetries == 0 {
 		maxRetries = 10
 	}
 	retries := wait.Backoff{Steps: maxRetries, Duration: time.Millisecond * 80, Jitter: 0.1}
 	if err := wait.ExponentialBackoff(retries, func() (bool, error) {
-		p := e.RunProc(effectiveCmd)
+		p := e.StartProc(effectiveCmd)
 		if p.Err() != nil {
 			logrus.Warn(fmt.Sprintf("ssh: failed to connect to %s: error '%s %s': retrying connection", args.Host, p.Err(), p.Result()))
-			return false, nil
+			return false, p.Err()
 		}
 		proc = p
 		return true, nil // worked

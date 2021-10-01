@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/vladimirvivien/echo"
+	"github.com/vladimirvivien/gexe"
 )
 
 func FetchBastionIpAddress(clusterName, namespace, kubeConfigPath string) (string, error) {
 	if namespace == "" {
 		namespace = "default"
 	}
-	p := echo.New().RunProc(fmt.Sprintf(
+	p := gexe.RunProc(fmt.Sprintf(
 		`kubectl get awscluster/%s -o jsonpath='{.status.bastion.publicIp}' --namespace %s --kubeconfig %s`,
 		clusterName,
 		namespace,

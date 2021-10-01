@@ -11,14 +11,14 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	"github.com/vladimirvivien/echo"
+	"github.com/vladimirvivien/gexe"
 )
 
 // FetchWorkloadConfig...
 func FetchWorkloadConfig(clusterName, clusterNamespace, mgmtKubeConfigPath string) (string, error) {
 	var filePath string
 	cmdStr := fmt.Sprintf(`kubectl get secrets/%s-kubeconfig --template '{{.data.value}}' --namespace=%s --kubeconfig %s`, clusterName, clusterNamespace, mgmtKubeConfigPath)
-	p := echo.New().RunProc(cmdStr)
+	p := gexe.StartProc(cmdStr)
 	if p.Err() != nil {
 		return filePath, fmt.Errorf("kubectl get secrets failed: %s: %s", p.Err(), p.Result())
 	}

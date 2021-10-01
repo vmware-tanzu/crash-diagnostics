@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vladimirvivien/echo"
+	"github.com/vladimirvivien/gexe"
 )
 
 func TestParseAndValidateAgentInfo(t *testing.T) {
@@ -91,7 +91,7 @@ func TestStartAgent(t *testing.T) {
 	if err != nil || a == nil {
 		t.Fatalf("error should be nil and agent should not be nil: %v", err)
 	}
-	out := echo.New().Run("ps -ax")
+	out := gexe.Run("ps -ax")
 	if !strings.Contains(out, "ssh-agent") {
 		t.Fatal("no ssh-agent process found")
 	}

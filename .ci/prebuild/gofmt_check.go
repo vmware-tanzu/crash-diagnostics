@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/vladimirvivien/echo"
+	"github.com/vladimirvivien/gexe"
 )
 
 func main() {
-	e := echo.New()
-	if !e.Empty(e.Run("gofmt -s -l .")) {
+	e := gexe.New()
+	if e.Run("gofmt -s -l .") != "" {
 		fmt.Println("Go code failed gofmt check:")
 		e.Runout("gofmt -s -d .")
 		os.Exit(1)

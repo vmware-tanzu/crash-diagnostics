@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/vladimirvivien/echo"
+	"github.com/vladimirvivien/gexe"
 	"go.starlark.net/starlark"
 )
 
@@ -45,7 +45,7 @@ func captureLocalFunc(thread *starlark.Thread, b *starlark.Builtin, args starlar
 		return starlark.None, fmt.Errorf("%s: %s", identifiers.captureLocal, err)
 	}
 
-	p := echo.New().RunProc(cmdStr)
+	p := gexe.StartProc(cmdStr)
 	if p.Err() != nil {
 		return starlark.None, fmt.Errorf("%s: %s", identifiers.captureLocal, p.Err())
 	}

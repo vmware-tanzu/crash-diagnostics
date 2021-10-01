@@ -133,6 +133,7 @@ func TestCopyTo(t *testing.T) {
 			MakeRemoteTestSSHDir(t, test.sshArgs, test.file)
 
 			sourceFile := filepath.Join(support.TmpDirRoot(), test.file)
+			t.Logf("copyTo: copying %s -to-> %s", sourceFile, test.file)
 			if err := CopyTo(test.sshArgs, nil, sourceFile, test.file); err != nil {
 				t.Fatal(err)
 			}
