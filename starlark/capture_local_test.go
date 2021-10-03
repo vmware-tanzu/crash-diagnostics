@@ -123,6 +123,42 @@ func TestCaptureLocalFunc(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "capture with error",
+			args: func(t *testing.T) []starlark.Tuple {
+				return []starlark.Tuple{{starlark.String("cmd"), starlark.String("nacho 'Hello World!'")}}
+			},
+			eval: func(t *testing.T, kwargs []starlark.Tuple) {
+				val, err := captureLocalFunc(newTestThreadLocal(t), nil, nil, kwargs)
+				if err != nil {
+					t.Fatal(err)
+				}
+				result := ""
+				if r, ok := val.(starlark.String); ok {
+					result = string(r)
+				}
+				defer func() {
+					os.RemoveAll(result)
+					os.RemoveAll(defaults.workdir)
+				}()
+
+				file, err := os.Open(result)
+				if err != nil {
+					t.Fatal(err)
+				}
+				buf := new(bytes.Buffer)
+				if _, err := io.Copy(buf, file); err != nil {
+					t.Fatal(err)
+				}
+				expected := strings.TrimSpace(buf.String())
+				if !strings.Contains(expected, "not found") {
+					t.Errorf("unexpected content captured: %s", expected)
+				}
+				if err := file.Close(); err != nil {
+					t.Error(err)
+				}
+			},
+		},
 	}
 
 	for _, test := range tests {

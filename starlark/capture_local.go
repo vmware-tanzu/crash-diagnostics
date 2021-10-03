@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/vladimirvivien/gexe"
 	"go.starlark.net/starlark"
@@ -14,7 +15,7 @@ import (
 
 // captureLocalFunc is a built-in starlark function that runs a provided command on the local machine.
 // The output of the command is stored in a file at a specified location under the workdir directory.
-// Starlark format: run_local(cmd=<command> [,workdir=path][,file_name=name][,desc=description][,append=append])
+// Starlark format: capture_local(cmd=<command> [,workdir=path][,file_name=name][,desc=description][,append=append])
 func captureLocalFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var cmdStr, workdir, fileName, desc string
 	var append bool
@@ -42,16 +43,24 @@ func captureLocalFunc(thread *starlark.Thread, b *starlark.Builtin, args starlar
 
 	filePath := filepath.Join(workdir, fileName)
 	if err := os.MkdirAll(workdir, 0744); err != nil && !os.IsExist(err) {
-		return starlark.None, fmt.Errorf("%s: %s", identifiers.captureLocal, err)
+		msg := fmt.Sprintf("%s error: %s", identifiers.captureLocal, err)
+		return starlark.String(msg), nil
 	}
 
 	p := gexe.StartProc(cmdStr)
+	// upon error, write error in file, return filepath
 	if p.Err() != nil {
-		return starlark.None, fmt.Errorf("%s: %s", identifiers.captureLocal, p.Err())
+		msg := fmt.Sprintf("%s error: %s: %s", identifiers.captureLocal, p.Err(), p.Result())
+		if err := captureOutput(strings.NewReader(msg), filePath, desc, append); err != nil {
+			msg := fmt.Sprintf("%s error: %s", identifiers.captureLocal, err)
+			return starlark.String(msg), nil
+		}
+		return starlark.String(filePath), nil
 	}
 
 	if err := captureOutput(p.Out(), filePath, desc, append); err != nil {
-		return starlark.None, fmt.Errorf("%s: %s", identifiers.captureLocal, err)
+		msg := fmt.Sprintf("%s error: %s", identifiers.captureLocal, err)
+		return starlark.String(msg), nil
 	}
 
 	return starlark.String(filePath), nil
