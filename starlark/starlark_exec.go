@@ -139,5 +139,6 @@ func newPredeclareds() starlark.StringDict {
 		identifiers.capaProvider:      starlark.NewBuiltin(identifiers.capaProvider, CapaProviderFn),
 		identifiers.setDefaults:       starlark.NewBuiltin(identifiers.setDefaults, SetDefaultsFunc),
 		identifiers.log:               starlark.NewBuiltin(identifiers.log, logFunc),
+		identifiers.plotMetric:        starlark.NewBuiltin(identifiers.plotMetric, plotMetric),
 	}
 }

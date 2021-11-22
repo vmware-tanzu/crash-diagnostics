@@ -53,6 +53,8 @@ var (
 		capvProvider      string
 		capaProvider      string
 
+		plotMetric string
+
 		sshAgent string
 	}{
 		scriptCtx: "script_context",
@@ -81,6 +83,7 @@ var (
 		archive:          "archive",
 		os:               "os",
 		setDefaults:      "set_defaults",
+		plotMetric:       "plot_metric",
 		log:              "log",
 
 		kubeCapture:       "kube_capture",
