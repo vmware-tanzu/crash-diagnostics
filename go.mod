@@ -3,8 +3,11 @@ module github.com/vmware-tanzu/crash-diagnostics
 go 1.16
 
 require (
+	github.com/aws/aws-sdk-go-v2 v1.11.1
+	github.com/aws/aws-sdk-go-v2/config v1.10.2
+	github.com/aws/aws-sdk-go-v2/service/ssm v1.16.0
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/google/go-cmp v0.5.6 // indirect
+	github.com/google/goexpect v0.0.0-20210430020637-ab937bf7fd6f
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/onsi/ginkgo v1.14.0
@@ -14,6 +17,7 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/vladimirvivien/gexe v0.1.1
 	go.starlark.net v0.0.0-20201006213952-227f4aabceb5
+	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f // indirect
 	golang.org/x/sys v0.0.0-20211019181941-9d821ace8654 // indirect
 	golang.org/x/text v0.3.7 // indirect
