@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"regexp"
 	"time"
@@ -15,13 +14,7 @@ import (
 	expect "github.com/google/goexpect"
 )
 
-func Run(region string, cmd string) (string, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO())
-	if err != nil {
-		return "", err
-	}
-
-	ssmClient := ssm.NewFromConfig(cfg)
+func Run(ssmClient *ssm.Client, region string, cmd string) (string, error) {
 	input := &ssm.StartSessionInput{
 		Target:       aws.String("i-033631851a5922563"),
 	}

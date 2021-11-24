@@ -1,9 +1,21 @@
 package ssm
 
-import "testing"
+import (
+	"context"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"testing"
+)
 
 func TestRun(t *testing.T) {
-	result, err := Run("eu-west-1", "sudo id")
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		t.Errorf("error while creating AWS session err=%s", err)
+	}
+
+	ssmClient := ssm.NewFromConfig(cfg)
+
+	result, err := Run(ssmClient, "eu-west-1", "sudo id")
 	if err != nil {
 		t.Errorf("error not expected: err=%s", err)
 	}
