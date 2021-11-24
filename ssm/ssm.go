@@ -14,9 +14,9 @@ import (
 	expect "github.com/google/goexpect"
 )
 
-func Run(ssmClient *ssm.Client, region string, cmd string) (string, error) {
+func Run(ssmClient *ssm.Client, instanceId string, region string, cmd string) (string, error) {
 	input := &ssm.StartSessionInput{
-		Target:       aws.String("i-033631851a5922563"),
+		Target:       aws.String(instanceId),
 	}
 	sess, err := ssmClient.StartSession(context.TODO(), input)
 	if err != nil {

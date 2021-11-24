@@ -8,6 +8,7 @@ import (
 )
 
 func TestRun(t *testing.T) {
+	instanceId := "i-033631851a5922563"
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		t.Errorf("error while creating AWS session err=%s", err)
@@ -15,7 +16,7 @@ func TestRun(t *testing.T) {
 
 	ssmClient := ssm.NewFromConfig(cfg)
 
-	result, err := Run(ssmClient, "eu-west-1", "sudo id")
+	result, err := Run(ssmClient, instanceId, "eu-west-1", "sudo id")
 	if err != nil {
 		t.Errorf("error not expected: err=%s", err)
 	}
