@@ -16,7 +16,7 @@ func TestRun(t *testing.T) {
 
 	ssmClient := ssm.NewFromConfig(cfg)
 
-	result, err := Run(ssmClient, instanceId, "eu-west-1", "sudo id")
+	result, err := Run(ssmClient, instanceId, "eu-west-1", "sudo id\n")
 	if err != nil {
 		t.Errorf("error not expected: err=%s", err)
 	}

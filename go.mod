@@ -3,11 +3,11 @@ module github.com/vmware-tanzu/crash-diagnostics
 go 1.16
 
 require (
+	github.com/Netflix/go-expect v0.0.0-20211003183012-e1a7c020ce25
 	github.com/aws/aws-sdk-go-v2 v1.11.1
 	github.com/aws/aws-sdk-go-v2/config v1.10.2
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.16.0
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/google/goexpect v0.0.0-20210430020637-ab937bf7fd6f
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/onsi/ginkgo v1.14.0
