@@ -1,0 +1,13 @@
+conf = crashd_config(workdir=args.workdir)
+
+instances=resources(
+    provider=instance_list_provider(
+        instances=["i-033631851a5922563", "i-033631851a5922536"],
+        region="eu-west-1"
+    ),
+)
+
+run(cmd="uptime", resources=instances)
+capture(cmd="sudo df -i", resources=instances)
+
+archive(output_file="diagnostics.tar.gz", source_paths=[conf.workdir])

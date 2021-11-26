@@ -9,7 +9,8 @@ import (
 
 func TestRunDocument(t *testing.T) {
 	instanceId := "i-033631851a5922563"
-	cfg, err := config.LoadDefaultConfig(context.TODO())
+	ctx := context.Background()
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		t.Errorf("error while creating AWS session err=%s", err)
 	}
@@ -19,7 +20,7 @@ func TestRunDocument(t *testing.T) {
 		client: originalSSMClient,
 	}
 
-	result, err := Run(ssmClientStruct, instanceId, "sudo crictl images")
+	result, err := Run(ctx, ssmClientStruct, instanceId, "sudo crictl images")
 	if err != nil {
 		t.Errorf("error not expected: err=%s", err)
 	}

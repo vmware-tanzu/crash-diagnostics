@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+const (
+	DocumentAWSRunShellScript = "AWS-RunShellScript"
+)
+
 // ssmClientAPI is a proxy to the AWS SDK. Tests should mock this.
 type ssmClientAPI interface {
 	SendCommand(context.Context, *ssm.SendCommandInput, ...func(*ssm.Options)) (*ssm.SendCommandOutput, error)
@@ -30,11 +34,11 @@ func (s *SSMClient) GetClient() *ssm.Client {
 	return s.client
 }
 
-func Run(ssmClient ssmClientAPI, instanceId string, cmd string) (string, error) {
+func Run(ctx context.Context, ssmClient ssmClientAPI, instanceId string, cmd string) (string, error) {
 	cmd = strings.TrimSpace(cmd)
 	input := &ssm.SendCommandInput{
-		DocumentName:           aws.String("AWS-RunShellScript"),
-		Comment:                nil,
+		DocumentName:           aws.String(DocumentAWSRunShellScript),
+		Comment:                aws.String(fmt.Sprintf("crash-diagnostic run at %s", time.Now().String())),
 		DocumentHash:           nil,
 		DocumentVersion:        nil,
 		InstanceIds:            []string{instanceId},
@@ -47,7 +51,7 @@ func Run(ssmClient ssmClientAPI, instanceId string, cmd string) (string, error) 
 		TimeoutSeconds:         60,
 	}
 
-	command, err := ssmClient.SendCommand(context.TODO(), input)
+	command, err := ssmClient.SendCommand(ctx, input)
 	if err != nil {
 		return "", fmt.Errorf("error sending command err=%s", err)
 	}
@@ -57,7 +61,7 @@ func Run(ssmClient ssmClientAPI, instanceId string, cmd string) (string, error) 
 		CommandId:  command.Command.CommandId,
 		InstanceId: aws.String(instanceId),
 	}
-	waiterOutput, err := waiter.WaitForOutput(context.TODO(), waiterInput, 60*time.Second)
+	waiterOutput, err := waiter.WaitForOutput(ctx, waiterInput, 60*time.Second)
 	if err != nil {
 		return "", fmt.Errorf("error wating for output of the command: cmd=%s, err=%s", cmd, err)
 	}

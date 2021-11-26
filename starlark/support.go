@@ -54,6 +54,8 @@ var (
 		capaProvider      string
 
 		sshAgent string
+
+		instanceListProvider string
 	}{
 		scriptCtx: "script_context",
 
@@ -89,7 +91,8 @@ var (
 		capvProvider:      "capv_provider",
 		capaProvider:      "capa_provider",
 
-		sshAgent: "crashd_ssh_agent",
+		sshAgent:             "crashd_ssh_agent",
+		instanceListProvider: "instance_list_provider",
 	}
 
 	defaults = struct {
