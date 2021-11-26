@@ -112,7 +112,7 @@ func enum(provider *starlarkstruct.Struct) (*starlark.List, error) {
 			return nil, fmt.Errorf("region not found in %s", identifiers.instanceListProvider)
 		}
 
-		region, ok := reg.(*starlark.String)
+		region, ok := reg.(starlark.String)
 		if !ok {
 			return nil, fmt.Errorf("%s: unexpected type for region: %T", identifiers.instanceListProvider, region)
 		}
@@ -123,12 +123,14 @@ func enum(provider *starlarkstruct.Struct) (*starlark.List, error) {
 		}
 
 		for i := 0; i < instanceList.Len(); i++ {
+			fmt.Printf("instance: %s", instanceList.Index(i))
 			dict := starlark.StringDict{
 				"kind": starlark.String(identifiers.instanceResource),
 				"provider": starlark.String(identifiers.instanceListProvider),
 				"instance": instanceList.Index(i),
 				"transport": transport,
 				"region": region,
+				"host": starlark.String(""),
 			}
 			resources = append(resources, starlarkstruct.FromStringDict(starlark.String(identifiers.instanceResource), dict))
 		}
