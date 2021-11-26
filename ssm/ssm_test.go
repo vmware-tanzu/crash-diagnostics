@@ -17,7 +17,7 @@ func TestRunDocument(t *testing.T) {
 
 	originalSSMClient := ssm.NewFromConfig(cfg)
 	ssmClientStruct := &SSMClient{
-		client: originalSSMClient,
+		Client: originalSSMClient,
 	}
 
 	result, err := Run(ctx, ssmClientStruct, instanceId, "sudo crictl images")

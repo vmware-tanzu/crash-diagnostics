@@ -16,25 +16,25 @@ const (
 	DocumentAWSRunShellScript = "AWS-RunShellScript"
 )
 
-// ssmClientAPI is a proxy to the AWS SDK. Tests should mock this.
-type ssmClientAPI interface {
+// SSMClientAPI is a proxy to the AWS SDK. Tests should mock this.
+type SSMClientAPI interface {
 	SendCommand(context.Context, *ssm.SendCommandInput, ...func(*ssm.Options)) (*ssm.SendCommandOutput, error)
 	GetClient() *ssm.Client
 }
 
 type SSMClient struct {
-	client *ssm.Client
+	Client *ssm.Client
 }
 
 func (s *SSMClient) SendCommand(ctx context.Context, input *ssm.SendCommandInput, opts ...func(*ssm.Options)) (*ssm.SendCommandOutput, error)  {
-	return s.client.SendCommand(ctx, input, opts...)
+	return s.Client.SendCommand(ctx, input, opts...)
 }
 
 func (s *SSMClient) GetClient() *ssm.Client {
-	return s.client
+	return s.Client
 }
 
-func Run(ctx context.Context, ssmClient ssmClientAPI, instanceId string, cmd string) (string, error) {
+func Run(ctx context.Context, ssmClient SSMClientAPI, instanceId string, cmd string) (string, error) {
 	cmd = strings.TrimSpace(cmd)
 	input := &ssm.SendCommandInput{
 		DocumentName:           aws.String(DocumentAWSRunShellScript),
