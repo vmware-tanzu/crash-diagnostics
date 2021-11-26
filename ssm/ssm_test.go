@@ -7,16 +7,19 @@ import (
 	"testing"
 )
 
-func TestRun(t *testing.T) {
+func TestRunDocument(t *testing.T) {
 	instanceId := "i-033631851a5922563"
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		t.Errorf("error while creating AWS session err=%s", err)
 	}
 
-	ssmClient := ssm.NewFromConfig(cfg)
+	originalSSMClient := ssm.NewFromConfig(cfg)
+	ssmClientStruct := &SSMClient{
+		client: originalSSMClient,
+	}
 
-	result, err := Run(ssmClient, instanceId, "eu-west-1", "sudo id\n")
+	result, err := Run(ssmClientStruct, instanceId, "sudo crictl images")
 	if err != nil {
 		t.Errorf("error not expected: err=%s", err)
 	}
