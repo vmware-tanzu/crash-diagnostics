@@ -56,6 +56,7 @@ var (
 		sshAgent string
 
 		instanceListProvider string
+		instanceResource string
 	}{
 		scriptCtx: "script_context",
 
@@ -93,6 +94,7 @@ var (
 
 		sshAgent:             "crashd_ssh_agent",
 		instanceListProvider: "instance_list_provider",
+		instanceResource: "instance_resource",
 	}
 
 	defaults = struct {

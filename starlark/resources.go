@@ -96,6 +96,42 @@ func enum(provider *starlarkstruct.Struct) (*starlark.List, error) {
 			}
 			resources = append(resources, starlarkstruct.FromStringDict(starlark.String(identifiers.hostResource), dict))
 		}
+	case identifiers.instanceListProvider:
+		instances, err := provider.Attr("instances")
+		if err != nil {
+			return nil, fmt.Errorf("instances not found in %s", identifiers.instanceListProvider)
+		}
+
+		instanceList, ok := instances.(*starlark.List)
+		if !ok {
+			return nil, fmt.Errorf("%s: unexpected type for instances: %T", identifiers.instanceListProvider, instances)
+		}
+
+		reg, err := provider.Attr("region")
+		if err != nil {
+			return nil, fmt.Errorf("region not found in %s", identifiers.instanceListProvider)
+		}
+
+		region, ok := reg.(*starlark.String)
+		if !ok {
+			return nil, fmt.Errorf("%s: unexpected type for region: %T", identifiers.instanceListProvider, region)
+		}
+
+		transport, err := provider.Attr("transport")
+		if err != nil {
+			return nil, fmt.Errorf("transport not found in %s", identifiers.instanceListProvider)
+		}
+
+		for i := 0; i < instanceList.Len(); i++ {
+			dict := starlark.StringDict{
+				"kind": starlark.String(identifiers.instanceResource),
+				"provider": starlark.String(identifiers.instanceListProvider),
+				"instance": instanceList.Index(i),
+				"transport": transport,
+				"region": region,
+			}
+			resources = append(resources, starlarkstruct.FromStringDict(starlark.String(identifiers.instanceResource), dict))
+		}
 	}
 
 	return starlark.NewList(resources), nil
