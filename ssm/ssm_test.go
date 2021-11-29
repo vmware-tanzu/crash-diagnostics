@@ -4,6 +4,8 @@ import (
 	"context"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"net/url"
+	"strings"
 	"testing"
 )
 
@@ -28,4 +30,17 @@ func TestRunDocument(t *testing.T) {
 	if result != "blah" {
 		t.Errorf("wrong result: result=%s", result)
 	}
+}
+
+func TestURL(t *testing.T) {
+	testUrl := "aws:///eu-west-1a/i-075404133d12be157"
+
+	u, err := url.Parse(testUrl)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	idList := strings.Split(u.Path, "/")
+
+	t.Log(idList[len(idList)-1])
 }

@@ -2,12 +2,24 @@ conf = crashd_config(workdir=args.workdir)
 
 instances=resources(
     provider=instance_list_provider(
-        instances=["i-033631851a5922563"],
+        instances=["i-033631851a5922563", "i-02b911ca2ab79ec74"],
         region="eu-west-1"
+    ),
+)
+
+k8s_hosts=resources(
+    provider=kube_nodes_provider(
+        kube_config=kube_config(path=args.kubecfg),
+        #ssh_config=ssh,
+        aws="true", # use SSM
+        labels=["node-role.kubernetes.io/control-plane="]
     ),
 )
 
 capture(cmd="sudo crictl ps", resources=instances)
 capture(cmd="sudo crictl images", resources=instances)
+
+capture(cmd="sudo crictl ps", resources=k8s_hosts)
+capture(cmd="sudo crictl images", resources=k8s_hosts)
 
 archive(output_file="diagnostics.tar.gz", source_paths=[conf.workdir])

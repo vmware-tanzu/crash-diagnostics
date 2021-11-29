@@ -65,74 +65,94 @@ func enum(provider *starlarkstruct.Struct) (*starlark.List, error) {
 	kind := trimQuotes(kindVal.String())
 
 	switch kind {
-	case identifiers.hostListProvider, identifiers.kubeNodesProvider, identifiers.capvProvider, identifiers.capaProvider:
-		hosts, err := provider.Attr("hosts")
-		if err != nil {
-			return nil, fmt.Errorf("hosts not found in %s", identifiers.hostListProvider)
-		}
-
-		hostList, ok := hosts.(*starlark.List)
-		if !ok {
-			return nil, fmt.Errorf("%s: unexpected type for hosts: %T", identifiers.hostListProvider, hosts)
-		}
+	case identifiers.instanceListProvider, identifiers.hostListProvider, identifiers.kubeNodesProvider, identifiers.capvProvider, identifiers.capaProvider:
 
 		transport, err := provider.Attr("transport")
 		if err != nil {
 			return nil, fmt.Errorf("transport not found in %s", identifiers.hostListProvider)
 		}
 
-		sshCfg, err := provider.Attr(identifiers.sshCfg)
-		if err != nil {
-			return nil, fmt.Errorf("ssh_config not found in %s", identifiers.hostListProvider)
-		}
-
-		for i := 0; i < hostList.Len(); i++ {
-			dict := starlark.StringDict{
-				"kind":       starlark.String(identifiers.hostResource),
-				"provider":   starlark.String(identifiers.hostListProvider),
-				"host":       hostList.Index(i),
-				"transport":  transport,
-				"ssh_config": sshCfg,
+		switch transport {
+		case starlark.String("ssh"):
+			hosts, err := provider.Attr("hosts")
+			if err != nil {
+				return nil, fmt.Errorf("hosts not found in %s", identifiers.hostListProvider)
 			}
-			resources = append(resources, starlarkstruct.FromStringDict(starlark.String(identifiers.hostResource), dict))
-		}
-	case identifiers.instanceListProvider:
-		instances, err := provider.Attr("instances")
-		if err != nil {
-			return nil, fmt.Errorf("instances not found in %s", identifiers.instanceListProvider)
-		}
 
-		instanceList, ok := instances.(*starlark.List)
-		if !ok {
-			return nil, fmt.Errorf("%s: unexpected type for instances: %T", identifiers.instanceListProvider, instances)
-		}
-
-		reg, err := provider.Attr("region")
-		if err != nil {
-			return nil, fmt.Errorf("region not found in %s", identifiers.instanceListProvider)
-		}
-
-		region, ok := reg.(starlark.String)
-		if !ok {
-			return nil, fmt.Errorf("%s: unexpected type for region: %T", identifiers.instanceListProvider, region)
-		}
-
-		transport, err := provider.Attr("transport")
-		if err != nil {
-			return nil, fmt.Errorf("transport not found in %s", identifiers.instanceListProvider)
-		}
-
-		for i := 0; i < instanceList.Len(); i++ {
-			fmt.Printf("instance: %s", instanceList.Index(i))
-			dict := starlark.StringDict{
-				"kind": starlark.String(identifiers.instanceResource),
-				"provider": starlark.String(identifiers.instanceListProvider),
-				"instance": instanceList.Index(i),
-				"transport": transport,
-				"region": region,
-				"host": starlark.String(""),
+			hostList, ok := hosts.(*starlark.List)
+			if !ok {
+				return nil, fmt.Errorf("%s: unexpected type for hosts: %T", identifiers.hostListProvider, hosts)
 			}
-			resources = append(resources, starlarkstruct.FromStringDict(starlark.String(identifiers.instanceResource), dict))
+
+			sshCfg, err := provider.Attr(identifiers.sshCfg)
+			if err != nil {
+				return nil, fmt.Errorf("ssh_config not found in %s", identifiers.hostListProvider)
+			}
+
+			for i := 0; i < hostList.Len(); i++ {
+				dict := starlark.StringDict{
+					"kind":       starlark.String(identifiers.hostResource),
+					"provider":   starlark.String(identifiers.hostListProvider),
+					"host":       hostList.Index(i),
+					"transport":  transport,
+					"ssh_config": sshCfg,
+				}
+				resources = append(resources, starlarkstruct.FromStringDict(starlark.String(identifiers.hostResource), dict))
+			}
+
+			sshCfg, err = provider.Attr(identifiers.sshCfg)
+			if err != nil {
+				return nil, fmt.Errorf("ssh_config not found in %s", identifiers.hostListProvider)
+			}
+
+			for i := 0; i < hostList.Len(); i++ {
+				dict := starlark.StringDict{
+					"kind":       starlark.String(identifiers.hostResource),
+					"provider":   starlark.String(identifiers.hostListProvider),
+					"host":       hostList.Index(i),
+					"transport":  transport,
+					"ssh_config": sshCfg,
+				}
+				resources = append(resources, starlarkstruct.FromStringDict(starlark.String(identifiers.hostResource), dict))
+			}
+		case starlark.String("ssm"):
+			instances, err := provider.Attr("instances")
+			if err != nil {
+				return nil, fmt.Errorf("instances not found in %s", identifiers.instanceListProvider)
+			}
+
+			instanceList, ok := instances.(*starlark.List)
+			if !ok {
+				return nil, fmt.Errorf("%s: unexpected type for instances: %T", identifiers.instanceListProvider, instances)
+			}
+
+			reg, err := provider.Attr("region")
+			if err != nil {
+				return nil, fmt.Errorf("region not found in %s", identifiers.instanceListProvider)
+			}
+
+			region, ok := reg.(starlark.String)
+			if !ok {
+				return nil, fmt.Errorf("%s: unexpected type for region: %T", identifiers.instanceListProvider, region)
+			}
+
+			transport, err := provider.Attr("transport")
+			if err != nil {
+				return nil, fmt.Errorf("transport not found in %s", identifiers.instanceListProvider)
+			}
+
+			for i := 0; i < instanceList.Len(); i++ {
+				fmt.Printf("instance: %s", instanceList.Index(i))
+				dict := starlark.StringDict{
+					"kind": starlark.String(identifiers.instanceResource),
+					"provider": starlark.String(identifiers.instanceListProvider),
+					"instance": instanceList.Index(i),
+					"transport": transport,
+					"region": region,
+					"host": starlark.String(""),
+				}
+				resources = append(resources, starlarkstruct.FromStringDict(starlark.String(identifiers.instanceResource), dict))
+			}
 		}
 	}
 

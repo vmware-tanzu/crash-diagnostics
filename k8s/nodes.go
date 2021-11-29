@@ -5,6 +5,8 @@ package k8s
 
 import (
 	"context"
+	"net/url"
+	"strings"
 
 	"github.com/pkg/errors"
 	coreV1 "k8s.io/api/core/v1"
@@ -27,6 +29,37 @@ func GetNodeAddresses(ctx context.Context, kubeconfigPath string, names, labels 
 		nodeIps = append(nodeIps, getNodeInternalIP(node))
 	}
 	return nodeIps, nil
+}
+
+func GetNodeInstanceID(ctx context.Context, kubeconfigPath string, names, labels []string) ([]string, string, error) {
+	client, err := New(kubeconfigPath)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "could not initialize search client")
+	}
+
+	nodes, err := getNodes(ctx, client, names, labels)
+	if err != nil {
+		return nil, "", errors.Wrapf(err, "could not fetch nodes")
+	}
+
+	var instanceIds []string
+	var region string
+	for _, node := range nodes {
+		if id := getNodeInstanceID(node); id != "" {
+			idURL, err := url.Parse(id)
+			if err != nil {
+				return nil, "", errors.Wrap(err, "could not parse the instance id")
+			}
+			splittedURL := strings.Split(idURL.Path, "/")
+
+			region = splittedURL[len(splittedURL)-2]
+			instanceId := splittedURL[len(splittedURL)-1]
+
+			instanceIds = append(instanceIds, instanceId)
+		}
+	}
+
+	return instanceIds, region, nil
 }
 
 func getNodes(ctx context.Context, k8sc *Client, names, labels []string) ([]*coreV1.Node, error) {
@@ -62,4 +95,8 @@ func getNodeInternalIP(node *coreV1.Node) (ipAddr string) {
 		}
 	}
 	return
+}
+
+func getNodeInstanceID(node *coreV1.Node) string {
+	return node.Spec.ProviderID
 }

@@ -20,6 +20,7 @@ func KubeNodesProviderFn(thread *starlark.Thread, _ *starlark.Builtin, args star
 
 	var names, labels *starlark.List
 	var kubeConfig, sshConfig *starlarkstruct.Struct
+	var aws string
 
 	if err := starlark.UnpackArgs(
 		identifiers.kubeNodesProvider, args, kwargs,
@@ -27,6 +28,7 @@ func KubeNodesProviderFn(thread *starlark.Thread, _ *starlark.Builtin, args star
 		"labels?", &labels,
 		"kube_config?", &kubeConfig,
 		"ssh_config?", &sshConfig,
+		"aws?", &aws,
 	); err != nil {
 		return starlark.None, errors.Wrap(err, "failed to read args")
 	}
@@ -44,15 +46,15 @@ func KubeNodesProviderFn(thread *starlark.Thread, _ *starlark.Builtin, args star
 		return starlark.None, errors.Wrap(err, "failed to kubeconfig")
 	}
 
-	if sshConfig == nil {
+	if sshConfig == nil && aws == "" {
 		sshConfig = thread.Local(identifiers.sshCfg).(*starlarkstruct.Struct)
 	}
 
-	return newKubeNodesProvider(ctx, path, sshConfig, toSlice(names), toSlice(labels))
+	return newKubeNodesProvider(ctx, path, sshConfig, aws, toSlice(names), toSlice(labels))
 }
 
 // newKubeNodesProvider returns a struct with k8s cluster node provider info
-func newKubeNodesProvider(ctx context.Context, kubeconfig string, sshConfig *starlarkstruct.Struct, names, labels []string) (*starlarkstruct.Struct, error) {
+func newKubeNodesProvider(ctx context.Context, kubeconfig string, sshConfig *starlarkstruct.Struct, aws string, names, labels []string) (*starlarkstruct.Struct, error) {
 
 	searchParams := k8s.SearchParams{
 		Names:  names,
@@ -76,6 +78,22 @@ func newKubeNodesProvider(ctx context.Context, kubeconfig string, sshConfig *sta
 		nodeIps = append(nodeIps, starlark.String(node))
 	}
 	kubeNodesProviderDict["hosts"] = starlark.NewList(nodeIps)
+
+	if aws != "" {
+		var nodeInstances []starlark.Value
+
+		instances, region, err := k8s.GetNodeInstanceID(ctx, kubeconfig, names, labels)
+		if err!= nil {
+			return nil, errors.Wrapf(err, "could not fetch node instanceID")
+		}
+		for _, instance := range instances {
+			nodeInstances = append(nodeInstances, starlark.String(instance))
+		}
+
+		kubeNodesProviderDict["instances"] = starlark.NewList(nodeInstances)
+		kubeNodesProviderDict["transport"] = starlark.String("ssm")
+		kubeNodesProviderDict["region"] = starlark.String(region)
+	}
 
 	return starlarkstruct.FromStringDict(starlark.String(identifiers.kubeNodesProvider), kubeNodesProviderDict), nil
 }
