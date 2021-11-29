@@ -122,6 +122,7 @@ func newPredeclareds() starlark.StringDict {
 		identifiers.crashdCfg:         starlark.NewBuiltin(identifiers.crashdCfg, crashdConfigFn),
 		identifiers.sshCfg:            starlark.NewBuiltin(identifiers.sshCfg, SshConfigFn),
 		identifiers.hostListProvider:  starlark.NewBuiltin(identifiers.hostListProvider, hostListProvider),
+		identifiers.instanceListProvider: starlark.NewBuiltin(identifiers.instanceListProvider, instanceListProvider),
 		identifiers.resources:         starlark.NewBuiltin(identifiers.resources, resourcesFunc),
 		identifiers.archive:           starlark.NewBuiltin(identifiers.archive, archiveFunc),
 		identifiers.run:               starlark.NewBuiltin(identifiers.run, runFunc),

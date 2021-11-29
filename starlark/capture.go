@@ -4,7 +4,10 @@
 package starlark
 
 import (
+	"context"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/vmware-tanzu/crash-diagnostics/ssm"
 	"io"
 	"os"
 	"path/filepath"
@@ -15,6 +18,9 @@ import (
 	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
+
+	awsSSM "github.com/aws/aws-sdk-go-v2/service/ssm"
+
 )
 
 // captureFunc is a built-in starlark function that runs a provided command and
@@ -124,6 +130,27 @@ func execCapture(cmdStr, rootPath, fileName, desc string, agent ssh.Agent, resou
 				logrus.Errorf("%s failed: cmd=[%s]: %s", identifiers.capture, cmdStr, err)
 			}
 			results = append(results, result)
+		case string(transport) == "ssm":
+			ctx := context.TODO()
+			cfg, err := config.LoadDefaultConfig(ctx)
+			if err != nil {
+				logrus.Errorf("error while creating AWS session err=%s", err)
+			}
+			originalSSMClient := awsSSM.NewFromConfig(cfg)
+			ssmClientStruct := &ssm.SSMClient{
+				Client: originalSSMClient,
+			}
+			val, err = res.Attr("instance")
+			if err != nil {
+				return nil, fmt.Errorf("%s: resource.instances: %s", identifiers.capture, err)
+			}
+			instance := string(val.(starlark.String))
+			rootDir = filepath.Join(rootPath, sanitizeStr(instance))
+			result, err := execCaptureSSM(ctx, instance, cmdStr, rootDir, fileName, desc, ssmClientStruct, res)
+			if err != nil {
+				logrus.Errorf("%s failed: cmd=[%s]: %s", identifiers.capture, cmdStr, err)
+			}
+			results = append(results, result)
 		default:
 			logrus.Errorf("%s: unsupported or invalid resource kind: %s", identifiers.capture, kind)
 			continue
@@ -131,6 +158,32 @@ func execCapture(cmdStr, rootPath, fileName, desc string, agent ssh.Agent, resou
 	}
 
 	return results, nil
+}
+
+func execCaptureSSM(ctx context.Context, instance, cmdStr, rootDir, fileName, desc string, agent ssm.SSMClientAPI, res *starlarkstruct.Struct) (commandResult, error) {
+	if err := os.MkdirAll(rootDir, 0744); err != nil && !os.IsExist(err) {
+		return commandResult{}, err
+	}
+	logrus.Debugf("%s: created capture dir: %s", identifiers.capture, rootDir)
+
+	if len(fileName) == 0 {
+		fileName = fmt.Sprintf("%s.txt", sanitizeStr(cmdStr))
+	}
+	filePath := filepath.Join(rootDir, fileName)
+
+	logrus.Debugf("%s: capturing output of [cmd=%s] => [%s] from %s using ssm", identifiers.capture, cmdStr, filePath, instance)
+
+	result, err := ssm.Run(ctx, agent, instance, cmdStr)
+	if err != nil {
+		return commandResult{}, err
+	}
+
+	if err := captureOutput(strings.NewReader(result), filePath, desc, false); err != nil {
+		logrus.Errorf("%s: output failed: %s", identifiers.capture, err)
+		return commandResult{resource: instance, result: filePath, err: err}, err
+	}
+
+	return commandResult{resource: instance, result: filePath, err: err}, nil
 }
 
 func execCaptureSSH(host, cmdStr, rootDir, fileName, desc string, agent ssh.Agent, res *starlarkstruct.Struct) (commandResult, error) {
