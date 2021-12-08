@@ -4,10 +4,12 @@ kube_conf = kube_config(path='./config')
 
 #list out management and workload cluster nodes
 wc_provider=capv_provider(
+    workload_cluster="test",
     ssh_config=ssh_conf,
     mgmt_kube_config=kube_conf
 )
 wc_provider_cp=capv_provider(
+    workload_cluster="test",
     ssh_config=ssh_conf,
     mgmt_kube_config=kube_conf,
     labels=["node-role.kubernetes.io/control-plane="]
@@ -15,7 +17,7 @@ wc_provider_cp=capv_provider(
 
 nodes = resources(provider=wc_provider)
 cp_nodes = resources(provider=wc_provider_cp)
-capture(cmd="timeout 60s vmstat 5", resources=cp_nodes)
+#capture(cmd="timeout 60s vmstat 5", resources=cp_nodes)
 
 cp_metrics = [
   "etcd_disk_backend_commit_duration_seconds",
@@ -38,6 +40,8 @@ cp_metrics = [
   "etcd_snap_db_save_total_duration_seconds",
   "etcd_snap_fsync_duration_seconds",
 ]
+
+
 plot_metric(metrics=cp_metrics, resources=cp_nodes)
 
 

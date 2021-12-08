@@ -7,9 +7,8 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/vmware-tanzu/crash-diagnostics/k8s"
+	"github.com/vmware-tanzu/crash-diagnostics/metric"
 	"github.com/vmware-tanzu/crash-diagnostics/ssh"
-	"github.com/vmware-tanzu/crash-diagnostics/util"
 	"go.starlark.net/starlark"
 )
 
@@ -18,9 +17,7 @@ import (
 // a list of known metrics and uses capture() to ssh onto the provided list of nodes curl the endpoints
 // and plot the metrics into pngs. Starlark format: plot_metric(prog=<prog_name>, resources=nodes)
 func plotMetric(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	var workdir, fileName, desc, clientKey, clientCert, endpoint string
-	var completedCommands []string
-	var results []commandResult
+	var workdir, fileName, desc, clientKey, clientCert, endpoint, cmdStr string
 	var metricNames, resources *starlark.List
 
 	if err := starlark.UnpackArgs(
@@ -53,52 +50,60 @@ func plotMetric(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tupl
 		resources = res
 	}
 
-	for _, name := range toSlice(metricNames) {
-		metricCheck := k8s.NewMetric(name, clientCert, clientKey, endpoint)
-		cmd, err := k8s.GetMetricsCommand(metricCheck)
+	for _, m := range toSlice(metricNames) {
+		var agent ssh.Agent
+		var ok bool
+		if agentVal := thread.Local(identifiers.sshAgent); agentVal != nil {
+			agent, ok = agentVal.(ssh.Agent)
+			if !ok {
+				return starlark.None, errors.New("unable to fetch ssh-agent")
+			}
+		}
+		switch m {
+		case "etcd":
+			client := metric.GetClient(m, clientKey, clientCert, endpoint, workdir)
+			cmdStr = client.GetCommandOutput()
+		default:
+			logrus.Errorf("Unknown Metric %s", m)
+		}
+
+		results, err := execCapture(cmdStr, workdir, fileName, desc, agent, resources)
 		if err != nil {
-			logrus.Errorf("lookup for command for metric check failed: %s", err)
-			return starlark.None, err
+			return starlark.None, fmt.Errorf("%s: %s", identifiers.capture, err)
 		}
-		if !util.Contains(completedCommands, cmd) {
-			var agent ssh.Agent
 
-			var ok bool
-			if agentVal := thread.Local(identifiers.sshAgent); agentVal != nil {
-				agent, ok = agentVal.(ssh.Agent)
-				if !ok {
-					return starlark.None, errors.New("unable to fetch ssh-agent")
-				}
+		// build list of struct as result
+		var resultList []starlark.Value
+		for _, result := range results {
+			if len(results) == 1 {
+				return result.toStarlarkStruct(), nil
 			}
-
-			cmdResults, err := execCapture(cmd, workdir, fileName, desc, agent, resources)
-			if err != nil {
-				return starlark.None, err
-			}
-			results = append(results, cmdResults...)
-			completedCommands = append(completedCommands, cmd)
+			resultList = append(resultList, result.toStarlarkStruct())
 		}
+
 	}
+
+	//results ,err := execPlotMetrics(metricNames, clientCert, clientKey, endpoint, resource)
+	//
+	//if err != nil {
+	//	return starlark.None, err
+	//}
 
 	// build list of struct as result
-	var resultList []starlark.Value
-	for _, result := range results {
-		metrics, _ := k8s.ParseMF(result.result)
-		for k, v := range metrics {
-			for _, n := range toSlice(metricNames) {
-				if k == n {
-					err := k8s.Plot(v, workdir, result.resource)
-					if err != nil {
-						return starlark.None, err
-					}
-				}
-			}
-		}
-
-		if len(results) == 1 {
-			return result.toStarlarkStruct(), nil
-		}
-		resultList = append(resultList, result.toStarlarkStruct())
-	}
-	return starlark.NewList(resultList), nil
+	//var resultList []starlark.Value
+	//	if len(results) == 1 {
+	//		return result.toStarlarkStruct(), nil
+	//	}
+	//	resultList = append(resultList, result.toStarlarkStruct())
+	//}
+	return nil, nil
+	//return starlark.NewList(resultList), nil
 }
+
+//func execPlotMetrics(metricNames, clientCert, clientKey, endpoint, resources, workdir) ([]commandResult,error){
+//	for _, metricNames {
+//
+//
+//	}
+//
+//}
