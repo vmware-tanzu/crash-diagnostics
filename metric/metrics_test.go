@@ -4,34 +4,55 @@
 package metric
 
 import (
-	"fmt"
-	"os"
+	"reflect"
 	"testing"
 )
 
-func TestPlot(t *testing.T) {
-	names := []string{"etcd"}
-	for _, name := range names {
+type getClientTestData struct {
+	name           string
+	clientCert     string
+	serverKey      string
+	endpoint       string
+	expectedClient EtcdMetricClient
+}
 
-		path, err := os.Getwd()
-		if err != nil {
-			t.Error(err)
-		}
-		testresults := fmt.Sprintf("%s/testdata/results", path)
-		if _, err := os.Stat(testresults); os.IsNotExist(err) {
-			t.Error(err)
-		} else {
-			os.RemoveAll(testresults)
-		}
-		_ = os.Mkdir(testresults, os.ModePerm)
-		client := GetClient(name, "", "", "", testresults)
-		testfile := fmt.Sprintf("%s/testdata/etcdresults.txt", path)
-		results, err := client.Plot(testfile, nil)
-		if err != nil {
-			t.Log(err)
+func TestGetClient(t *testing.T) {
+	tests := []getClientTestData{
+		{
+			name:       "etcd",
+			clientCert: "foo",
+			serverKey:  "bar",
+			endpoint:   "somewhere",
+			expectedClient: EtcdMetricClient{
+				Name:             "etcd",
+				SupportedMetrics: etcdKnownMetrics(),
+				ServerKey:        "bar",
+				ClientCert:       "foo",
+				Endpoint:         "somewhere",
+				WorkDir:          "",
+			},
+		},
+		{
+			name:       "etcd",
+			clientCert: "",
+			serverKey:  "",
+			endpoint:   "",
+			expectedClient: EtcdMetricClient{
+				Name:             "etcd",
+				SupportedMetrics: etcdKnownMetrics(),
+				ServerKey:        "",
+				ClientCert:       "",
+				Endpoint:         "",
+				WorkDir:          "",
+			},
+		},
+	}
+	for _, test := range tests {
+		client := GetClient(test.name, test.serverKey, test.clientCert, test.endpoint, "")
+		if !reflect.DeepEqual(client, test.expectedClient) {
+			t.Logf("Expected: %v, Got: %s", test.expectedClient, client)
 			t.Fail()
-		} else {
-			t.Log(results)
 		}
 	}
+
 }

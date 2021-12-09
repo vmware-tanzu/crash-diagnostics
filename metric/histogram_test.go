@@ -2,6 +2,7 @@ package metric
 
 import (
 	"os"
+	"reflect"
 	"testing"
 )
 
@@ -52,5 +53,18 @@ func TestHistogram_GenerateBarItems(t *testing.T) {
 			t.Logf("Value for bucket %v is incorrect. Expected: %v Got: %v", i, expected[i], f)
 			t.Fail()
 		}
+	}
+}
+
+func TestNewHistogram(t *testing.T) {
+	chart := NewHistogram()
+	expected := Histogram{
+		BarColor:    2,
+		ChartHeight: 10,
+		ChartWidth:  10,
+		PointsWidth: 20,
+	}
+	if reflect.DeepEqual(chart, expected) {
+		t.Logf("Expected %v, %v", expected, chart)
 	}
 }

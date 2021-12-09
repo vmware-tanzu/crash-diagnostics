@@ -9,6 +9,7 @@ const (
 	EtcdDefaultClientCert = "/etc/kubernetes/pki/apiserver-etcd-client.crt"
 	EtcdDefaultKeyFile    = "/etc/kubernetes/pki/apiserver-etcd-client.key"
 	EtcdDefaultEndpoint   = "https://localhost:2379/metrics"
+	EtcdCurlCmd           = "sudo curl -sk"
 )
 
 func etcdKnownMetrics() map[string]struct{} {
@@ -32,9 +33,6 @@ func etcdKnownMetrics() map[string]struct{} {
 		"etcd_snap_db_fsync_duration_seconds":                              struct{}{},
 		"etcd_snap_db_save_total_duration_seconds":                         struct{}{},
 		"etcd_snap_fsync_duration_seconds":                                 struct{}{},
-		"/etc/kubernetes/pki/apiserver-etcd-client.crt":                    struct{}{},
-		"/etc/kubernetes/pki/apiserver-etcd-client.key":                    struct{}{},
-		"https://localhost:2379/metrics":                                   struct{}{},
 	}
 
 }
@@ -116,8 +114,7 @@ func (m EtcdMetricClient) GetCommandOutput() string {
 	if m.Endpoint == "" {
 		m.Endpoint = EtcdDefaultEndpoint
 	}
-	curlCmd := "sudo curl -sk"
-	m.Command = fmt.Sprintf("%s --cert %s --key %s %s", curlCmd, m.ClientCert, m.ServerKey, m.Endpoint)
+	m.Command = fmt.Sprintf("%s --cert %s --key %s %s", EtcdCurlCmd, m.ClientCert, m.ServerKey, m.Endpoint)
 	return m.Command
 }
 
