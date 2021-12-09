@@ -64,7 +64,7 @@ func TestNewHistogram(t *testing.T) {
 		ChartWidth:  10,
 		PointsWidth: 20,
 	}
-	if reflect.DeepEqual(chart, expected) {
+	if !reflect.DeepEqual(chart, expected) {
 		t.Logf("Expected %v, %v", expected, chart)
 	}
 }
