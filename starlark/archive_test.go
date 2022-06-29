@@ -18,7 +18,7 @@ func TestArchiveFunc(t *testing.T) {
 		eval func(t *testing.T, kwargs []starlark.Tuple)
 	}{
 		{
-			name: "arhive single file",
+			name: "archive single file",
 			args: func(t *testing.T) []starlark.Tuple {
 				return []starlark.Tuple{
 					{starlark.String("output_file"), starlark.String("/tmp/out.tar.gz")},

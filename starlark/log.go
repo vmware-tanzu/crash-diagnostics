@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/sirupsen/logrus"
+	"github.com/vmware-tanzu/crash-diagnostics/logging"
 	"go.starlark.net/starlark"
 )
 
@@ -31,12 +33,22 @@ func logFunc(t *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwarg
 		addDefaultLogger(t)
 		loggerLocal = t.Local(identifiers.log)
 	}
-	logger := loggerLocal.(*log.Logger)
 
-	if prefix != "" {
-		logger.Printf("%s: %s", prefix, msg)
-	} else {
-		logger.Print(msg)
+	switch logger := loggerLocal.(type) {
+	case *log.Logger:
+		if prefix != "" {
+			logger.Printf("%s: %s", prefix, msg)
+		} else {
+			logger.Print(msg)
+		}
+	case *logrus.Logger:
+		if prefix != "" {
+			logger.Printf("%s: %s", prefix, msg)
+		} else {
+			logger.Print(msg)
+		}
+	default:
+		return starlark.None, fmt.Errorf("local logger has unknown type %T", loggerLocal)
 	}
 
 	return starlark.None, nil
@@ -45,6 +57,10 @@ func logFunc(t *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwarg
 func addDefaultLogger(t *starlark.Thread) {
 	loggerLocal := t.Local(identifiers.log)
 	if loggerLocal == nil {
-		t.SetLocal(identifiers.log, log.Default())
+		logger := logrus.StandardLogger()
+		t.SetLocal(identifiers.log, logger)
+		if fh := logging.GetFirstFileHook(logger); fh != nil {
+			t.SetLocal(identifiers.logPath, fh.FilePath)
+		}
 	}
 }

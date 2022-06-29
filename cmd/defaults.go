@@ -6,9 +6,10 @@ import (
 )
 
 var (
-	// Directory path created at crashd runtime
+	// CrashdDir is the directory path created at crashd runtime
 	CrashdDir = filepath.Join(os.Getenv("HOME"), ".crashd")
-	// file path of the defaults args file
+
+	// ArgsFile is the path of the defaults args file.
 	ArgsFile = filepath.Join(CrashdDir, "args")
 )
 

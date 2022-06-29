@@ -19,7 +19,8 @@ var (
 	strSanitization = regexp.MustCompile(`[^a-zA-Z0-9]`)
 
 	identifiers = struct {
-		scriptCtx string
+		scriptCtx  string
+		scriptName string
 
 		crashdCfg string
 		kubeCfg   string
@@ -46,6 +47,7 @@ var (
 		os               string
 		setDefaults      string
 		log              string
+		logPath          string
 
 		kubeCapture       string
 		kubeGet           string
@@ -82,6 +84,7 @@ var (
 		os:               "os",
 		setDefaults:      "set_defaults",
 		log:              "log",
+		logPath:          "logPath",
 
 		kubeCapture:       "kube_capture",
 		kubeGet:           "kube_get",
@@ -94,6 +97,7 @@ var (
 
 	defaults = struct {
 		crashdir    string
+		logpath     string
 		workdir     string
 		kubeconfig  string
 		sshPort     string
@@ -103,7 +107,11 @@ var (
 		connTimeout int // seconds
 	}{
 		crashdir: filepath.Join(os.Getenv("HOME"), ".crashd"),
-		workdir:  "/tmp/crashd",
+
+		// Setting a default here but the CLI should really be setting a FileHook with the value
+		// from user input.
+		logpath: filepath.Join(os.Getenv("HOME"), ".crashd", "crashd.log"),
+		workdir: "/tmp/crashd",
 		kubeconfig: func() string {
 			kubecfg := os.Getenv("KUBECONFIG")
 			if kubecfg == "" {
