@@ -59,6 +59,7 @@ func (e *Executor) Exec(name string, source io.Reader) error {
 	if err := setupLocalDefaults(e.thread); err != nil {
 		return fmt.Errorf("failed to setup defaults: %s", err)
 	}
+	e.thread.SetLocal(identifiers.scriptName, name)
 
 	result, err := starlark.ExecFile(e.thread, name, source, e.predecs)
 	if err != nil {
