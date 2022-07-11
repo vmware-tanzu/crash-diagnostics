@@ -7,7 +7,7 @@ jobs:
     steps:
 
     - name: Set up Go 1.16
-      uses: actions/setup-go@v1
+      uses: actions/setup-go@v3
       with:
         go-version: 1.16.6
       id: go
@@ -27,8 +27,8 @@ jobs:
       run: GO111MODULE=on go run .ci/prebuild/gofmt_check.go
 
     - name: Run linter
-      uses: golangci/golangci-lint-action@v2
+      uses: golangci/golangci-lint-action@v3.2.0
       with:
-        version: v1.29
+        version: v1.46.2
         only-new-issues: true
         args: --timeout 5m
