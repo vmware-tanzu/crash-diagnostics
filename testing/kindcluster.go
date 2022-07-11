@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	kindVersion = "v0.11.1"
+	kindVersion = "v0.14.0"
 )
 
 type KindCluster struct {
