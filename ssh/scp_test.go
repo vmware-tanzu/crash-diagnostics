@@ -4,7 +4,6 @@
 package ssh
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -67,7 +66,7 @@ func TestCopyFrom(t *testing.T) {
 			}
 
 			if finfo.IsDir() {
-				finfos, err := ioutil.ReadDir(expectedPath)
+				finfos, err := os.ReadDir(expectedPath)
 				if err != nil {
 					t.Fatal(err)
 				}

@@ -5,7 +5,6 @@ package starlark
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -268,7 +267,7 @@ func TestKubeCapture(t *testing.T) {
 					t.Fatalf("expecting %s to be a directory", path)
 				}
 
-				files, err := ioutil.ReadDir(path)
+				files, err := os.ReadDir(path)
 				if err != nil {
 					t.Fatalf("ReadeDir(%s) failed: %s", path, err)
 				}
@@ -325,7 +324,7 @@ func TestKubeCapture(t *testing.T) {
 					t.Fatalf("expecting %s to be a directory", path)
 				}
 
-				files, err := ioutil.ReadDir(path)
+				files, err := os.ReadDir(path)
 				if err != nil {
 					t.Fatalf("ReadeDir(%s) failed: %s", path, err)
 				}
@@ -540,7 +539,7 @@ kube_data = kube_capture(what="logs", namespaces=["kube-system"])`, workdir, k8s
 					t.Fatalf("expecting %s to be a directory", path)
 				}
 
-				files, err := ioutil.ReadDir(path)
+				files, err := os.ReadDir(path)
 				if err != nil {
 					t.Fatalf("ReadeDir(%s) failed: %s", path, err)
 				}
@@ -578,7 +577,7 @@ kube_data = kube_capture(what="logs", namespaces=["kube-system"], containers=["e
 					t.Fatalf("expecting %s to be a directory", path)
 				}
 
-				files, err := ioutil.ReadDir(path)
+				files, err := os.ReadDir(path)
 				if err != nil {
 					t.Fatalf("ReadeDir(%s) failed: %s", path, err)
 				}
