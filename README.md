@@ -23,7 +23,7 @@ For detail on the design of Crashd, see this Google Doc design document [here](h
 There are two ways to get started with Crashd. Either download a pre-built binary or pull down the code and build it locally.
 
 ### Download binary
-1. Dowload the latest [binary relase](https://github.com/vmware-tanzu/crash-diagnostics/releases/) for your platform
+1. Dowload the latest [binary release](https://github.com/vmware-tanzu/crash-diagnostics/releases/) for your platform
 2. Extract `tarball` from release
    ```
    tar -xvf <RELEASE_TARBALL_NAME>.tar.gz
@@ -190,8 +190,8 @@ kube_capture(what="objects", kinds=["services", "pods"], namespaces=nspaces, kub
 kube_capture(what="objects", kinds=["deployments", "replicasets"], namespaces=nspaces, kube_config=conf)
 ```
 
-### Interacting with Cluster-API manged machines running on vSphere (CAPV)
-As mentioned, Crashd provides the `capv_provider` which allows scripts to interact with Cluster-API managed clusters running on a vSphere infrastructure (CAPV).  The following shows an abbreviated snippet of a Crashd script that retrieves diagnostics information from the mangement cluster machines managed by a CAPV-initiated cluster:
+### Interacting with Cluster-API managed machines running on vSphere (CAPV)
+As mentioned, Crashd provides the `capv_provider` which allows scripts to interact with Cluster-API managed clusters running on a vSphere infrastructure (CAPV).  The following shows an abbreviated snippet of a Crashd script that retrieves diagnostics information from the management cluster machines managed by a CAPV-initiated cluster:
 
 ```python
 # enumerates management cluster nodes
