@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/pkg/errors"
@@ -23,7 +22,7 @@ func FetchWorkloadConfig(clusterName, clusterNamespace, mgmtKubeConfigPath strin
 		return filePath, fmt.Errorf("kubectl get secrets failed: %s: %s", p.Err(), p.Result())
 	}
 
-	f, err := ioutil.TempFile(os.TempDir(), fmt.Sprintf("%s-workload-config", clusterName))
+	f, err := os.CreateTemp(os.TempDir(), fmt.Sprintf("%s-workload-config", clusterName))
 	if err != nil {
 		return filePath, errors.Wrap(err, "Cannot create temporary file")
 	}

@@ -5,7 +5,6 @@ package starlark
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -189,7 +188,7 @@ func testCopyFromFuncForHostResources(t *testing.T, port, privateKey, username s
 					}
 
 					path := filepath.Join(defaults.workdir, sanitizeStr(resource), "bar")
-					finfos, err := ioutil.ReadDir(path)
+					finfos, err := os.ReadDir(path)
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -340,7 +339,7 @@ result = cp(hosts)`, username, port, privateKey),
 					}
 
 					path := filepath.Join(defaults.workdir, sanitizeStr(resource), "bar")
-					finfos, err := ioutil.ReadDir(path)
+					finfos, err := os.ReadDir(path)
 					if err != nil {
 						t.Fatal(err)
 					}

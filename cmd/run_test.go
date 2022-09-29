@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -34,10 +33,10 @@ var _ = Describe("Run", func() {
 		})
 
 		DescribeTable("processScriptArguments", func(argsFileContent string, args map[string]string, size int) {
-			f, err := ioutil.TempFile(os.TempDir(), "")
+			f, err := os.CreateTemp(os.TempDir(), "")
 			Expect(err).NotTo(HaveOccurred())
 
-			err = ioutil.WriteFile(f.Name(), []byte(argsFileContent), 0644)
+			err = os.WriteFile(f.Name(), []byte(argsFileContent), 0644)
 			Expect(err).NotTo(HaveOccurred())
 
 			defer f.Close()

@@ -5,7 +5,7 @@ package k8s
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
@@ -17,7 +17,7 @@ import (
 )
 
 var populateSearchResults = func() []SearchResult {
-	content, err := ioutil.ReadFile("../testing/search_results.json")
+	content, err := os.ReadFile("../testing/search_results.json")
 	Expect(err).NotTo(HaveOccurred())
 	Expect(len(content)).NotTo(Equal(0))
 

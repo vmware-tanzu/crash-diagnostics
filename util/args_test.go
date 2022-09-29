@@ -4,7 +4,6 @@
 package util
 
 import (
-	"io/ioutil"
 	"os"
 
 	. "github.com/onsi/ginkgo"
@@ -79,10 +78,10 @@ foo= bar`)
 })
 
 var writeContentToFile = func(content string) *os.File {
-	f, err := ioutil.TempFile(os.TempDir(), "read_file_args")
+	f, err := os.CreateTemp(os.TempDir(), "read_file_args")
 	Expect(err).NotTo(HaveOccurred())
 
-	err = ioutil.WriteFile(f.Name(), []byte(content), 0644)
+	err = os.WriteFile(f.Name(), []byte(content), 0644)
 	Expect(err).NotTo(HaveOccurred())
 
 	return f
