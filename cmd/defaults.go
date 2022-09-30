@@ -13,7 +13,7 @@ var (
 	ArgsFile = filepath.Join(CrashdDir, "args")
 )
 
-// This creates a crashd directory which can be used as a default workdir
+// CreateCrashdDir creates a .crashd directory which can be used as a default workdir
 // for script execution. It will also house the default args file.
 func CreateCrashdDir() error {
 	if _, err := os.Stat(CrashdDir); os.IsNotExist(err) {

@@ -4,10 +4,10 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/vmware-tanzu/crash-diagnostics/exec"
 	"github.com/vmware-tanzu/crash-diagnostics/util"
@@ -46,7 +46,7 @@ func newRunCommand() *cobra.Command {
 func run(flags *runFlags, path string) error {
 	file, err := os.Open(path)
 	if err != nil {
-		return errors.Wrapf(err, "failed to open script file: %s", path)
+		return fmt.Errorf("failed to open script file: %s: %w", path, err)
 	}
 	defer file.Close()
 
@@ -56,7 +56,7 @@ func run(flags *runFlags, path string) error {
 	}
 
 	if err := exec.ExecuteFile(file, scriptArgs); err != nil {
-		return errors.Wrapf(err, "execution failed for %s", file.Name())
+		return fmt.Errorf("execution failed for %s: %w", file.Name(), err)
 	}
 
 	return nil
@@ -71,7 +71,7 @@ func processScriptArguments(flags *runFlags) (map[string]string, error) {
 	// get args from script args file
 	err := util.ReadArgsFile(flags.argsFile, scriptArgs)
 	if err != nil && flags.argsFile != ArgsFile {
-		return nil, errors.Wrapf(err, "failed to parse scriptArgs file: %s", flags.argsFile)
+		return nil, fmt.Errorf("failed to parse scriptArgs file %s: %w", flags.argsFile, err)
 	}
 
 	// any value specified by the args flag overrides
