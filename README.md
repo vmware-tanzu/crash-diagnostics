@@ -172,7 +172,7 @@ print(uptimes[0].result)
 
 
 ### Retreiving Kubernetes API objects and logs
-The`kube_capture` is used, in the folliwng example, to connect to a Kubernetes API server to retrieve Kubernetes API objects and logs.  The retrieved data is then saved to the filesystem as shown below:
+The`kube_capture` is used, in the following example, to connect to a Kubernetes API server to retrieve Kubernetes API objects and logs.  The retrieved data is then saved to the filesystem as shown below:
 
 ```python
 nspaces=[
