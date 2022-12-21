@@ -37,7 +37,7 @@ func KubeConfigFn(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, 
 		val := provider.Constructor()
 		if constructor, ok := val.(starlark.String); ok {
 			constStr := constructor.GoString()
-			if constStr != identifiers.capvProvider && constStr != identifiers.capaProvider {
+			if constStr != identifiers.capvProvider && constStr != identifiers.capgProvider && constStr != identifiers.capaProvider {
 				return starlark.None, errors.New("unknown capi provider")
 			}
 		}

@@ -54,6 +54,7 @@ var (
 		kubeNodesProvider string
 		capvProvider      string
 		capaProvider      string
+		capgProvider      string
 
 		sshAgent string
 	}{
@@ -91,6 +92,7 @@ var (
 		kubeNodesProvider: "kube_nodes_provider",
 		capvProvider:      "capv_provider",
 		capaProvider:      "capa_provider",
+		capgProvider:      "capg_provider",
 
 		sshAgent: "crashd_ssh_agent",
 	}
