@@ -99,7 +99,7 @@ func (k *KindCluster) Destroy() error {
 
 func findOrInstallKind(e *gexe.Echo) error {
 	if len(e.Prog().Avail("kind")) == 0 {
-		logrus.Info(`kind not found, installing with GO111MODULE="on" go get sigs.k8s.io/kind@v0.7.0`)
+		logrus.Info(`kind not found, installing with GO111MODULE="on" go get sigs.k8s.io/kind@` + kindVersion)
 		if err := installKind(e); err != nil {
 			return err
 		}
