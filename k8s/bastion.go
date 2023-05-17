@@ -12,7 +12,7 @@ func FetchBastionIpAddress(clusterName, namespace, kubeConfigPath string) (strin
 		namespace = "default"
 	}
 	p := gexe.RunProc(fmt.Sprintf(
-		`kubectl get awscluster/%s -o jsonpath='{.status.bastion.publicIp}' --namespace %s --kubeconfig %s`,
+		`kubectl get awscluster -l cluster.x-k8s.io/cluster-name=%s -o jsonpath='{.status.bastion.publicIp}' --namespace %s --kubeconfig %s`,
 		clusterName,
 		namespace,
 		kubeConfigPath,
