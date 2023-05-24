@@ -217,13 +217,13 @@ func (t *TestSupport) TearDown() error {
 		time.Sleep(time.Millisecond * 500)
 	}
 
-	logrus.Infof("Removing dir: %s", t.testingRoot)
-	if err := os.RemoveAll(t.testingRoot); err != nil {
-		// do return err:
-		// ssh-server container does not cleanly release mounted dir
-		// workaround to GitHub Actions permission issue during tests
-		logrus.Errorf("Unable to remove testing root dir: %s", err)
-	}
+	// logrus.Infof("Removing dir: %s", t.testingRoot)
+	// if err := os.RemoveAll(t.testingRoot); err != nil {
+	// 	// do return err:
+	// 	// ssh-server container does not cleanly release mounted dir
+	// 	// workaround to GitHub Actions permission issue during tests
+	// 	logrus.Errorf("Unable to remove testing root dir: %s", err)
+	// }
 
 	if errs != nil {
 		return fmt.Errorf("%v", errs)
@@ -232,7 +232,7 @@ func (t *TestSupport) TearDown() error {
 	return nil
 }
 
-//NextPortValue returns a pseudo-rando test [2200 .. 2290]
+// NextPortValue returns a pseudo-rando test [2200 .. 2290]
 func NextPortValue() string {
 	port := 2200 + rnd.Intn(90)
 	return fmt.Sprintf("%d", port)
