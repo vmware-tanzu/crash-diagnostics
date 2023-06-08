@@ -36,36 +36,42 @@ func testCaptureFuncForHostResources(t *testing.T, port, privateKey, username st
 				if err != nil {
 					t.Fatal(err)
 				}
-				result := ""
-				if strct, ok := val.(*starlarkstruct.Struct); ok {
-					if val, err := strct.Attr("result"); err == nil {
-						if r, ok := val.(starlark.String); ok {
-							result = string(r)
+				resultList, ok := val.(*starlark.List)
+				if !ok {
+					t.Fatalf("expecting type *starlark.List, got %T", val)
+				}
+
+				for i := 0; i < resultList.Len(); i++ {
+					result := ""
+					if strct, ok := resultList.Index(i).(*starlarkstruct.Struct); ok {
+						if val, err := strct.Attr("result"); err == nil {
+							if r, ok := val.(starlark.String); ok {
+								result = string(r)
+							}
 						}
 					}
-				}
+					expected := filepath.Join(defaults.workdir, sanitizeStr("127.0.0.1"), fmt.Sprintf("%s.txt", sanitizeStr("echo 'Hello World!'")))
+					if result != expected {
+						t.Errorf("unexpected file name captured: %s", result)
+					}
 
-				expected := filepath.Join(defaults.workdir, sanitizeStr("127.0.0.1"), fmt.Sprintf("%s.txt", sanitizeStr("echo 'Hello World!'")))
-				if result != expected {
-					t.Errorf("unexpected file name captured: %s", result)
+					file, err := os.Open(result)
+					if err != nil {
+						t.Fatal(err)
+					}
+					buf := new(bytes.Buffer)
+					if _, err := io.Copy(buf, file); err != nil {
+						t.Fatal(err)
+					}
+					expected = strings.TrimSpace(buf.String())
+					if expected != "Hello World!" {
+						t.Errorf("unexpected content captured: %s", expected)
+					}
+					if err := file.Close(); err != nil {
+						t.Error(err)
+					}
+					os.RemoveAll(result)
 				}
-
-				file, err := os.Open(result)
-				if err != nil {
-					t.Fatal(err)
-				}
-				buf := new(bytes.Buffer)
-				if _, err := io.Copy(buf, file); err != nil {
-					t.Fatal(err)
-				}
-				expected = strings.TrimSpace(buf.String())
-				if expected != "Hello World!" {
-					t.Errorf("unexpected content captured: %s", expected)
-				}
-				if err := file.Close(); err != nil {
-					t.Error(err)
-				}
-				defer os.RemoveAll(result)
 			},
 		},
 
@@ -88,35 +94,43 @@ func testCaptureFuncForHostResources(t *testing.T, port, privateKey, username st
 					t.Fatal(err)
 				}
 
-				result := ""
-				if strct, ok := val.(*starlarkstruct.Struct); ok {
-					if val, err := strct.Attr("result"); err == nil {
-						if r, ok := val.(starlark.String); ok {
-							result = string(r)
-						}
-					}
-				}
-				expected := filepath.Join(defaults.workdir, sanitizeStr("127.0.0.1"), "echo_out.txt")
-				if result != expected {
-					t.Errorf("unexpected file name captured: %s", result)
+				resultList, ok := val.(*starlark.List)
+				if !ok {
+					t.Fatalf("expecting type *starlark.List, got %T", val)
 				}
 
-				file, err := os.Open(result)
-				if err != nil {
-					t.Fatal(err)
+				for i := 0; i < resultList.Len(); i++ {
+					result := ""
+					if strct, ok := resultList.Index(i).(*starlarkstruct.Struct); ok {
+						if val, err := strct.Attr("result"); err == nil {
+							if r, ok := val.(starlark.String); ok {
+								result = string(r)
+							}
+						}
+					}
+
+					expected := filepath.Join(defaults.workdir, sanitizeStr("127.0.0.1"), "echo_out.txt")
+					if result != expected {
+						t.Errorf("unexpected file name captured: %s", result)
+					}
+
+					file, err := os.Open(result)
+					if err != nil {
+						t.Fatal(err)
+					}
+					buf := new(bytes.Buffer)
+					if _, err := io.Copy(buf, file); err != nil {
+						t.Fatal(err)
+					}
+					expected = strings.TrimSpace(buf.String())
+					if expected != "echo command\nHello World!" {
+						t.Errorf("unexpected content captured: %s", expected)
+					}
+					if err := file.Close(); err != nil {
+						t.Error(err)
+					}
+					os.RemoveAll(result)
 				}
-				buf := new(bytes.Buffer)
-				if _, err := io.Copy(buf, file); err != nil {
-					t.Fatal(err)
-				}
-				expected = strings.TrimSpace(buf.String())
-				if expected != "echo command\nHello World!" {
-					t.Errorf("unexpected content captured: %s", expected)
-				}
-				if err := file.Close(); err != nil {
-					t.Error(err)
-				}
-				defer os.RemoveAll(result)
 			},
 		},
 
@@ -174,10 +188,12 @@ func testCaptureFuncScriptForHostResources(t *testing.T, port, privateKey, usern
 	tests := []struct {
 		name   string
 		script string
-		eval   func(t *testing.T, script string)
+
+		eval func(t *testing.T, script string)
 	}{
 		{
 			name: "default cmd multiple machines",
+
 			script: fmt.Sprintf(`
 set_defaults(resources(provider = host_list_provider(hosts=["127.0.0.1","localhost"], ssh_config = ssh_config(username="%s", port="%s", private_key_path="%s", max_retries=50))))
 result = capture("echo 'Hello World!'")`, username, port, privateKey),
@@ -234,32 +250,39 @@ result = exec(hosts)`, username, port, privateKey),
 					t.Fatal(err)
 				}
 
-				resultVal := exe.result["result"]
-				if resultVal == nil {
+				val := exe.result["result"]
+				if val == nil {
 					t.Fatal("capture() should be assigned to a variable")
 				}
-				resultList, ok := resultVal.(*starlark.List)
+
+				resultList, ok := val.(*starlark.List)
 				if !ok {
-					t.Fatal("capture() with multiple resources should return a list")
+					t.Fatalf("expecting type *starlark.List, got %T", val)
 				}
 
 				for i := 0; i < resultList.Len(); i++ {
-					resultStruct, ok := resultList.Index(i).(*starlarkstruct.Struct)
+					resultsList, ok := resultList.Index(i).(*starlark.List)
 					if !ok {
-						t.Fatalf("run(): expecting a starlark struct, got %T", resultList.Index(i))
+						t.Fatalf("capture(): expecting a starlark struct, got %T", resultList.Index(i))
 					}
-					val, err := resultStruct.Attr("result")
-					if err != nil {
-						t.Fatal(err)
+
+					for i := 0; i < resultsList.Len(); i++ {
+						resultStruct, ok := resultList.Index(i).(*starlarkstruct.Struct)
+						if !ok {
+							t.Fatalf("capture(): expecting a starlark struct, got %T", resultsList.Index(i))
+						}
+						val, err := resultStruct.Attr("result")
+						if err != nil {
+							t.Fatal(err)
+						}
+						result := string(val.(starlark.String))
+						if _, err := os.Stat(result); err != nil {
+							t.Fatalf("captured command file not found: %s", err)
+						}
+						os.RemoveAll(result)
 					}
-					result := string(val.(starlark.String))
-					if _, err := os.Stat(result); err != nil {
-						t.Fatalf("captured command file not found: %s", err)
-					}
-					os.RemoveAll(result)
 				}
-			},
-		},
+			}},
 	}
 
 	for _, test := range tests {

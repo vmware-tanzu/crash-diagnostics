@@ -57,7 +57,7 @@ func CopyFrom(args SSHArgs, agent Agent, rootDir string, sourcePath string) erro
 	if err := wait.ExponentialBackoff(retries, func() (bool, error) {
 		p := e.RunProc(effectiveCmd)
 		if p.Err() != nil {
-			logrus.Warn(fmt.Sprintf("scp: copyFrom: failed to connect to %s: '%s %s': retrying connection", args.Host, p.Err(), p.Result()))
+			logrus.Warn(fmt.Sprintf("scp: copyFrom: failed to connect to %s:%s '%s %s': retrying connection", args.Host, args.Port, p.Err(), p.Result()))
 			return false, nil
 		}
 		return true, nil // worked

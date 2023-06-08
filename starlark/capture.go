@@ -80,7 +80,6 @@ func captureFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tup
 		}
 		resultList = append(resultList, result.toStarlarkStruct())
 	}
-
 	return starlark.NewList(resultList), nil
 }
 
@@ -88,48 +87,57 @@ func execCapture(cmdStr, rootPath, fileName, desc string, agent ssh.Agent, resou
 	if resources == nil {
 		return nil, fmt.Errorf("%s: missing resources", identifiers.capture)
 	}
-
-	logrus.Debugf("%s: executing command on %d resources", identifiers.capture, resources.Len())
+	resultsChannel := make(chan commandResult)
 	var results []commandResult
+
 	for i := 0; i < resources.Len(); i++ {
-		val := resources.Index(i)
-		res, ok := val.(*starlarkstruct.Struct)
-		if !ok {
-			return nil, fmt.Errorf("%s: unexpected resource type", identifiers.capture)
-		}
-
-		val, err := res.Attr("kind")
-		if err != nil {
-			return nil, fmt.Errorf("%s: resource.kind: %s", identifiers.capture, err)
-		}
-		kind := val.(starlark.String)
-
-		val, err = res.Attr("transport")
-		if err != nil {
-			return nil, fmt.Errorf("%s: resource.transport: %s", identifiers.capture, err)
-		}
-		transport := val.(starlark.String)
-
-		val, err = res.Attr("host")
-		if err != nil {
-			return nil, fmt.Errorf("%s: resource.host: %s", identifiers.capture, err)
-		}
-		host := string(val.(starlark.String))
-		rootDir := filepath.Join(rootPath, sanitizeStr(host))
-
-		switch {
-		case string(kind) == identifiers.hostResource && string(transport) == "ssh":
-			result, err := execCaptureSSH(host, cmdStr, rootDir, fileName, desc, agent, res)
-			if err != nil {
-				logrus.Errorf("%s failed: cmd=[%s]: %s", identifiers.capture, cmdStr, err)
+		go func(i int) {
+			val := resources.Index(i)
+			res, ok := val.(*starlarkstruct.Struct)
+			if !ok {
+				resultsChannel <- commandResult{err: fmt.Errorf("%s: unexpected resource type", identifiers.capture)}
 			}
-			results = append(results, result)
-		default:
-			logrus.Errorf("%s: unsupported or invalid resource kind: %s", identifiers.capture, kind)
+			val, err := res.Attr("kind")
+			if err != nil {
+				resultsChannel <- commandResult{err: fmt.Errorf("%s: resource.kind: %s", identifiers.capture, err)}
+			}
+			kind := val.(starlark.String)
+
+			val, err = res.Attr("transport")
+			if err != nil {
+				resultsChannel <- commandResult{err: fmt.Errorf("%s: resource.transport: %s", identifiers.capture, err)}
+			}
+			transport := val.(starlark.String)
+
+			val, err = res.Attr("host")
+			if err != nil {
+				resultsChannel <- commandResult{err: fmt.Errorf("%s: resource.host: %s", identifiers.capture, err)}
+			}
+			host := string(val.(starlark.String))
+			rootDir := filepath.Join(rootPath, sanitizeStr(host))
+
+			switch {
+			case string(kind) == identifiers.hostResource && string(transport) == "ssh":
+				result, err := execCaptureSSH(host, cmdStr, rootDir, fileName, desc, agent, res)
+				if err != nil {
+					logrus.Errorf("%s failed: cmd=[%s]: %s", identifiers.capture, cmdStr, err)
+				}
+				resultsChannel <- result
+			default:
+				logrus.Errorf("%s: unsupported or invalid resource kind: %s", identifiers.capture, kind)
+			}
+		}(i)
+	}
+
+	for i := 0; i < resources.Len(); i++ {
+		r := <-resultsChannel
+		if r.err != nil {
+			logrus.Infof("result is: %v", r)
+			results = append(results, r)
+		} else {
 			continue
 		}
 	}
-
 	return results, nil
 }
 

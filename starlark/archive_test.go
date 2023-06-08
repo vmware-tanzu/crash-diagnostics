@@ -60,10 +60,8 @@ func TestArchiveScript(t *testing.T) {
 		eval   func(t *testing.T, script string)
 	}{
 		{
-			name: "archive defaults",
-			script: `
-result = archive(output_file="/tmp/archive.tar.gz", source_paths=["/tmp/crashd"])
-`,
+			name:   "archive defaults",
+			script: `result = archive(output_file="/tmp/archive.tar.gz", source_paths=["/tmp/crashd"])`,
 			eval: func(t *testing.T, script string) {
 				exe := New()
 				if err := exe.Exec("test.star", strings.NewReader(script)); err != nil {
