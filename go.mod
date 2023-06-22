@@ -9,7 +9,7 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/cobra v1.2.1
 	github.com/vladimirvivien/gexe v0.1.1
-	go.starlark.net v0.0.0-20201006213952-227f4aabceb5
+	go.starlark.net v0.0.0-20230612165344-9532f5667272
 	k8s.io/api v0.22.2
 	k8s.io/apimachinery v0.22.2
 	k8s.io/cli-runtime v0.22.2
