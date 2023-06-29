@@ -128,9 +128,10 @@ func StartAgent() (Agent, error) {
 // parseAgentInfo parses the output of ssh-agent -s to determine the information
 // for the ssh authentication agent.
 // example output:
-//   SSH_AUTH_SOCK=/foo/bar.1234; export SSH_AUTH_SOCK;
-//   SSH_AGENT_PID=4567; export SSH_AGENT_PID;
-//   echo Agent pid 4567;
+//
+//	SSH_AUTH_SOCK=/foo/bar.1234; export SSH_AUTH_SOCK;
+//	SSH_AGENT_PID=4567; export SSH_AGENT_PID;
+//	echo Agent pid 4567;
 func parseAgentInfo(info io.Reader) (agentInfo, error) {
 	agentInfo := map[string]string{}
 
