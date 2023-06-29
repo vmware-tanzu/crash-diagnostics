@@ -1,6 +1,6 @@
 module github.com/vmware-tanzu/crash-diagnostics
 
-go 1.18
+go 1.19
 
 require (
 	github.com/onsi/ginkgo v1.14.0
