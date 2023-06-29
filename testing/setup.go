@@ -232,7 +232,7 @@ func (t *TestSupport) TearDown() error {
 	return nil
 }
 
-//NextPortValue returns a pseudo-rando test [2200 .. 2290]
+// NextPortValue returns a pseudo-rando test [2200 .. 2290]
 func NextPortValue() string {
 	port := 2200 + rnd.Intn(90)
 	return fmt.Sprintf("%d", port)

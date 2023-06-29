@@ -15,7 +15,8 @@ import (
 // logFunc implements a starlark built-in func for simple message logging.
 // This iteration uses Go's standard log package.
 // Example:
-//   log(msg="message", [prefix="info"])
+//
+//	log(msg="message", [prefix="info"])
 func logFunc(t *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var msg string
 	var prefix string

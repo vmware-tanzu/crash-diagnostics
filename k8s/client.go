@@ -116,11 +116,11 @@ func (k8sc *Client) Search(ctx context.Context, params SearchParams) ([]SearchRe
 }
 
 // Search does a drill-down search from group, version, resourceList, to resources.  The following rules are applied
-// 1) Legacy core group can be specified as "core" instead of empty string.
-// 2) All specified search params will use AND operator for match (i.e. groups=core AND kinds=pods AND versions=v1 AND ... etc)
-// 3) kinds (resources) will match resource.Kind or resource.Name
-// 4) All search params are passed as comma- or space-separated sets that are matched using OR (i.e. kinds=pods services
-//    will match resouces of type pods or services)
+//  1. Legacy core group can be specified as "core" instead of empty string.
+//  2. All specified search params will use AND operator for match (i.e. groups=core AND kinds=pods AND versions=v1 AND ... etc)
+//  3. kinds (resources) will match resource.Kind or resource.Name
+//  4. All search params are passed as comma- or space-separated sets that are matched using OR (i.e. kinds=pods services
+//     will match resouces of type pods or services)
 func (k8sc *Client) _search(ctx context.Context, groups, categories, kinds, namespaces, versions, names, labels, containers string) ([]SearchResult, error) {
 
 	// normalize params
