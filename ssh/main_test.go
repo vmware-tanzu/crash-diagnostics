@@ -13,8 +13,9 @@ import (
 )
 
 var (
-	support     *testcrashd.TestSupport
-	testSSHArgs SSHArgs
+	support         *testcrashd.TestSupport
+	testSSHArgs     SSHArgs
+	testSSHArgsIPv6 SSHArgs
 )
 
 func TestMain(m *testing.M) {
@@ -32,6 +33,14 @@ func TestMain(m *testing.M) {
 		User:           support.CurrentUsername(),
 		PrivateKeyPath: support.PrivateKeyPath(),
 		Host:           "127.0.0.1",
+		Port:           support.PortValue(),
+		MaxRetries:     support.MaxConnectionRetries(),
+	}
+
+	testSSHArgsIPv6 = SSHArgs{
+		User:           support.CurrentUsername(),
+		PrivateKeyPath: support.PrivateKeyPath(),
+		Host:           "::1",
 		Port:           support.PortValue(),
 		MaxRetries:     support.MaxConnectionRetries(),
 	}

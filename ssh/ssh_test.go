@@ -50,6 +50,12 @@ func TestRunRead(t *testing.T) {
 			cmd:    "echo 'Hello World!'",
 			result: "Hello World!",
 		},
+		{
+			name:   "simple cmd on IPv6 host",
+			args:   testSSHArgsIPv6,
+			cmd:    "echo 'Hello World!'",
+			result: "Hello World!",
+		},
 	}
 
 	for _, test := range tests {
@@ -101,6 +107,26 @@ func TestSSHRunMakeCmdStr(t *testing.T) {
 			name:       "missing host",
 			args:       SSHArgs{User: "sshuser"},
 			shouldFail: true,
+		},
+		{
+			name:   "user and IPv6 host",
+			args:   SSHArgs{User: "sshuser", Host: "b::1"},
+			cmdStr: "ssh -q -o StrictHostKeyChecking=no -p 22 sshuser@b::1",
+		},
+		{
+			name:   "user IPv6 host and pkpath",
+			args:   SSHArgs{User: "sshuser", Host: "b::1", PrivateKeyPath: "/pk/path"},
+			cmdStr: "ssh -q -o StrictHostKeyChecking=no -i /pk/path -p 22 sshuser@b::1",
+		},
+		{
+			name:   "user IPv6 host pkpath and proxy",
+			args:   SSHArgs{User: "sshuser", Host: "b::1", PrivateKeyPath: "/pk/path", ProxyJump: &ProxyJumpArgs{User: "juser", Host: "jhost"}},
+			cmdStr: "ssh -q -o StrictHostKeyChecking=no -i /pk/path -p 22 sshuser@b::1 -o \"ProxyCommand ssh -o StrictHostKeyChecking=no -W %h:%p -i /pk/path juser@jhost\"",
+		},
+		{
+			name:   "user IPv6 host and IPv6 proxy",
+			args:   SSHArgs{User: "sshuser", Host: "b::1", ProxyJump: &ProxyJumpArgs{User: "juser", Host: "::a"}},
+			cmdStr: "ssh -q -o StrictHostKeyChecking=no -p 22 sshuser@b::1 -o \"ProxyCommand ssh -o StrictHostKeyChecking=no -W %h:%p juser@::a\"",
 		},
 	}
 
