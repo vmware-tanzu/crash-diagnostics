@@ -277,7 +277,7 @@ func (k8sc *Client) _search(ctx context.Context, groups, categories, kinds, name
 					results = append(results, result)
 				}
 			} else {
-				logrus.Debugf("searching for %s objects in [group=%s; non-namespced; labels=%v]",
+				logrus.Debugf("searching for %s objects in [group=%s; non-namespaced; labels=%v]",
 					resource.Name, groupVer, listOptions.LabelSelector,
 				)
 
