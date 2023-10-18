@@ -13,6 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/vladimirvivien/gexe"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/utils/net"
 )
 
 // CopyFrom copies one or more files using SCP from remote host
@@ -167,9 +168,15 @@ func makeSCPCmdStr(progName string, args SSHArgs) (string, error) {
 }
 
 func getCopyFromSourceTarget(args SSHArgs, sourcePath, targetPath string) string {
+	if net.IsIPv6String(args.Host) {
+		return fmt.Sprintf("%s@[%s]:%s %s", args.User, args.Host, sourcePath, targetPath)
+	}
 	return fmt.Sprintf("%s@%s:%s %s", args.User, args.Host, sourcePath, targetPath)
 }
 
 func getCopyToSourceTarget(args SSHArgs, sourcePath, targetPath string) string {
+	if net.IsIPv6String(args.Host) {
+		return fmt.Sprintf("%s %s@[%s]:%s", sourcePath, args.User, args.Host, targetPath)
+	}
 	return fmt.Sprintf("%s %s@%s:%s", sourcePath, args.User, args.Host, targetPath)
 }

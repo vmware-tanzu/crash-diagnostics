@@ -39,6 +39,27 @@ func TestCopyFrom(t *testing.T) {
 			srcFile:     "bar/",
 			fileContent: "FooBar",
 		},
+		{
+			name:        "copy single file from IPv6 host",
+			sshArgs:     testSSHArgsIPv6,
+			remoteFiles: map[string]string{"foo.txt": "FooBar"},
+			srcFile:     "foo.txt",
+			fileContent: "FooBar",
+		},
+		{
+			name:        "copy single file in dir from IPv6 host",
+			sshArgs:     testSSHArgsIPv6,
+			remoteFiles: map[string]string{"foo/bar.txt": "FooBar"},
+			srcFile:     "foo/bar.txt",
+			fileContent: "FooBar",
+		},
+		{
+			name:        "copy dir from IPv6 host",
+			sshArgs:     testSSHArgsIPv6,
+			remoteFiles: map[string]string{"bar/foo.csv": "FooBar", "bar/bar.txt": "BarBar"},
+			srcFile:     "bar/",
+			fileContent: "FooBar",
+		},
 	}
 
 	for _, test := range tests {
@@ -111,6 +132,27 @@ func TestCopyTo(t *testing.T) {
 			file:        "local-bar/",
 			fileContent: "FooBar",
 		},
+		{
+			name:        "copy single file to remote IPv6 host",
+			sshArgs:     testSSHArgsIPv6,
+			localFiles:  map[string]string{"local-foo.txt": "FooBar"},
+			file:        "local-foo.txt",
+			fileContent: "FooBar",
+		},
+		{
+			name:        "copy single file in dir to remote IPv6 host",
+			sshArgs:     testSSHArgsIPv6,
+			localFiles:  map[string]string{"local-foo/local-bar.txt": "FooBar"},
+			file:        "local-foo/local-bar.txt",
+			fileContent: "FooBar",
+		},
+		{
+			name:        "copy dir entire dir to remote IPv6 host",
+			sshArgs:     testSSHArgsIPv6,
+			localFiles:  map[string]string{"local-bar/local-foo.csv": "FooBar", "local-bar/local-bar.txt": "BarBar"},
+			file:        "local-bar/",
+			fileContent: "FooBar",
+		},
 	}
 
 	for _, test := range tests {
@@ -174,6 +216,12 @@ func TestMakeSCPCmdStr(t *testing.T) {
 			name:       "missing host",
 			args:       SSHArgs{User: "sshuser"},
 			shouldFail: true,
+		},
+		{
+			name:   "IPv6 host",
+			args:   SSHArgs{User: "sshuser", Host: "b::1"},
+			source: "/tmp/any",
+			cmdStr: "scp -rpq -o StrictHostKeyChecking=no -P 22",
 		},
 	}
 
