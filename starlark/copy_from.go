@@ -22,9 +22,12 @@ import (
 // If resources and workdir are not provided, copyFromFunc uses defaults from starlark thread generated
 // by previous calls to resources(), ssh_config, and crashd_config().
 //
-// Starlark format: copy_from([<path>] [,path=<list>, resources=resources, workdir=path])
+// If compressed flag is true, the command will compress the file sent to the server.
+//
+// Starlark format: copy_from([<path>] [,path=<list>, resources=resources, workdir=path, compress=False])
 func copyFromFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var sourcePath, workdir string
+	var compress bool
 	var resources *starlark.List
 
 	if err := starlark.UnpackArgs(
@@ -32,6 +35,7 @@ func copyFromFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tu
 		"path", &sourcePath,
 		"resources?", &resources,
 		"workdir?", &workdir,
+		"compress?", &compress,
 	); err != nil {
 		return starlark.None, fmt.Errorf("%s: %s", identifiers.capture, err)
 	}
@@ -66,7 +70,7 @@ func copyFromFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tu
 		}
 	}
 
-	results, err := execCopyFrom(workdir, sourcePath, agent, resources)
+	results, err := execCopyFrom(workdir, sourcePath, compress, agent, resources)
 	if err != nil {
 		return starlark.None, fmt.Errorf("%s: %s", identifiers.copyFrom, err)
 	}
@@ -83,7 +87,7 @@ func copyFromFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tu
 	return starlark.NewList(resultList), nil
 }
 
-func execCopyFrom(rootPath string, path string, agent ssh.Agent, resources *starlark.List) ([]commandResult, error) {
+func execCopyFrom(rootPath string, path string, compress bool, agent ssh.Agent, resources *starlark.List) ([]commandResult, error) {
 	if resources == nil {
 		return nil, fmt.Errorf("%s: missing resources", identifiers.copyFrom)
 	}
@@ -117,7 +121,7 @@ func execCopyFrom(rootPath string, path string, agent ssh.Agent, resources *star
 
 		switch {
 		case string(kind) == identifiers.hostResource && string(transport) == "ssh":
-			result, err := execSCPCopyFrom(host, rootDir, path, agent, res)
+			result, err := execSCPCopyFrom(host, rootDir, path, compress, agent, res)
 			if err != nil {
 				logrus.Errorf("%s: failed to copyFrom %s: %s", identifiers.copyFrom, path, err)
 			}
@@ -131,7 +135,7 @@ func execCopyFrom(rootPath string, path string, agent ssh.Agent, resources *star
 	return results, nil
 }
 
-func execSCPCopyFrom(host, rootDir, path string, agent ssh.Agent, res *starlarkstruct.Struct) (commandResult, error) {
+func execSCPCopyFrom(host, rootDir, path string, compress bool, agent ssh.Agent, res *starlarkstruct.Struct) (commandResult, error) {
 	sshCfg := starlarkstruct.FromKeywords(starlarkstruct.Default, makeDefaultSSHConfig())
 	if val, err := res.Attr(identifiers.sshCfg); err == nil {
 		if cfg, ok := val.(*starlarkstruct.Struct); ok {
@@ -144,6 +148,7 @@ func execSCPCopyFrom(host, rootDir, path string, agent ssh.Agent, res *starlarks
 		return commandResult{}, err
 	}
 	args.Host = host
+	args.Compress = compress
 
 	// create dir for the host
 	if err := os.MkdirAll(rootDir, 0744); err != nil && !os.IsExist(err) {
