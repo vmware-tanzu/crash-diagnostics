@@ -110,6 +110,7 @@ Crashd utilizes the concept of a provider to enumerate compute resources. Each i
 * *Kubernetes Nodes Provider* - extracts host information from a Kubernetes API node objects
 * *CAPV Provider* - uses Cluster-API to discover machines in vSphere cluster
 * *CAPA Provider* - uses Cluster-API to discover machines running on AWS
+* *CAPG Provider* - uses Cluster-API to discover machines running on Google Cloud
 * More providers coming!
 
 
