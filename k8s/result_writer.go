@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/client-go/rest"
 )
@@ -87,20 +88,20 @@ func (w *ResultWriter) Write(ctx context.Context, searchResults []SearchResult) 
 				for _, containerLogger := range containers {
 					semaphore <- 1 // Acquire a slot
 					wg.Add(1)
-					go func(logger Container) {
+					go func(pod unstructured.Unstructured, logger Container) {
 						defer wg.Done()
 						defer func() { <-semaphore }() // Release the slot
 						reader, e := logger.Fetch(ctx, w.restApi)
 						if e != nil {
-							logrus.Errorf("Failed to fetch container logs for pod %s: %s", podItem.GetName(), e)
+							logrus.Errorf("Failed to fetch container logs for pod %s: %s", pod.GetName(), e)
 							return
 						}
 						e = logger.Write(reader, logDir)
 						if e != nil {
-							logrus.Errorf("Failed to write container logs for pod %s: %s", podItem.GetName(), e)
+							logrus.Errorf("Failed to write container logs for pod %s: %s", pod.GetName(), e)
 							return
 						}
-					}(containerLogger)
+					}(podItem, containerLogger)
 				}
 			}
 		}

@@ -141,13 +141,14 @@ spec:
 
 	// Wait until pod is in Error state or max 10 seconds
 	timeout := time.After(10 * time.Second)
-	tick := time.Tick(500 * time.Millisecond)
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop() // Ensure the ticker is stopped to prevent resource leaks
 
 	for {
 		select {
 		case <-timeout:
 			return fmt.Errorf("timed out waiting for pod to be in Terminating state")
-		case <-tick:
+		case <-ticker.C:
 			p = k.e.RunProc(fmt.Sprintf(`kubectl --context kind-%s get pod stuck-pod -o jsonpath='{.status.phase}'`, k.name))
 			if p.Err() != nil {
 				return fmt.Errorf("failed to check pod status: %s: %s", p.Err(), p.Result())
