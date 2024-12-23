@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/vladimirvivien/gexe"
@@ -18,13 +19,14 @@ var (
 )
 
 type KindCluster struct {
-	name   string
-	config string
-	e      *gexe.Echo
+	name       string
+	config     string
+	tmpRootDir string
+	e          *gexe.Echo
 }
 
-func NewKindCluster(config, name string) *KindCluster {
-	return &KindCluster{name: name, config: config, e: gexe.New()}
+func NewKindCluster(config, name, tmpRootDir string) *KindCluster {
+	return &KindCluster{name: name, config: config, tmpRootDir: tmpRootDir, e: gexe.New()}
 }
 
 func (k *KindCluster) Create() error {
@@ -71,6 +73,92 @@ func (k *KindCluster) MakeKubeConfigFile(path string) error {
 	}
 
 	logrus.Infof("kind kubeconfig file created: %s", f.Name())
+	return nil
+}
+
+func (k *KindCluster) SimulateTerminatingPod() error {
+	logrus.Infof("Simulating terminating pod in kind cluster %s", k.name)
+	podConfig := `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: stuck-pod
+  namespace: default
+  labels:
+    app: test
+  finalizers:
+    - example.com/finalizer
+spec:
+  containers:
+    - name: busybox
+      image: busybox
+      command:
+        - sh
+        - -c
+        - while true; do echo "Simulating a stuck pod"; sleep 5; done
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: non-stuck-pod
+  namespace: default
+  labels:
+    app: test
+spec:
+  containers:
+    - name: busybox
+      image: busybox
+      command:
+        - sh
+        - -c
+        - while true; do echo "Simulating a non-stuck pod"; sleep 5; done
+`
+	// Write pod configuration to a temporary file in the directory k.tmpRootDir
+	filePath := fmt.Sprintf("%s/stuck-pod.yaml", k.tmpRootDir)
+	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to create file for pod configuration: %s", err)
+	}
+	defer file.Close()
+
+	if _, err := file.WriteString(podConfig); err != nil {
+		return fmt.Errorf("failed to write pod configuration to file: %s", err)
+	}
+	p := k.e.RunProc(fmt.Sprintf(`kubectl --context kind-%s apply -f %s`, k.name, filePath))
+	if p.Err() != nil {
+		return fmt.Errorf("failed to apply pod configuration: %s: %s", p.Err(), p.Result())
+	}
+
+	p = k.e.RunProc(fmt.Sprintf("kubectl --context kind-%s wait --for=condition=Ready pod -l app=test --timeout=60s", k.name))
+	if p.Err() != nil {
+		return fmt.Errorf("failed to simulate terminating pod: %s: %s", p.Err(), p.Result())
+	}
+
+	p = k.e.RunProc(fmt.Sprintf(`kubectl --context kind-%s delete pod stuck-pod --wait=false --grace-period=0 --force`, k.name))
+	if p.Err() != nil {
+		return fmt.Errorf("failed to simulate terminating pod: %s: %s", p.Err(), p.Result())
+	}
+
+	// Wait until pod is in Error state or max 10 seconds
+	timeout := time.After(10 * time.Second)
+	tick := time.Tick(500 * time.Millisecond)
+
+	for {
+		select {
+		case <-timeout:
+			return fmt.Errorf("timed out waiting for pod to be in Terminating state")
+		case <-tick:
+			p = k.e.RunProc(fmt.Sprintf(`kubectl --context kind-%s get pod stuck-pod -o jsonpath='{.status.phase}'`, k.name))
+			if p.Err() != nil {
+				return fmt.Errorf("failed to check pod status: %s: %s", p.Err(), p.Result())
+			}
+			if strings.Contains(p.Result(), "Failed") {
+				logrus.Infof("Pod is in Error state: %s", p.Result())
+				return nil
+			}
+		}
+	}
+
 	return nil
 }
 

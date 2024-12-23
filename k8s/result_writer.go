@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/client-go/rest"
 )
@@ -53,6 +55,10 @@ func (w *ResultWriter) Write(ctx context.Context, searchResults []SearchResult) 
 
 	// each result represents a list of searched item
 	// write each list in a namespaced location in working dir
+	var wg sync.WaitGroup
+	concurrencyLimit := 10
+	semaphore := make(chan int, concurrencyLimit)
+
 	for _, result := range searchResults {
 		objWriter := ObjectWriter{
 			writeDir: w.workdir,
@@ -75,21 +81,31 @@ func (w *ResultWriter) Write(ctx context.Context, searchResults []SearchResult) 
 
 				containers, err := GetContainers(podItem)
 				if err != nil {
-					return err
+					logrus.Errorf("Failed to get containers for pod %s: %s", podItem.GetName(), err)
+					continue
 				}
 				for _, containerLogger := range containers {
-					reader, err := containerLogger.Fetch(ctx, w.restApi)
-					if err != nil {
-						return err
-					}
-					err = containerLogger.Write(reader, logDir)
-					if err != nil {
-						return err
-					}
+					semaphore <- 1 // Acquire a slot
+					wg.Add(1)
+					go func(logger Container) {
+						defer wg.Done()
+						defer func() { <-semaphore }() // Release the slot
+						reader, e := logger.Fetch(ctx, w.restApi)
+						if e != nil {
+							logrus.Errorf("Failed to fetch container logs for pod %s: %s", podItem.GetName(), e)
+							return
+						}
+						e = logger.Write(reader, logDir)
+						if e != nil {
+							logrus.Errorf("Failed to write container logs for pod %s: %s", podItem.GetName(), e)
+							return
+						}
+					}(containerLogger)
 				}
 			}
 		}
 	}
+	wg.Wait()
 
 	return nil
 }

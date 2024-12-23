@@ -156,7 +156,7 @@ func (t *TestSupport) SetupKindCluster() error {
 			return err
 		}
 
-		kind := NewKindCluster(yamlPath, t.resourceName)
+		kind := NewKindCluster(yamlPath, t.resourceName, t.tmpDirRoot)
 		if err := kind.Create(); err != nil {
 			return err
 		}
@@ -195,6 +195,10 @@ func (t *TestSupport) KindKubeConfigFile() string {
 
 func (t *TestSupport) KindClusterContextName() string {
 	return t.kindCluster.GetKubeCtlContext()
+}
+
+func (t *TestSupport) SimulateTerminatingPod() error {
+	return t.kindCluster.SimulateTerminatingPod()
 }
 
 func (t *TestSupport) TearDown() error {
