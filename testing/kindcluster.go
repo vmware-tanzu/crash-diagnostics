@@ -159,8 +159,6 @@ spec:
 			}
 		}
 	}
-
-	return nil
 }
 
 func (k *KindCluster) GetKubeCtlContext() string {
