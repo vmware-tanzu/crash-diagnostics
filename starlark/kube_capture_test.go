@@ -119,7 +119,7 @@ func TestKubeCapture(t *testing.T) {
 					t.Error(err)
 				}
 				resultErr := errVal.(starlark.String).GoString()
-				if resultErr != "unsupported output format: xml" {
+				if resultErr != "failed to initialize writer: unsupported output format: xml" {
 					t.Fatalf("Expected error \"unsupported output format: xml\" but got: \"%s\"", resultErr)
 				}
 			},
