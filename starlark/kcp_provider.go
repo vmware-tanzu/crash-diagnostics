@@ -32,16 +32,17 @@ func KcpProviderFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.T
 		return starlark.None, fmt.Errorf("script context not found")
 	}
 
-	var kcpKubeConfigPath string
+	var kcpKubeConfigPath = "/Users/tatanas/dev.kubeconfig"
 	//TODO Generate a KCP admin kubeconfig
 
 	// dictionary for capa provider struct
 	kcpProviderDict := starlark.StringDict{
-		"kind":        starlark.String(identifiers.capaProvider),
+		"kind":        starlark.String(identifiers.kcpProvider),
 		"kube_config": starlark.String(kcpKubeConfigPath),
 	}
 
 	var contexts []starlark.Value
+	contexts = append(contexts, starlark.String("tanzu-cli-Falcons_GCP_New-staging-5a2f0150:project-ashindov"))
 	kcpProviderDict["contexts"] = starlark.NewList(contexts)
 
 	return starlarkstruct.FromStringDict(starlark.String(identifiers.kcpProvider), kcpProviderDict), nil

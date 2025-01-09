@@ -4,17 +4,27 @@
 
 # object kinds to capture
 kinds = [
-"SRS",
+"space",
 ]
 
 def capture_kcp_objects():
-	kcp_provider_result=kcp_provider(kcp_admin_secret_namespace="",kcp_admin_secret_name="")
-    contexts = kcp_provider_result.get("contexts")
-	# capture kubernetes objects in all kcp logical clusters
-	for context in contexts:
-	    print("Capturing kcp objects for ", context)
-	    config = kube_config(capi_provider=kcp_provider,cluster_context=context)
-	    kube_capture(kube_config=config,what="objects", kinds=[kind], namespaces=namespace)
+    kcp_provider_result = kcp_provider(
+        kcp_admin_secret_namespace="",
+        kcp_admin_secret_name=""
+    )
+
+    # capture kubernetes objects from all kcp workspaces
+    for context in kcp_provider_result.contexts:
+        # TODO convert context to directory path and change workdir so that preserve directory structure
+        print("Capturing kcp objects for", context)
+        set_defaults(kube_config(capi_provider=kcp_provider_result, cluster_context=context))
+        kube_capture(what="objects", kinds=kinds, namespaces=["default"])
+
 
 def main():
-	capture_kcp_objects()
+    work_dir = args.workdir if hasattr(args, "workdir") else fail("Error: workdir argument is required but not provided.")
+    conf = crashd_config(workdir=work_dir)
+
+    capture_kcp_objects()
+
+main()
