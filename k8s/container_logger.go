@@ -33,7 +33,7 @@ func (c ContainerLogsImpl) Fetch(ctx context.Context, restApi rest.Interface) (i
 	req := restApi.Get().Namespace(c.namespace).Name(c.podName).Resource("pods").SubResource("log").VersionedParams(opts, scheme.ParameterCodec)
 	stream, err := req.Stream(ctx)
 	if err != nil {
-		err = errors.Wrap(err, "failed to create container log stream for container with name "+c.container.Name)
+		err = errors.Wrapf(err, "failed to create container log stream for container with name %s", c.container.Name)
 	}
 	return stream, err
 }
