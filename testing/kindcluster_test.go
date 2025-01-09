@@ -8,7 +8,7 @@ import (
 )
 
 func TestCreateKindCluster(t *testing.T) {
-	k := NewKindCluster("./kind-cluster-docker.yaml", "testing-test-cluster")
+	k := NewKindCluster("./kind-cluster-docker.yaml", "testing-test-cluster", "")
 	if err := k.Create(); err != nil {
 		t.Error(err)
 	}

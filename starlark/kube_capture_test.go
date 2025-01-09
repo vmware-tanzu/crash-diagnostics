@@ -623,6 +623,49 @@ kube_data = kube_capture(what="logs", namespaces=["kube-system"], containers=["e
 				}
 			},
 		},
+		{
+			name: "capture logs does not fail even when we have a terminating pod",
+			script: fmt.Sprintf(`
+crashd_config(workdir="%s")
+set_defaults(kube_config(path="%s"))
+kube_data = kube_capture(what="logs", namespaces=["default"])`, workdir, k8sconfig),
+			eval: func(t *testing.T, script string) {
+				err := testSupport.SimulateTerminatingPod()
+				if err != nil {
+					t.Error("Unexpected error while simulating terminating pod", err)
+					return
+				}
+				data := execute(t, script)
+
+				fileVal, err := data.Attr("file")
+				if err != nil {
+					t.Error(err)
+				}
+
+				fileValStr, ok := fileVal.(starlark.String)
+				if !ok {
+					t.Fatalf("unexpected type for starlark value")
+				}
+				captureDir := fileValStr.GoString()
+				if _, err := os.Stat(captureDir); err != nil {
+					t.Fatalf("stat(%s) failed: %s", captureDir, err)
+				}
+				defer os.RemoveAll(captureDir)
+
+				path := filepath.Join(captureDir, "core_v1", "default")
+				if _, err := os.Stat(path); err != nil {
+					t.Fatalf("expecting %s to be a directory", path)
+				}
+
+				files, err := os.ReadDir(path)
+				if err != nil {
+					t.Fatalf("ReadeDir(%s) failed: %s", path, err)
+				}
+				if len(files) == 0 {
+					t.Error("unexpected number of log files for namespace default:", len(files))
+				}
+			},
+		},
 	}
 
 	for _, test := range tests {
