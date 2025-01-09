@@ -57,7 +57,7 @@ func TestExampleScripts(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer file.Close()
-			if err := ExecuteFile(file, test.args); err != nil {
+			if err := ExecuteFile(file, test.args, false); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -74,7 +74,7 @@ func TestExecute(t *testing.T) {
 			name:   "execute single script",
 			script: `result = run_local("echo 'Hello World!'")`,
 			exec: func(t *testing.T, script string) {
-				if err := Execute("run_local", strings.NewReader(script), ArgMap{}); err != nil {
+				if err := Execute("run_local", strings.NewReader(script), ArgMap{}, false); err != nil {
 					t.Fatal(err)
 				}
 			},

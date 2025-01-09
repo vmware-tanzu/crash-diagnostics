@@ -13,8 +13,8 @@ import (
 
 type ArgMap map[string]string
 
-func Execute(name string, source io.Reader, args ArgMap) error {
-	star, err := newExecutor(args)
+func Execute(name string, source io.Reader, args ArgMap, restrictedMode bool) error {
+	star, err := newExecutor(args, restrictedMode)
 	if err != nil {
 		return err
 	}
@@ -22,8 +22,8 @@ func Execute(name string, source io.Reader, args ArgMap) error {
 	return execute(star, name, source)
 }
 
-func ExecuteFile(file *os.File, args ArgMap) error {
-	return Execute(file.Name(), file, args)
+func ExecuteFile(file *os.File, args ArgMap, restrictedMode bool) error {
+	return Execute(file.Name(), file, args, restrictedMode)
 }
 
 type StarlarkModule struct {
@@ -32,7 +32,7 @@ type StarlarkModule struct {
 }
 
 func ExecuteWithModules(name string, source io.Reader, args ArgMap, modules ...StarlarkModule) error {
-	star, err := newExecutor(args)
+	star, err := newExecutor(args, false)
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func ExecuteWithModules(name string, source io.Reader, args ArgMap, modules ...S
 	return execute(star, name, source)
 }
 
-func newExecutor(args ArgMap) (*starlark.Executor, error) {
+func newExecutor(args ArgMap, restrictedMode bool) (*starlark.Executor, error) {
 	star := starlark.New()
 
 	if args != nil {
