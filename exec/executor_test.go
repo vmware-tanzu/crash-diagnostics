@@ -91,6 +91,7 @@ def multiply(x, y):
 					"multiply",
 					strings.NewReader(script),
 					ArgMap{},
+					false,
 					StarlarkModule{Name: "lib", Source: strings.NewReader(mod)}); err != nil {
 					t.Fatal(err)
 				}

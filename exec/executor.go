@@ -31,8 +31,8 @@ type StarlarkModule struct {
 	Source io.Reader
 }
 
-func ExecuteWithModules(name string, source io.Reader, args ArgMap, modules ...StarlarkModule) error {
-	star, err := newExecutor(args, false)
+func ExecuteWithModules(name string, source io.Reader, args ArgMap, restrictedMode bool, modules ...StarlarkModule) error {
+	star, err := newExecutor(args, restrictedMode)
 	if err != nil {
 		return err
 	}
