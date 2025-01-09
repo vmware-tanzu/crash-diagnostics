@@ -1,0 +1,20 @@
+## @copyright Copyright Broadcom. All Rights Reserved.
+## The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+## @license For licensing, see LICENSE.md.
+
+# object kinds to capture
+kinds = [
+"SRS",
+]
+
+def capture_kcp_objects():
+	kcp_provider_result=kcp_provider(kcp_admin_secret_namespace="",kcp_admin_secret_name="")
+    contexts = kcp_provider_result.get("contexts")
+	# capture kubernetes objects in all kcp logical clusters
+	for context in contexts:
+	    print("Capturing kcp objects for ", context)
+	    config = kube_config(capi_provider=kcp_provider,cluster_context=context)
+	    kube_capture(kube_config=config,what="objects", kinds=[kind], namespaces=namespace)
+
+def main():
+	capture_kcp_objects()
