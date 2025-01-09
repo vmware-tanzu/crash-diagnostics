@@ -29,5 +29,6 @@ pod_ns=["default", "kube-system"]
 kube_capture(what="logs", namespaces=pod_ns)
 kube_capture(what="objects", kinds=["pods", "services"], namespaces=pod_ns)
 kube_capture(what="objects", kinds=["deployments", "replicasets"], groups=["apps"], namespaces=pod_ns)
+kube_capture(what="objects", output_format="yaml", kinds=["deployments", "replicasets"], groups=["apps"], namespaces=pod_ns)
 
 archive(output_file="diagnostics.tar.gz", source_paths=[conf.workdir])

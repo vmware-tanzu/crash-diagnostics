@@ -22,10 +22,13 @@ func KubeCaptureFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.T
 	var groups, categories, kinds, namespaces, versions, names, labels, containers *starlark.List
 	var kubeConfig *starlarkstruct.Struct
 	var what string
+	var outputFormat string
+	logrus.Info(kwargs)
 
 	if err := starlark.UnpackArgs(
 		identifiers.kubeCapture, args, kwargs,
 		"what", &what,
+		"output_format?", &outputFormat,
 		"groups?", &groups,
 		"categories?", &categories,
 		"kinds?", &kinds,
@@ -61,7 +64,7 @@ func KubeCaptureFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.T
 	data := thread.Local(identifiers.crashdCfg)
 	cfg, _ := data.(*starlarkstruct.Struct)
 	workDirVal, _ := cfg.Attr("workdir")
-	resultDir, err := write(ctx, trimQuotes(workDirVal.String()), what, client, k8s.SearchParams{
+	resultDir, err := write(ctx, trimQuotes(workDirVal.String()), what, outputFormat, client, k8s.SearchParams{
 		Groups:     toSlice(groups),
 		Categories: toSlice(categories),
 		Kinds:      toSlice(kinds),
@@ -85,7 +88,7 @@ func KubeCaptureFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.T
 		}), nil
 }
 
-func write(ctx context.Context, workdir, what string, client *k8s.Client, params k8s.SearchParams) (string, error) {
+func write(ctx context.Context, workdir, what, outputFormat string, client *k8s.Client, params k8s.SearchParams) (string, error) {
 
 	logrus.Debugf("kube_capture(what=%s)", what)
 	switch what {
@@ -103,7 +106,7 @@ func write(ctx context.Context, workdir, what string, client *k8s.Client, params
 		return "", err
 	}
 
-	resultWriter, err := k8s.NewResultWriter(workdir, what, client.CoreRest)
+	resultWriter, err := k8s.NewResultWriter(workdir, what, outputFormat, client.CoreRest)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to initialize writer")
 	}

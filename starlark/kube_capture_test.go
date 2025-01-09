@@ -94,12 +94,44 @@ func TestKubeCapture(t *testing.T) {
 			},
 		},
 		{
+			name: "test with invalid output format",
+			kwargs: func(t *testing.T) []starlark.Tuple {
+				return []starlark.Tuple{
+					[]starlark.Value{starlark.String("what"), starlark.String("objects")},
+					[]starlark.Value{starlark.String("groups"), starlark.NewList([]starlark.Value{starlark.String("core")})},
+					[]starlark.Value{starlark.String("kinds"), starlark.NewList([]starlark.Value{starlark.String("services")})},
+					[]starlark.Value{starlark.String("namespaces"), starlark.NewList([]starlark.Value{starlark.String("default"), starlark.String("kube-system")})},
+					[]starlark.Value{starlark.String("output_format"), starlark.String("xml")},
+				}
+			},
+			eval: func(t *testing.T, kwargs []starlark.Tuple) {
+				val, err := KubeCaptureFn(newTestThreadLocal(t), nil, nil, kwargs)
+				if err != nil {
+					t.Fatalf("failed to execute: %s", err)
+				}
+				resultStruct, ok := val.(*starlarkstruct.Struct)
+				if !ok {
+					t.Fatalf("expecting type *starlarkstruct.Struct, got %T", val)
+				}
+
+				errVal, err := resultStruct.Attr("error")
+				if err != nil {
+					t.Error(err)
+				}
+				resultErr := errVal.(starlark.String).GoString()
+				if resultErr != "failed to initialize writer: unsupported output format: xml" {
+					t.Fatalf("Expected error \"unsupported output format: xml\" but got: \"%s\"", resultErr)
+				}
+			},
+		},
+		{
 			name: "test for non-namespaced objects",
 			kwargs: func(t *testing.T) []starlark.Tuple {
 				return []starlark.Tuple{
 					[]starlark.Value{starlark.String("what"), starlark.String("objects")},
 					[]starlark.Value{starlark.String("groups"), starlark.NewList([]starlark.Value{starlark.String("core")})},
 					[]starlark.Value{starlark.String("kinds"), starlark.NewList([]starlark.Value{starlark.String("nodes")})},
+					[]starlark.Value{starlark.String("output_format"), starlark.String("yaml")},
 				}
 			},
 			eval: func(t *testing.T, kwargs []starlark.Tuple) {
@@ -150,7 +182,9 @@ func TestKubeCapture(t *testing.T) {
 				if !strings.Contains(files[0].Name(), "nodes-") {
 					t.Errorf("expecting to find a node output file, but fond: %s", files[0].Name())
 				}
-
+				if !strings.HasSuffix(files[0].Name(), ".yaml") {
+					t.Errorf("expecting to find a yaml file, but found: %s", files[0].Name())
+				}
 			},
 		},
 		{
@@ -460,6 +494,9 @@ kube_data = kube_capture(what="objects", groups=["core"], kinds=["nodes"])`, wor
 				}
 				if !strings.Contains(files[0].Name(), "nodes-") {
 					t.Errorf("expecting to find a node output file, but fond: %s", files[0].Name())
+				}
+				if !strings.HasSuffix(files[0].Name(), ".json") {
+					t.Errorf("expecting to find a json file, but found: %s", files[0].Name())
 				}
 			},
 		},

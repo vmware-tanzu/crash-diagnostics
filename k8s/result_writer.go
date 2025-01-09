@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/pkg/errors"
+	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/client-go/rest"
 )
 
@@ -13,9 +15,10 @@ type ResultWriter struct {
 	workdir   string
 	writeLogs bool
 	restApi   rest.Interface
+	printer   printers.ResourcePrinter
 }
 
-func NewResultWriter(workdir, what string, restApi rest.Interface) (*ResultWriter, error) {
+func NewResultWriter(workdir, what, outputFormat string, restApi rest.Interface) (*ResultWriter, error) {
 	var err error
 	workdir = filepath.Join(workdir, BaseDirname)
 	if err := os.MkdirAll(workdir, 0744); err != nil && !os.IsExist(err) {
@@ -23,8 +26,17 @@ func NewResultWriter(workdir, what string, restApi rest.Interface) (*ResultWrite
 	}
 
 	writeLogs := what == "logs" || what == "all"
+	var printer printers.ResourcePrinter
+	if outputFormat == "" || outputFormat == "json" {
+		printer = &printers.JSONPrinter{}
+	} else if outputFormat == "yaml" {
+		printer = &printers.YAMLPrinter{}
+	} else {
+		return nil, errors.Errorf("unsupported output format: %s", outputFormat)
+	}
 	return &ResultWriter{
 		workdir:   workdir,
+		printer:   printer,
 		writeLogs: writeLogs,
 		restApi:   restApi,
 	}, err
@@ -44,6 +56,7 @@ func (w *ResultWriter) Write(ctx context.Context, searchResults []SearchResult) 
 	for _, result := range searchResults {
 		objWriter := ObjectWriter{
 			writeDir: w.workdir,
+			printer:  w.printer,
 		}
 		writeDir, err := objWriter.Write(result)
 		if err != nil {

@@ -12,6 +12,7 @@ import (
 
 type ObjectWriter struct {
 	writeDir string
+	printer  printers.ResourcePrinter
 }
 
 func (w ObjectWriter) Write(result SearchResult) (string, error) {
@@ -35,7 +36,13 @@ func (w ObjectWriter) Write(result SearchResult) (string, error) {
 	}
 
 	now := time.Now().Format("200601021504.0000")
-	path := filepath.Join(w.writeDir, fmt.Sprintf("%s-%s.json", result.ResourceName, now))
+	var extension string
+	if _, ok := w.printer.(*printers.JSONPrinter); ok {
+		extension = "json"
+	} else {
+		extension = "yaml"
+	}
+	path := filepath.Join(w.writeDir, fmt.Sprintf("%s-%s.%s", result.ResourceName, now, extension))
 
 	file, err := os.Create(path)
 	if err != nil {
@@ -45,8 +52,7 @@ func (w ObjectWriter) Write(result SearchResult) (string, error) {
 
 	logrus.Debugf("objectWriter: saving %s search results to: %s", result.ResourceName, path)
 
-	printer := new(printers.JSONPrinter)
-	if err := printer.PrintObj(result.List, file); err != nil {
+	if err := w.printer.PrintObj(result.List, file); err != nil {
 		if wErr := writeError(err, file); wErr != nil {
 			return "", fmt.Errorf("objectWriter: failed to write previous err [%s] to file: %s", err, wErr)
 		}
