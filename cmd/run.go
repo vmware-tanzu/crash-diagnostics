@@ -14,14 +14,16 @@ import (
 )
 
 type runFlags struct {
-	args     map[string]string
-	argsFile string
+	args           map[string]string
+	argsFile       string
+	restrictedMode bool
 }
 
 func defaultRunFlags() *runFlags {
 	return &runFlags{
-		args:     make(map[string]string),
-		argsFile: ArgsFile,
+		args:           make(map[string]string),
+		argsFile:       ArgsFile,
+		restrictedMode: false,
 	}
 }
 
@@ -40,6 +42,7 @@ func newRunCommand() *cobra.Command {
 	}
 	cmd.Flags().StringToStringVar(&flags.args, "args", flags.args, "comma-separated key=value pairs passed to the script (i.e. --args 'key0=val0,key1=val1')")
 	cmd.Flags().StringVar(&flags.argsFile, "args-file", flags.argsFile, "path to a file containing key=value argument pairs that are passed to the script file")
+	cmd.Flags().BoolVar(&flags.restrictedMode, "restrictedMode", flags.restrictedMode, "run the script in a restricted mode that prevents usage of certain grammar functions")
 	return cmd
 }
 
@@ -55,7 +58,7 @@ func run(flags *runFlags, path string) error {
 		return err
 	}
 
-	if err := exec.ExecuteFile(file, scriptArgs); err != nil {
+	if err := exec.ExecuteFile(file, scriptArgs, flags.restrictedMode); err != nil {
 		return fmt.Errorf("execution failed for %s: %w", file.Name(), err)
 	}
 

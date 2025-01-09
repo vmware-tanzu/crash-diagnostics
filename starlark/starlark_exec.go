@@ -20,10 +20,10 @@ type Executor struct {
 	result  starlark.StringDict
 }
 
-func New() *Executor {
+func New(restrictedMode ...bool) *Executor {
 	return &Executor{
 		thread:  &starlark.Thread{Name: "crashd"},
-		predecs: newPredeclareds(),
+		predecs: newPredeclareds(restrictedMode),
 	}
 }
 
@@ -117,8 +117,9 @@ func setupLocalDefaults(thread *starlark.Thread) error {
 // newPredeclareds creates string dictionary containing the
 // global built-ins values and functions available to the
 // running script.
-func newPredeclareds() starlark.StringDict {
-	return starlark.StringDict{
+func newPredeclareds(restrictedMode []bool) starlark.StringDict {
+
+	dict := starlark.StringDict{
 		identifiers.os:                setupOSStruct(),
 		identifiers.crashdCfg:         starlark.NewBuiltin(identifiers.crashdCfg, crashdConfigFn),
 		identifiers.sshCfg:            starlark.NewBuiltin(identifiers.sshCfg, SshConfigFn),
@@ -141,4 +142,13 @@ func newPredeclareds() starlark.StringDict {
 		identifiers.setDefaults:       starlark.NewBuiltin(identifiers.setDefaults, SetDefaultsFunc),
 		identifiers.log:               starlark.NewBuiltin(identifiers.log, logFunc),
 	}
+
+	if len(restrictedMode) > 0 && restrictedMode[0] {
+		logrus.Info("Running crashd in restricted mode. Some functions will be disabled from the grammar.")
+		delete(dict, identifiers.runLocal)
+		delete(dict, identifiers.captureLocal)
+		delete(dict, identifiers.copyTo)
+	}
+
+	return dict
 }

@@ -103,6 +103,13 @@ DEBU[0001] run: executing command on 170.10.20.30 using ssh: [sudo df -i]
 ...
 ```
 
+To run crashd in a `restrictedMode`, use the `--restrictedMode` flag as shown:
+
+```
+$> crashd run --restrictedMode diagnostics.crsh
+```
+Restricted mode is used to prevent the execution of potentially harmful commands.  In restricted mode, the following commands are disabled: `run_local`, `capture_local`, `copy_to`
+
 ## Compute Resource Providers
 Crashd utilizes the concept of a provider to enumerate compute resources. Each implementation of a provider is responsible for enumerating compute resources on which Crashd can execute commands using a transport (i.e. SSH). Crashd comes with several providers including
 
