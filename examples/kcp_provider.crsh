@@ -5,6 +5,7 @@
 # object kinds to capture
 kinds = [
 "space",
+"configmap"
 ]
 
 def capture_kcp_objects():

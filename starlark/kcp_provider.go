@@ -43,6 +43,8 @@ func KcpProviderFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.T
 
 	var contexts []starlark.Value
 	contexts = append(contexts, starlark.String("tanzu-cli-Falcons_GCP_New-staging-5a2f0150:project-ashindov"))
+	contexts = append(contexts, starlark.String("tanzu-cli-Falcons_GCP_New-staging-5a2f0150:project-ashindov:services-space"))
+
 	kcpProviderDict["contexts"] = starlark.NewList(contexts)
 
 	return starlarkstruct.FromStringDict(starlark.String(identifiers.kcpProvider), kcpProviderDict), nil
