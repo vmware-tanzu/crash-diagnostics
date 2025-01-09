@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/pkg/errors"
 	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/client-go/rest"
 )
@@ -26,10 +27,12 @@ func NewResultWriter(workdir, what, outputFormat string, restApi rest.Interface)
 
 	writeLogs := what == "logs" || what == "all"
 	var printer printers.ResourcePrinter
-	if outputFormat == "json" {
+	if outputFormat == "" || outputFormat == "json" {
 		printer = &printers.JSONPrinter{}
 	} else if outputFormat == "yaml" {
 		printer = &printers.YAMLPrinter{}
+	} else {
+		return nil, errors.Errorf("unsupported output format: %s", outputFormat)
 	}
 	return &ResultWriter{
 		workdir:   workdir,

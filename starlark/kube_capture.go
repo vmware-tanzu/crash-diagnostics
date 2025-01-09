@@ -100,12 +100,6 @@ func write(ctx context.Context, workdir, what, outputFormat string, client *k8s.
 	default:
 		return "", errors.Errorf("don't know how to get: %s", what)
 	}
-	if outputFormat == "" {
-		outputFormat = "json"
-	}
-	if outputFormat != "json" && outputFormat != "yaml" {
-		return "", errors.Errorf("unsupported output format: %s", outputFormat)
-	}
 
 	searchResults, err := client.Search(ctx, params)
 	if err != nil {
