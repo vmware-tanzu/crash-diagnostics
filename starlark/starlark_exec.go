@@ -143,7 +143,7 @@ func newPredeclareds(restrictedMode []bool) starlark.StringDict {
 		identifiers.log:               starlark.NewBuiltin(identifiers.log, logFunc),
 	}
 
-	if len(restrictedMode) > 0 && !restrictedMode[0] {
+	if len(restrictedMode) > 0 && restrictedMode[0] {
 		logrus.Info("Running crashd in restricted mode. Some functions will be disabled from the grammar.")
 		delete(dict, identifiers.runLocal)
 		delete(dict, identifiers.captureLocal)
