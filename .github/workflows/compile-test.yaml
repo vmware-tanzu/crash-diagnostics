@@ -2,7 +2,7 @@ name: Crash Diagnostics Build
 on: [push, pull_request]
 jobs:
   go-build:
-    name: Build-Test-Binary
+    name: coBuild-Test-Binary
     runs-on: ubuntu-latest
     steps:
 
@@ -27,7 +27,7 @@ jobs:
       run: GO111MODULE=on go run .ci/prebuild/gofmt_check.go
 
     - name: Run linter
-      uses: golangci/golangci-lint-action@v3.2.0
+      uses: golangci/golangci-lint-action@v6.1.1
       with:
         version: v1.63.4
         only-new-issues: true

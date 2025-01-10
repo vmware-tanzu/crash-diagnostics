@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/vladimirvivien/gexe"
 )
@@ -67,7 +68,7 @@ func (s *SSHServer) Start() error {
 	result := proc.Result()
 	if proc.Err() != nil {
 		msg := fmt.Sprintf("%s: %s", proc.Err(), result)
-		return fmt.Errorf(msg)
+		return errors.New(msg)
 	}
 	logrus.Infof("SSH server container started: name=%s, port=%s (docker id - %s)", s.name, s.port, result)
 
@@ -90,7 +91,7 @@ func (s *SSHServer) Stop() error {
 	result := proc.Result()
 	if proc.Err() != nil {
 		msg := fmt.Sprintf("failed to stop container: %s: %s", proc.Err(), result)
-		return fmt.Errorf(msg)
+		return errors.New(msg)
 	}
 
 	// attempt to remove container if still lingering
@@ -100,7 +101,7 @@ func (s *SSHServer) Stop() error {
 		result := proc.Result()
 		if proc.Err() != nil {
 			msg := fmt.Sprintf("failed to remove container: %s: %s", proc.Err(), result)
-			return fmt.Errorf(msg)
+			return errors.New(msg)
 		}
 		logrus.Info("SSH server container removed: ", result)
 	}
