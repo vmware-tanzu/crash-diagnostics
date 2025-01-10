@@ -8,6 +8,11 @@ kinds = [
 "configmap"
 ]
 
+def configure_work_dir(context):
+    work_dir = args.workdir if hasattr(args, "workdir") else fail("Error: workdir argument is required but not provided.")
+    context_dir = work_dir + "/" + context
+    conf = crashd_config(workdir=context_dir)
+
 def capture_kcp_objects():
     kcp_provider_result = kcp_provider(
         kcp_admin_secret_namespace="",
@@ -16,16 +21,16 @@ def capture_kcp_objects():
 
     # capture kubernetes objects from all kcp workspaces
     for context in kcp_provider_result.contexts:
-        # TODO convert context to directory path and change workdir so that preserve directory structure
         print("Capturing kcp objects for", context)
+
+        # set kubeconfig path and context in threadlocal
         set_defaults(kube_config(capi_provider=kcp_provider_result, cluster_context=context))
+
+        # configure work directory based on context name - context-name should use "/"
+        configure_work_dir(context)
         kube_capture(what="objects", kinds=kinds, namespaces=["default"])
 
-
 def main():
-    work_dir = args.workdir if hasattr(args, "workdir") else fail("Error: workdir argument is required but not provided.")
-    conf = crashd_config(workdir=work_dir)
-
     capture_kcp_objects()
 
 main()
