@@ -6,6 +6,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -225,7 +226,12 @@ func (k8sc *Client) _search(ctx context.Context, groups, categories, kinds, name
 	} else {
 		nsNames, err := getNamespaces(ctx, k8sc)
 		if err != nil {
-			return nil, err
+			if !errors.IsNotFound(err) {
+				return nil, err
+			}
+			//This is the case when namespace resource does not exist in the cluster.This is KCP case.
+			//Continue the execution of this function with emtpy namespace list
+			nsNames = append(nsNames, "default")
 		}
 		nsList = nsNames
 	}
