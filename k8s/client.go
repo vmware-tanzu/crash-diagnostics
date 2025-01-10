@@ -228,10 +228,9 @@ func (k8sc *Client) _search(ctx context.Context, groups, categories, kinds, name
 		if err != nil {
 			if !errors.IsNotFound(err) {
 				return nil, err
-			} else {
-				logrus.Warnf("failed to list namespaces:%v. Switch to %s", err, "default")
-				nsNames = append(nsNames, "default")
 			}
+			//This is the case when namespace resource does not exist in the cluster.This is KCP case.
+			//Continue the execution of this function with emtpy namespace list
 
 		}
 		nsList = nsNames
