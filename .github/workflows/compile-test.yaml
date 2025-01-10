@@ -1,5 +1,5 @@
 name: Crash Diagnostics Build
-on: [push, pull_request]
+on: [pull_request]
 jobs:
   go-build:
     name: Build-Test-Binary
@@ -9,7 +9,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
-        go-version: 1.19.10
+        go-version: 1.22.0
       id: go
 
     - name: Check out code into the Go module directory
@@ -20,15 +20,15 @@ jobs:
         sudo ufw allow 2200:2300/tcp
         sudo ufw enable
         sudo ufw status verbose
-        go get sigs.k8s.io/kind@v0.14.0
+        go get sigs.k8s.io/kind@v0.26.0
         go test -timeout 600s -v -p 1 ./...
 
     - name: Run gofmt
       run: GO111MODULE=on go run .ci/prebuild/gofmt_check.go
 
     - name: Run linter
-      uses: golangci/golangci-lint-action@v3.2.0
+      uses: golangci/golangci-lint-action@v6.1.1
       with:
-        version: v1.53.3
+        version: v1.63.4
         only-new-issues: true
         args: --timeout 5m

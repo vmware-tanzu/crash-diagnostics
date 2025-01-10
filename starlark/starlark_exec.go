@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 	"go.starlark.net/starlark"
+	"go.starlark.net/syntax"
 )
 
 type Executor struct {
@@ -39,10 +40,10 @@ func (e *Executor) AddPredeclared(name string, value starlark.Value) {
 // The result of the loaded module are added to the global predeclared
 // values used in Exec call.
 func (e *Executor) Preload(name string, source io.Reader) error {
-	result, err := starlark.ExecFile(e.thread, name, source, e.predecs)
+	result, err := starlark.ExecFileOptions(syntax.LegacyFileOptions(), e.thread, name, source, e.predecs)
 	if err != nil {
 		if evalErr, ok := err.(*starlark.EvalError); ok {
-			return fmt.Errorf(evalErr.Backtrace())
+			return errors.New(evalErr.Backtrace())
 		}
 		return err
 	}
@@ -61,10 +62,10 @@ func (e *Executor) Exec(name string, source io.Reader) error {
 	}
 	e.thread.SetLocal(identifiers.scriptName, name)
 
-	result, err := starlark.ExecFile(e.thread, name, source, e.predecs)
+	result, err := starlark.ExecFileOptions(syntax.LegacyFileOptions(), e.thread, name, source, e.predecs)
 	if err != nil {
 		if evalErr, ok := err.(*starlark.EvalError); ok {
-			return fmt.Errorf(evalErr.Backtrace())
+			return errors.New(evalErr.Backtrace())
 		}
 		return err
 	}
