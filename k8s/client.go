@@ -231,7 +231,7 @@ func (k8sc *Client) _search(ctx context.Context, groups, categories, kinds, name
 			}
 			//This is the case when namespace resource does not exist in the cluster.This is KCP case.
 			//Continue the execution of this function with emtpy namespace list
-
+			nsNames = append(nsNames, "default")
 		}
 		nsList = nsNames
 	}
