@@ -6,8 +6,9 @@ package k8s
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"

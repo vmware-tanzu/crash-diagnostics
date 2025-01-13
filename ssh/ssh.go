@@ -64,7 +64,7 @@ func sshRunProc(args SSHArgs, agent Agent, cmd string) (io.Reader, error) {
 
 	if agent != nil {
 		logrus.Debugf("Adding agent info: %s", agent.GetEnvVariables())
-		e = e.Envs(agent.GetEnvVariables())
+		e = e.Envs(agent.GetEnvVariables()...)
 	}
 
 	var proc *exec.Proc

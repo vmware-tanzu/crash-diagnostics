@@ -132,13 +132,17 @@ func TestAgent(t *testing.T) {
 			name: "GetEnvVariables",
 			assert: func(t *testing.T, agent Agent) {
 				vars := agent.GetEnvVariables()
-				if len(strings.Split(vars, " ")) != 2 {
+				if len(vars) != 2 {
 					t.Fatalf("not enough variables")
 				}
 
-				match, err := regexp.MatchString(`SSH_AGENT_PID=[0-9]+ SSH_AUTH_SOCK=\S*`, vars)
-				if err != nil || !match {
-					t.Fatalf("format does not match")
+				matchPID, err := regexp.MatchString(`SSH_AGENT_PID=[0-9]+`, vars[0])
+				if err != nil || !matchPID {
+					t.Fatalf("SSH_AGENT_PID format does not match")
+				}
+				matchSock, err := regexp.MatchString(`SSH_AUTH_SOCK=\S*`, vars[1])
+				if err != nil || !matchSock {
+					t.Fatalf("SSH_AUTH_SOCK format does not match")
 				}
 			},
 		},

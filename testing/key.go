@@ -13,8 +13,16 @@ import (
 // WriteKeys copies the static private key in variable privateKey
 // to a local file.
 func WriteKeys(rootPath string) error {
+	// Use 0444 on github and 0600 on local dev because for some reason the docker volume mount in the action runner requires 0444 to work with the file
+	isGitHubActions := os.Getenv("GITHUB_ACTIONS") == "true"
+	var keyPerm os.FileMode
+	if isGitHubActions {
+		keyPerm = 0444
+	} else {
+		keyPerm = 0600
+	}
 	pkPath := filepath.Join(rootPath, "id_rsa")
-	pkFile, err := os.OpenFile(pkPath, os.O_RDWR|os.O_CREATE, 0600)
+	pkFile, err := os.OpenFile(pkPath, os.O_RDWR|os.O_CREATE, keyPerm)
 	if err != nil {
 		return err
 	}

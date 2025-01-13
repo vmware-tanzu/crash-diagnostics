@@ -24,7 +24,7 @@ type Agent interface {
 	AddKey(keyPath string) error
 	RemoveKey(keyPath string) error
 	Stop() error
-	GetEnvVariables() string
+	GetEnvVariables() []string
 }
 
 // agentInfo captures the connection information of the ssh-agent
@@ -50,7 +50,7 @@ func (agent *agent) AddKey(keyPath string) error {
 		return errors.New("ssh-add not found")
 	}
 
-	p := e.Envs(agent.GetEnvVariables()).
+	p := e.Envs(agent.GetEnvVariables()...).
 		RunProc(fmt.Sprintf("%s %s", sshAddCmd, keyPath))
 	if err := p.Err(); err != nil {
 		return errors.Wrapf(err, "could not add key %s to ssh-agent", keyPath)
@@ -67,7 +67,7 @@ func (agent *agent) RemoveKey(keyPath string) error {
 		return errors.New("ssh-add not found")
 	}
 
-	p := e.Envs(agent.GetEnvVariables()).
+	p := e.Envs(agent.GetEnvVariables()...).
 		RunProc(fmt.Sprintf("%s -d %s", sshAddCmd, keyPath))
 	if err := p.Err(); err != nil {
 		return errors.Wrapf(err, "could not add key %s to ssh-agent", keyPath)
@@ -88,15 +88,19 @@ func (agent *agent) Stop() error {
 	}
 
 	logrus.Debugf("stopping the ssh-agent with Pid: %s", agent.Pid)
-	p := gexe.Envs(agent.GetEnvVariables()).RunProc("ssh-agent -k")
+	e := gexe.New()
+	p := e.Envs(agent.GetEnvVariables()...).RunProc("ssh-agent -k")
 	logrus.Debugf("ssh-agent stopped: %s", p.Result())
 
 	return p.Err()
 }
 
 // GetEnvVariables returns the space separated key=value information used to communicate with the ssh-agent
-func (agent *agent) GetEnvVariables() string {
-	return fmt.Sprintf("%s=%s %s=%s", AgentPidIdentifier, agent.Pid, AuthSockIdentifier, agent.AuthSockPath)
+func (agent *agent) GetEnvVariables() []string {
+	return []string{
+		fmt.Sprintf("%s=%s", AgentPidIdentifier, agent.Pid),
+		fmt.Sprintf("%s=%s", AuthSockIdentifier, agent.AuthSockPath),
+	}
 }
 
 // StartAgent starts the ssh-agent process and returns the SSH authentication parameters.

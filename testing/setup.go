@@ -67,7 +67,7 @@ func Init() (*TestSupport, error) {
 	logrus.Infof("Created testing root dir: %s", testingRoot)
 
 	workDir := filepath.Join(testingRoot, "work")
-	if err := os.MkdirAll(workDir, 0700); err != nil && !os.IsExist(err) {
+	if err := os.MkdirAll(workDir, 0765); err != nil && !os.IsExist(err) {
 		return nil, err
 	}
 	logrus.Infof("Created testing work dir: %s", workDir)
