@@ -17,7 +17,7 @@ import (
 func FetchWorkloadConfig(clusterName, clusterNamespace, mgmtKubeConfigPath string) (string, error) {
 	var filePath string
 	cmdStr := fmt.Sprintf(`kubectl get secrets/%s-kubeconfig --template '{{.data.value}}' --namespace=%s --kubeconfig %s`, clusterName, clusterNamespace, mgmtKubeConfigPath)
-	p := gexe.StartProc(cmdStr)
+	p := gexe.RunProc(cmdStr)
 	if p.Err() != nil {
 		return filePath, fmt.Errorf("kubectl get secrets failed: %s: %s", p.Err(), p.Result())
 	}

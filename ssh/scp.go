@@ -47,7 +47,7 @@ func CopyFrom(args SSHArgs, agent Agent, rootDir string, sourcePath string) erro
 
 	if agent != nil {
 		logrus.Debugf("scp: copyFrom: adding agent info: %s", agent.GetEnvVariables())
-		e = e.Envs(agent.GetEnvVariables())
+		e = e.Envs(agent.GetEnvVariables()...)
 	}
 
 	maxRetries := args.MaxRetries
@@ -97,7 +97,7 @@ func CopyTo(args SSHArgs, agent Agent, sourcePath, targetPath string) error {
 
 	if agent != nil {
 		logrus.Debugf("scp: adding agent info: %s", agent.GetEnvVariables())
-		e = e.Envs(agent.GetEnvVariables())
+		e = e.Envs(agent.GetEnvVariables()...)
 	}
 
 	maxRetries := args.MaxRetries

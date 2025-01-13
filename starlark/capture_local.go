@@ -47,7 +47,7 @@ func captureLocalFunc(thread *starlark.Thread, b *starlark.Builtin, args starlar
 		return starlark.String(msg), nil
 	}
 
-	p := gexe.StartProc(cmdStr)
+	p := gexe.RunProc(cmdStr)
 	// upon error, write error in file, return filepath
 	if p.Err() != nil {
 		msg := fmt.Sprintf("%s error: %s: %s", identifiers.captureLocal, p.Err(), p.Result())

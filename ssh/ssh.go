@@ -64,7 +64,7 @@ func sshRunProc(args SSHArgs, agent Agent, cmd string) (io.Reader, error) {
 
 	if agent != nil {
 		logrus.Debugf("Adding agent info: %s", agent.GetEnvVariables())
-		e = e.Envs(agent.GetEnvVariables())
+		e = e.Envs(agent.GetEnvVariables()...)
 	}
 
 	var proc *exec.Proc
@@ -74,7 +74,7 @@ func sshRunProc(args SSHArgs, agent Agent, cmd string) (io.Reader, error) {
 	}
 	retries := wait.Backoff{Steps: maxRetries, Duration: time.Millisecond * 80, Jitter: 0.1}
 	if err := wait.ExponentialBackoff(retries, func() (bool, error) {
-		p := e.StartProc(effectiveCmd)
+		p := e.RunProc(effectiveCmd)
 		if p.Err() != nil {
 			logrus.Warn(fmt.Sprintf("ssh: failed to connect to %s: error '%s %s': retrying connection", args.Host, p.Err(), p.Result()))
 			return false, p.Err()
