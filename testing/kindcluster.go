@@ -63,7 +63,7 @@ func (k *KindCluster) MakeKubeConfigFile(path string) error {
 	defer f.Close()
 
 	logrus.Infof("Retrieving kind kubeconfig for cluster: kind get kubeconfig --name %s", k.name)
-	p := k.e.StartProc(fmt.Sprintf(`kind get kubeconfig --name %s`, k.name))
+	p := k.e.RunProc(fmt.Sprintf(`kind get kubeconfig --name %s`, k.name))
 	if p.Err() != nil {
 		return fmt.Errorf("failed to generate kind kubeconfig: %s: %s", p.Result(), p.Err())
 	}

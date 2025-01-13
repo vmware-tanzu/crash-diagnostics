@@ -108,7 +108,7 @@ func StartAgent() (Agent, error) {
 	}
 
 	logrus.Debugf("starting %s", sshAgentCmd)
-	p := e.StartProc(fmt.Sprintf("%s -s", sshAgentCmd))
+	p := e.RunProc(fmt.Sprintf("%s -s", sshAgentCmd))
 	if p.Err() != nil {
 		return nil, errors.Wrap(p.Err(), "failed to start ssh agent")
 	}

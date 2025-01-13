@@ -14,7 +14,7 @@ import (
 // to a local file.
 func WriteKeys(rootPath string) error {
 	pkPath := filepath.Join(rootPath, "id_rsa")
-	pkFile, err := os.OpenFile(pkPath, os.O_RDWR|os.O_CREATE, 0444)
+	pkFile, err := os.OpenFile(pkPath, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		return err
 	}
@@ -25,7 +25,7 @@ func WriteKeys(rootPath string) error {
 	}
 
 	pubPath := filepath.Join(rootPath, "id_rsa.pub")
-	pubFile, err := os.OpenFile(pubPath, os.O_RDWR|os.O_CREATE, 0444)
+	pubFile, err := os.OpenFile(pubPath, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}

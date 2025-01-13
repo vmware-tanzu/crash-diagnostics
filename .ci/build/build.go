@@ -30,7 +30,6 @@ func main() {
 
 func gobuild(arch, os, ldflags, binary string) {
 	b := gexe.New()
-	b.Conf.SetPanicOnErr(true)
 	b.SetVar("arch", arch)
 	b.SetVar("os", os)
 	b.SetVar("ldflags", ldflags)
