@@ -161,6 +161,52 @@ spec:
 	}
 }
 
+func (k *KindCluster) StartNginxPod() error {
+	logrus.Infof("Starting pod in kind cluster %s", k.name)
+	podConfig := `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    ports:
+    - containerPort: 80
+
+`
+	
+	filePath := fmt.Sprintf("%s/nginx-pod.yaml", k.tmpRootDir)
+	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to create file for pod configuration: %s", err)
+	}
+	defer file.Close()
+
+	if _, err := file.WriteString(podConfig); err != nil {
+		return fmt.Errorf("failed to write pod configuration to file: %s", err)
+	}
+	p := k.e.RunProc(fmt.Sprintf("timeout 60s bash -c 'while ! kubectl --context kind-%s get sa default -n default &>/dev/null; do sleep 1; done'", k.name))
+	if p.Err() != nil {
+		return fmt.Errorf("default service account has not been created: %s: %s", p.Err(), p.Result())
+	}
+
+	p = k.e.RunProc(fmt.Sprintf(`kubectl --context kind-%s apply -f %s`, k.name, filePath))
+	if p.Err() != nil {
+		return fmt.Errorf("failed to apply pod configuration: %s: %s", p.Err(), p.Result())
+	}
+
+	p = k.e.RunProc(fmt.Sprintf("kubectl --context kind-%s wait --for=condition=Ready pod -l app=nginx --timeout=60s", k.name))
+	if p.Err() != nil {
+		return fmt.Errorf("faild to schedule a pod: %s: %s", p.Err(), p.Result())
+	}
+
+	return nil
+}
+
 func (k *KindCluster) GetKubeCtlContext() string {
 	return fmt.Sprintf("kind-%s", k.name)
 }
