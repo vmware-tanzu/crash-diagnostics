@@ -151,16 +151,41 @@ This configuration function declares and stores configuration needed to connect 
 #### Output
 `kube_config()` returns a struct with the following fields.
 
-| Field | Description |
-| --------| --------- |
-| `path` | The path to the local Kubernetes config that was set |
-| `cluster_context` | The name of a context that was set for the cluster |
-| `capi_provider`|A provider that was set for Cluster-API usage|
-
 #### Example
 ```python
 kube_config(path=args.kube_conf, cluster_context="my-cluster")
 ```
+
+### `kube_exec()`
+This function executes an arbitrary command inside a K8s pod
+
+#### Parameters
+
+| Param            | Description                                                                                                                                                                                     | Required |
+|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
+| `namespace`      | Namespace of the target pod. The default value is 'default'.                                                                                                                                    | No       |
+| `pod`            | The name of the target pod.                                                                                                                                                                     | Yes      | 
+| `container`      | Container name. If omitted, use the kubectl.kubernetes.io/default-container annotation for selecting the container to be attached or the first container in the pod will be chosen.             | No       |
+| `cmd`            | The command to be executed inside the container.                                                                                                                                                | Yes      |
+| `workdir`        | A parent directory where the result file from the executed command will be saved. Defaults to `crashd_config.workdir` or if `crashd_config.workdir` doesn't exist, it defaults to `/tmp/crashd` | No       |
+| `kube_config`    | A struct with Kubernetes configuration.If not provided defaults to Kubernetes config returned by `kube_config()                                                                                 | No       |
+| `timeout_in_seconds`| The maximum duration (in seconds) to wait for the command to complete. If not specified, the default is 120 seconds.                                                                         | No       |
+| `output_file`    | The file (relative to the working directory) where the command output will be streamed. If not specified, the output is appended /workdir/<pod-name>.out                                        | No       |
+
+
+#### Output
+`kube_exec()` returns a struct with the following fields.
+
+| Field           | Description                                                |
+|-----------------|------------------------------------------------------------|
+| `file`          | The path to a file where the command result was redirected |
+| `error`         | An error message if one was encountered                        |
+
+#### Example
+```python
+kube_exec(pod="nginx", output_file="nginx_version.txt",container="nginx", cmd=["nginx", "-v"])
+```
+
 ### `ssh_config()`
 This function creates configuration that can be used to connect via SSH to remote machines.
 

@@ -51,6 +51,7 @@ var (
 
 		kubeCapture       string
 		kubeGet           string
+		kubeExec          string
 		kubeNodesProvider string
 		capvProvider      string
 		capaProvider      string
@@ -88,6 +89,7 @@ var (
 
 		kubeCapture:       "kube_capture",
 		kubeGet:           "kube_get",
+		kubeExec:          "kube_exec",
 		kubeNodesProvider: "kube_nodes_provider",
 		capvProvider:      "capv_provider",
 		capaProvider:      "capa_provider",

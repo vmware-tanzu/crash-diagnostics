@@ -200,6 +200,9 @@ func (t *TestSupport) KindClusterContextName() string {
 func (t *TestSupport) SimulateTerminatingPod() error {
 	return t.kindCluster.SimulateTerminatingPod()
 }
+func (t *TestSupport) StartNginxPod() error {
+	return t.kindCluster.StartNginxPod()
+}
 
 func (t *TestSupport) TearDown() error {
 	var errs []error
