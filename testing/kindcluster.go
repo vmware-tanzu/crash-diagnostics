@@ -176,9 +176,8 @@ spec:
     image: nginx
     ports:
     - containerPort: 80
-
 `
-	
+
 	filePath := fmt.Sprintf("%s/nginx-pod.yaml", k.tmpRootDir)
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
