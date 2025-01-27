@@ -1,0 +1,14 @@
+work_dir = args.workdir if hasattr(args, "workdir") else fail("Error: workdir argument is required but not provided.")
+conf = crashd_config(workdir=work_dir)
+kube_config_path = args.kubeconfig
+set_defaults(kube_config(path=kube_config_path))
+
+# Exec into pod and run a long-running command. The command timeout period is controlled via timeout_in_seconds
+#Output is appended in file under work_dir/<pod name>.out
+kube_exec(namespace=args.namespace,pod="nginx", timeout_in_seconds=3, cmd=["sh", "-c" ,"while true; do echo 'Running'; sleep 1; done"])
+
+# Exec into pod and run short-lived command. The output will be appended in work_dir/<pod name>.out
+kube_exec(pod="nginx", cmd=["ls"])
+
+# Exec into pod and run short-lived command. The output will be stored into file: work_dir/nginx_version.txt
+kube_exec(pod="nginx", output_file="nginx_version.txt",container="nginx", cmd=["nginx", "-v"])

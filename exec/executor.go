@@ -48,7 +48,7 @@ func ExecuteWithModules(name string, source io.Reader, args ArgMap, restrictedMo
 }
 
 func newExecutor(args ArgMap, restrictedMode bool) (*starlark.Executor, error) {
-	star := starlark.New()
+	star := starlark.New(restrictedMode)
 
 	if args != nil {
 		starStruct, err := starlark.NewGoValue(args).ToStarlarkStruct("args")
