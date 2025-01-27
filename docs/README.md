@@ -620,18 +620,19 @@ These are functions used to execute API requests against a running Kubernetes cl
 The `kube_capture` function retrieves Kubernetes API objects and container logs.  The captured information is stored in local files with directory structure similar to that of `kubectl cluster-info dump`.
 
 #### Parameters
-| Param           | Description                                                                              | Required                    |
-|-----------------|------------------------------------------------------------------------------------------|-----------------------------|
-| `what`          | Specifies what to get inclusing `objects` or `logs`                                      | Yes                         |
-| `output_format` | The output format of the captured k8s objects. Supported formats are json & yaml         | No, uses json if omitted    |
-| `groups`        | A list of API groups from which to retrieve API objects.  The core group is named `core` | No                          |
-| `kinds`         | A list of object kinds to select                                                         | No                          |
-| `namespaces`    | A list of namespaces from which to select objects                                        | No                          |
-| `versions`      | A list of API versions used to select objects                                            | No                          |
-| `names`         | A list used to filter retrieved object by names                                          | No                          |
-| `labels`        | A list of label selector expressions used to filter objects                              | No                          |
-| `containers`    | A list of container names used to filter when selecting pod objects                      | No                          |
-| `kube_config`   | The Kubernetes configuration used for this call                                          | No, uses default if omitted |
+| Param           | Description                                                                                  | Required                        |
+|-----------------|----------------------------------------------------------------------------------------------|---------------------------------|
+| `what`          | Specifies what to get inclusing `objects` or `logs`                                          | Yes                             |
+| `output_format` | The output format of the captured k8s objects. Supported formats are json & yaml             | No, uses json if omitted        |
+| `output_mode`   | The output mode of the captured k8s objects. Supported modes are single_file & multiple_files| No, uses single_file if omitted |
+| `groups`        | A list of API groups from which to retrieve API objects.  The core group is named `core`     | No                              |
+| `kinds`         | A list of object kinds to select                                                             | No                              |
+| `namespaces`    | A list of namespaces from which to select objects                                            | No                              |
+| `versions`      | A list of API versions used to select objects                                                | No                              |
+| `names`         | A list used to filter retrieved object by names                                              | No                              |
+| `labels`        | A list of label selector expressions used to filter objects                                  | No                              |
+| `containers`    | A list of container names used to filter when selecting pod objects                          | No                              |
+| `kube_config`   | The Kubernetes configuration used for this call                                              | No, uses default if omitted     |
 
 #### Output
 Function `kube_capture` returns a struct with the following fields.
