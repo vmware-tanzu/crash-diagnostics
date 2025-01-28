@@ -6,6 +6,7 @@ package starlark
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -66,7 +67,7 @@ func KubeCaptureFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.T
 	data := thread.Local(identifiers.crashdCfg)
 	cfg, _ := data.(*starlarkstruct.Struct)
 	workDirVal, _ := cfg.Attr("workdir")
-	resultDir, err := write(ctx, trimQuotes(workDirVal.String()), what, outputFormat, outputMode, client, k8s.SearchParams{
+	resultDir, err := write(ctx, trimQuotes(workDirVal.String()), what, strings.ToLower(outputFormat), strings.ToLower(outputMode), client, k8s.SearchParams{
 		Groups:     toSlice(groups),
 		Categories: toSlice(categories),
 		Kinds:      toSlice(kinds),
