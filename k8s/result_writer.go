@@ -15,13 +15,14 @@ import (
 )
 
 type ResultWriter struct {
-	workdir   string
-	writeLogs bool
-	restApi   rest.Interface
-	printer   printers.ResourcePrinter
+	workdir    string
+	writeLogs  bool
+	restApi    rest.Interface
+	printer    printers.ResourcePrinter
+	singleFile bool
 }
 
-func NewResultWriter(workdir, what, outputFormat string, restApi rest.Interface) (*ResultWriter, error) {
+func NewResultWriter(workdir, what, outputFormat, outputMode string, restApi rest.Interface) (*ResultWriter, error) {
 	var err error
 	workdir = filepath.Join(workdir, BaseDirname)
 	if err := os.MkdirAll(workdir, 0744); err != nil && !os.IsExist(err) {
@@ -37,11 +38,17 @@ func NewResultWriter(workdir, what, outputFormat string, restApi rest.Interface)
 	} else {
 		return nil, errors.Errorf("unsupported output format: %s", outputFormat)
 	}
+
+	if outputMode != "" && outputMode != "single_file" && outputMode != "multiple_files" {
+		return nil, errors.Errorf("unsupported output mode: %s", outputMode)
+	}
+	singleFile := outputMode == "single_file" || outputMode == ""
 	return &ResultWriter{
-		workdir:   workdir,
-		printer:   printer,
-		writeLogs: writeLogs,
-		restApi:   restApi,
+		workdir:    workdir,
+		printer:    printer,
+		singleFile: singleFile,
+		writeLogs:  writeLogs,
+		restApi:    restApi,
 	}, err
 }
 
@@ -62,8 +69,9 @@ func (w *ResultWriter) Write(ctx context.Context, searchResults []SearchResult) 
 
 	for _, result := range searchResults {
 		objWriter := ObjectWriter{
-			writeDir: w.workdir,
-			printer:  w.printer,
+			writeDir:   w.workdir,
+			printer:    w.printer,
+			singleFile: w.singleFile,
 		}
 		writeDir, err := objWriter.Write(result)
 		if err != nil {

@@ -125,6 +125,37 @@ func TestKubeCapture(t *testing.T) {
 			},
 		},
 		{
+			name: "test with invalid output mode",
+			kwargs: func(t *testing.T) []starlark.Tuple {
+				return []starlark.Tuple{
+					[]starlark.Value{starlark.String("what"), starlark.String("objects")},
+					[]starlark.Value{starlark.String("groups"), starlark.NewList([]starlark.Value{starlark.String("core")})},
+					[]starlark.Value{starlark.String("kinds"), starlark.NewList([]starlark.Value{starlark.String("services")})},
+					[]starlark.Value{starlark.String("namespaces"), starlark.NewList([]starlark.Value{starlark.String("default"), starlark.String("kube-system")})},
+					[]starlark.Value{starlark.String("output_mode"), starlark.String("invalid")},
+				}
+			},
+			eval: func(t *testing.T, kwargs []starlark.Tuple) {
+				val, err := KubeCaptureFn(newTestThreadLocal(t), nil, nil, kwargs)
+				if err != nil {
+					t.Fatalf("failed to execute: %s", err)
+				}
+				resultStruct, ok := val.(*starlarkstruct.Struct)
+				if !ok {
+					t.Fatalf("expecting type *starlarkstruct.Struct, got %T", val)
+				}
+
+				errVal, err := resultStruct.Attr("error")
+				if err != nil {
+					t.Error(err)
+				}
+				resultErr := errVal.(starlark.String).GoString()
+				if resultErr != "failed to initialize writer: unsupported output mode: invalid" {
+					t.Fatalf("Expected error \"unsupported output mode: invalid\" but got: \"%s\"", resultErr)
+				}
+			},
+		},
+		{
 			name: "test for non-namespaced objects",
 			kwargs: func(t *testing.T) []starlark.Tuple {
 				return []starlark.Tuple{
@@ -195,6 +226,7 @@ func TestKubeCapture(t *testing.T) {
 					[]starlark.Value{starlark.String("groups"), starlark.NewList([]starlark.Value{starlark.String("core")})},
 					[]starlark.Value{starlark.String("categories"), starlark.NewList([]starlark.Value{starlark.String("all")})},
 					[]starlark.Value{starlark.String("namespaces"), starlark.NewList([]starlark.Value{starlark.String("default"), starlark.String("kube-system")})},
+					[]starlark.Value{starlark.String("output_mode"), starlark.String("multiple_files")},
 				}
 			},
 			eval: func(t *testing.T, kwargs []starlark.Tuple) {
@@ -235,22 +267,22 @@ func TestKubeCapture(t *testing.T) {
 				if !fileInfo.IsDir() {
 					t.Fatalf("expecting starlark function to return a dir")
 				}
-				path := filepath.Join(captureDir, "core_v1", "kube-system")
-				if _, err := os.Stat(path); err != nil {
-					t.Fatalf("expecting %s to be a directory", path)
-				}
-
-				path = filepath.Join(captureDir, "core_v1", "default")
+				path := filepath.Join(captureDir, "core_v1", "default")
 				if _, err := os.Stat(path); err != nil {
 					t.Fatalf("expecting %s to exist: %s", path, err)
+				}
+
+				path = filepath.Join(captureDir, "core_v1", "kube-system", "pods")
+				if _, err := os.Stat(path); err != nil {
+					t.Fatalf("expecting %s to be a directory", path)
 				}
 
 				files, err := os.ReadDir(path)
 				if err != nil {
 					t.Fatalf("ReadeDir(%s) failed: %s", path, err)
 				}
-				if len(files) < 1 {
-					t.Errorf("directory should have at least 1 file but has none: %s:", path)
+				if len(files) < 2 {
+					t.Errorf("directory should have at least 2 files but has none: %s:", path)
 				}
 			},
 		},
