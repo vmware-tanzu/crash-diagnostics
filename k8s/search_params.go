@@ -1,9 +1,10 @@
 package k8s
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
@@ -108,14 +109,14 @@ func parse(inputValue starlark.Value) ([]string, error) {
 	case "string":
 		val, ok := inputValue.(starlark.String)
 		if !ok {
-			err = errors.Errorf("cannot process starlark value %s", inputValue.String())
+			err = fmt.Errorf("cannot process starlark value %s", inputValue.String())
 			break
 		}
 		values = append(values, val.GoString())
 	case "list":
 		val, ok := inputValue.(*starlark.List)
 		if !ok {
-			err = errors.Errorf("cannot process starlark value %s", inputValue.String())
+			err = fmt.Errorf("cannot process starlark value %s", inputValue.String())
 			break
 		}
 		iter := val.Iterate()

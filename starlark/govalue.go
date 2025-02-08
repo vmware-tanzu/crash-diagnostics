@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/pkg/errors"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
@@ -80,7 +79,7 @@ func (v *GoValue) ToDict() (*starlark.Dict, error) {
 				return nil, fmt.Errorf("ToDict failed value conversion: %s", err)
 			}
 			if err := dict.SetKey(key, val); err != nil {
-				return nil, errors.Wrapf(err, "failed to add key: %s", key)
+				return nil, fmt.Errorf("failed to add key: %s: %w", key, err)
 			}
 		}
 	default:

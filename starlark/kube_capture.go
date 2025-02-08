@@ -5,10 +5,10 @@ package starlark
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/vmware-tanzu/crash-diagnostics/k8s"
 	"go.starlark.net/starlark"
@@ -42,12 +42,12 @@ func KubeCaptureFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.T
 		"containers?", &containers,
 		"kube_config?", &kubeConfig,
 	); err != nil {
-		return starlark.None, errors.Wrap(err, "failed to read args")
+		return starlark.None, fmt.Errorf("failed to read args: %w", err)
 	}
 
 	ctx, ok := thread.Local(identifiers.scriptCtx).(context.Context)
 	if !ok || ctx == nil {
-		return starlark.None, fmt.Errorf("script context not found")
+		return starlark.None, errors.New("script context not found")
 	}
 
 	if kubeConfig == nil {
@@ -55,13 +55,13 @@ func KubeCaptureFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.T
 	}
 	path, err := getKubeConfigPathFromStruct(kubeConfig)
 	if err != nil {
-		return starlark.None, errors.Wrap(err, "failed to kubeconfig")
+		return starlark.None, fmt.Errorf("failed to kubeconfig: %w", err)
 	}
 	clusterCtxName := getKubeConfigContextNameFromStruct(kubeConfig)
 
 	client, err := k8s.New(path, clusterCtxName)
 	if err != nil {
-		return starlark.None, errors.Wrap(err, "could not initialize search client")
+		return starlark.None, fmt.Errorf("could not initialize search client: %w", err)
 	}
 
 	data := thread.Local(identifiers.crashdCfg)
@@ -101,7 +101,7 @@ func write(ctx context.Context, workdir, what, outputFormat, outputMode string, 
 		params.Versions = []string{}
 	case "objects", "all", "*":
 	default:
-		return "", errors.Errorf("don't know how to get: %s", what)
+		return "", fmt.Errorf("don't know how to get: %s", what)
 	}
 
 	searchResults, err := client.Search(ctx, params)
@@ -111,11 +111,11 @@ func write(ctx context.Context, workdir, what, outputFormat, outputMode string, 
 
 	resultWriter, err := k8s.NewResultWriter(workdir, what, outputFormat, outputMode, client.CoreRest)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to initialize writer")
+		return "", fmt.Errorf("failed to initialize writer: %w", err)
 	}
 	err = resultWriter.Write(ctx, searchResults)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to write search results")
+		return "", fmt.Errorf("failed to write search results: %w", err)
 	}
 	return resultWriter.GetResultDir(), nil
 }

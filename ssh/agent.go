@@ -5,11 +5,11 @@ package ssh
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/vladimirvivien/gexe"
 )
@@ -53,7 +53,7 @@ func (agent *agent) AddKey(keyPath string) error {
 	p := e.Envs(agent.GetEnvVariables()...).
 		RunProc(fmt.Sprintf("%s %s", sshAddCmd, keyPath))
 	if err := p.Err(); err != nil {
-		return errors.Wrapf(err, "could not add key %s to ssh-agent", keyPath)
+		return fmt.Errorf("could not add key %s to ssh-agent: %w", keyPath, err)
 	}
 	agent.KeyPaths = append(agent.KeyPaths, keyPath)
 	return nil
@@ -70,7 +70,7 @@ func (agent *agent) RemoveKey(keyPath string) error {
 	p := e.Envs(agent.GetEnvVariables()...).
 		RunProc(fmt.Sprintf("%s -d %s", sshAddCmd, keyPath))
 	if err := p.Err(); err != nil {
-		return errors.Wrapf(err, "could not add key %s to ssh-agent", keyPath)
+		return fmt.Errorf("could not add key %s to ssh-agent: %w", keyPath, err)
 	}
 
 	return nil
@@ -108,13 +108,13 @@ func StartAgent() (Agent, error) {
 	e := gexe.New()
 	sshAgentCmd := e.Prog().Avail("ssh-agent")
 	if len(sshAgentCmd) == 0 {
-		return nil, fmt.Errorf("ssh-agent not found")
+		return nil, errors.New("ssh-agent not found")
 	}
 
 	logrus.Debugf("starting %s", sshAgentCmd)
 	p := e.RunProc(fmt.Sprintf("%s -s", sshAgentCmd))
-	if p.Err() != nil {
-		return nil, errors.Wrap(p.Err(), "failed to start ssh agent")
+	if err := p.Err(); err != nil {
+		return nil, fmt.Errorf("failed to start ssh agent: %w", err)
 	}
 
 	agentInfo, err := parseAgentInfo(p.Out())

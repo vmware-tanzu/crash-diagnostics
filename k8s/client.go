@@ -5,13 +5,13 @@ package k8s
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/api/errors"
-
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -88,7 +88,7 @@ func New(kubeconfig string, clusterContextOptions ...string) (*Client, error) {
 // makeRESTConfig creates a new *rest.Config with a k8s context name if one is provided.
 func makeRESTConfig(fileName, contextName string) (*rest.Config, error) {
 	if fileName == "" {
-		return nil, fmt.Errorf("kubeconfig file path required")
+		return nil, errors.New("kubeconfig file path required")
 	}
 
 	if contextName != "" {
@@ -145,10 +145,10 @@ func (k8sc *Client) _search(ctx context.Context, groups, categories, kinds, name
 	switch {
 	case groups == "" && kinds == "" && versions == "" && categories == "":
 		// no groups, no kinds (resources), no versions, no categories provided
-		return nil, fmt.Errorf("search: at least one of {groups, kinds, versions, or categories} is required")
+		return nil, errors.New("search: at least one of {groups, kinds, versions, or categories} is required")
 	case groups == "" && kinds == "" && versions != "" && categories == "":
 		// only versions provided
-		return nil, fmt.Errorf("search: versions must be provided with at least one of {groups, kinds, or categories}")
+		return nil, errors.New("search: versions must be provided with at least one of {groups, kinds, or categories}")
 	default:
 		// build a group-to-resources map, based on the passed parameters.
 		// first, extract groups needed to build the map
@@ -227,7 +227,7 @@ func (k8sc *Client) _search(ctx context.Context, groups, categories, kinds, name
 	} else {
 		nsNames, err := getNamespaces(ctx, k8sc)
 		if err != nil {
-			if !errors.IsNotFound(err) {
+			if !apierrors.IsNotFound(err) {
 				return nil, err
 			}
 			//This is the case when namespace resource does not exist in the cluster.This is KCP case.

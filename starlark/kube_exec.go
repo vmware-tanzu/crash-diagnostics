@@ -5,13 +5,14 @@ package starlark
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/pkg/errors"
+	"path/filepath"
+	"time"
+
 	"github.com/vmware-tanzu/crash-diagnostics/k8s"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
-	"path/filepath"
-	"time"
 )
 
 // KubeExecFn is a starlark built-in for executing command in target K8s pods
@@ -32,7 +33,7 @@ func KubeExecFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tupl
 		"kube_config?", &kubeConfig,
 		"timeout_in_seconds?", &timeout,
 	); err != nil {
-		return starlark.None, errors.Wrap(err, "failed to read args")
+		return starlark.None, fmt.Errorf("failed to read args: %w", err)
 	}
 
 	if namespace == "" {
@@ -52,7 +53,7 @@ func KubeExecFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tupl
 
 	ctx, ok := thread.Local(identifiers.scriptCtx).(context.Context)
 	if !ok || ctx == nil {
-		return starlark.None, fmt.Errorf("script context not found")
+		return starlark.None, errors.New("script context not found")
 	}
 
 	if kubeConfig == nil {
@@ -60,7 +61,7 @@ func KubeExecFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tupl
 	}
 	path, err := getKubeConfigPathFromStruct(kubeConfig)
 	if err != nil {
-		return starlark.None, errors.Wrap(err, "failed to get kubeconfig")
+		return starlark.None, fmt.Errorf("failed to get kubeconfig: %w", err)
 	}
 	clusterCtxName := getKubeConfigContextNameFromStruct(kubeConfig)
 
@@ -73,7 +74,7 @@ func KubeExecFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tupl
 	}
 	executor, err := k8s.NewExecutor(path, clusterCtxName, execOpts)
 	if err != nil {
-		return starlark.None, errors.Wrap(err, "could not initialize search client")
+		return starlark.None, fmt.Errorf("could not initialize search client: %w", err)
 	}
 
 	outputFilePath := filepath.Join(trimQuotes(workdir), outputfile)

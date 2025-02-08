@@ -4,6 +4,7 @@
 package testing
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"math/rand"
@@ -174,7 +175,7 @@ func (t *TestSupport) SetupKindCluster() error {
 
 func (t *TestSupport) SetupKindKubeConfig() (string, error) {
 	if t.kindCluster == nil {
-		return "", fmt.Errorf("kind not set: call SetupKindCluster() first")
+		return "", errors.New("kind not set: call SetupKindCluster() first")
 	}
 
 	if len(t.kindKubeCfg) > 0 {

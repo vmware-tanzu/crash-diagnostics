@@ -4,7 +4,7 @@
 package starlark
 
 import (
-	"fmt"
+	"errors"
 	"os"
 	"runtime"
 
@@ -29,7 +29,7 @@ func getEnvFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tupl
 	}
 	key, ok := args.Index(0).(starlark.String)
 	if !ok {
-		return starlark.None, fmt.Errorf("os.getenv: invalid env key")
+		return starlark.None, errors.New("os.getenv: invalid env key")
 	}
 
 	return starlark.String(os.Getenv(string(key))), nil

@@ -1,7 +1,7 @@
 package testing
 
 import (
-	"fmt"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -29,7 +29,7 @@ func WriteKeys(rootPath string) error {
 	defer pkFile.Close()
 	logrus.Infof("Writing private key file: %s", pkPath)
 	if _, err := io.Copy(pkFile, strings.NewReader(privateKey)); err != nil {
-		return fmt.Errorf("")
+		return errors.New("")
 	}
 
 	pubPath := filepath.Join(rootPath, "id_rsa.pub")
@@ -40,7 +40,7 @@ func WriteKeys(rootPath string) error {
 	defer pubFile.Close()
 	logrus.Infof("Writing private key file: %s", pubPath)
 	if _, err := io.Copy(pubFile, strings.NewReader(publicKey)); err != nil {
-		return fmt.Errorf("")
+		return errors.New("")
 	}
 	return nil
 }

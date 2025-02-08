@@ -4,9 +4,9 @@
 package starlark
 
 import (
+	"errors"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 	"go.starlark.net/starlark"
@@ -68,7 +68,7 @@ func SshConfigFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tup
 		}
 		logrus.Debugf("adding key %s to ssh-agent", pkPath)
 		if err := agent.AddKey(pkPath); err != nil {
-			return starlark.None, errors.Wrapf(err, "unable to add key %s", pkPath)
+			return starlark.None, fmt.Errorf("unable to add key %s: %w", pkPath, err)
 		}
 	}
 

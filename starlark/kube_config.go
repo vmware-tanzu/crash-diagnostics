@@ -4,9 +4,9 @@
 package starlark
 
 import (
+	"errors"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/vmware-tanzu/crash-diagnostics/util"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
@@ -44,7 +44,7 @@ func KubeConfigFn(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, 
 
 		pathVal, err := provider.Attr("kube_config")
 		if err != nil {
-			return starlark.None, errors.Wrap(err, "could not find the kubeconfig attribute")
+			return starlark.None, fmt.Errorf("could not find the kubeconfig attribute: %w", err)
 		}
 		pathStr, ok := pathVal.(starlark.String)
 		if !ok {
@@ -84,7 +84,7 @@ func addDefaultKubeConf(thread *starlark.Thread) error {
 func getKubeConfigPathFromStruct(kubeConfigStructVal *starlarkstruct.Struct) (string, error) {
 	kvPathVal, err := kubeConfigStructVal.Attr("path")
 	if err != nil {
-		return "", errors.Wrap(err, "failed to extract kubeconfig path")
+		return "", fmt.Errorf("failed to extract kubeconfig path: %w", err)
 	}
 	kvPathStrVal, ok := kvPathVal.(starlark.String)
 	if !ok {

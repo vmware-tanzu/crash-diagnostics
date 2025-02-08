@@ -5,9 +5,9 @@ package starlark
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/vmware-tanzu/crash-diagnostics/k8s"
 	"github.com/vmware-tanzu/crash-diagnostics/provider"
 	"go.starlark.net/starlark"
@@ -32,12 +32,12 @@ func CapvProviderFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.
 		"labels?", &labels,
 		"nodes?", &names)
 	if err != nil {
-		return starlark.None, errors.Wrap(err, "failed to unpack input arguments")
+		return starlark.None, fmt.Errorf("failed to unpack input arguments: %w", err)
 	}
 
 	ctx, ok := thread.Local(identifiers.scriptCtx).(context.Context)
 	if !ok || ctx == nil {
-		return starlark.None, fmt.Errorf("script context not found")
+		return starlark.None, errors.New("script context not found")
 	}
 
 	if sshConfig == nil || mgmtKubeConfig == nil {
@@ -49,7 +49,7 @@ func CapvProviderFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.
 	}
 	mgmtKubeConfigPath, err := getKubeConfigPathFromStruct(mgmtKubeConfig)
 	if err != nil {
-		return starlark.None, errors.Wrap(err, "failed to extract management kubeconfig")
+		return starlark.None, fmt.Errorf("failed to extract management kubeconfig: %w", err)
 	}
 
 	providerConfigPath, err := provider.KubeConfig(mgmtKubeConfigPath, workloadCluster, namespace)
@@ -59,7 +59,7 @@ func CapvProviderFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.
 
 	nodeAddresses, err := k8s.GetNodeAddresses(ctx, providerConfigPath, toSlice(names), toSlice(labels))
 	if err != nil {
-		return starlark.None, errors.Wrap(err, "could not fetch host addresses")
+		return starlark.None, fmt.Errorf("could not fetch host addresses: %w", err)
 	}
 
 	// dictionary for capv provider struct

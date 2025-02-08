@@ -5,14 +5,16 @@ package k8s
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
+	"time"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
-	"os"
-	"time"
 )
 
 // Executor is a struct that facilitates the execution of commands in Kubernetes pods.
@@ -64,7 +66,7 @@ func NewExecutor(kubeconfig string, clusterCtxName string, opts ExecOptions) (*E
 // makeRESTConfig creates a new *rest.Config with a k8s context name if one is provided.
 func restConfig(fileName, contextName string) (*rest.Config, error) {
 	if fileName == "" {
-		return nil, fmt.Errorf("kubeconfig file path required")
+		return nil, errors.New("kubeconfig file path required")
 	}
 
 	if contextName != "" {

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
+	"errors"
 	"github.com/sirupsen/logrus"
 	"github.com/vladimirvivien/gexe"
 )
@@ -47,7 +47,7 @@ docker create \
 */
 func (s *SSHServer) Start() error {
 	if len(s.e.Prog().Avail("docker")) == 0 {
-		return fmt.Errorf("docker command not found")
+		return errors.New("docker command not found")
 	}
 
 	if strings.Contains(s.e.Run("docker ps"), s.name) {
@@ -77,7 +77,7 @@ func (s *SSHServer) Start() error {
 
 func (s *SSHServer) Stop() error {
 	if len(s.e.Prog().Avail("docker")) == 0 {
-		return fmt.Errorf("docker command not found")
+		return errors.New("docker command not found")
 	}
 
 	s.e.SetVar("CONTAINER_NAME", s.name)

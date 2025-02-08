@@ -4,6 +4,7 @@
 package ssh
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -22,7 +23,7 @@ func CopyFrom(args SSHArgs, agent Agent, rootDir string, sourcePath string) erro
 	e := gexe.New()
 	prog := e.Prog().Avail("scp")
 	if len(prog) == 0 {
-		return fmt.Errorf("scp program not found")
+		return errors.New("scp program not found")
 	}
 
 	targetPath := filepath.Join(rootDir, sourcePath)
@@ -76,15 +77,15 @@ func CopyTo(args SSHArgs, agent Agent, sourcePath, targetPath string) error {
 	e := gexe.New()
 	prog := e.Prog().Avail("scp")
 	if len(prog) == 0 {
-		return fmt.Errorf("scp program not found")
+		return errors.New("scp program not found")
 	}
 
 	if len(sourcePath) == 0 {
-		return fmt.Errorf("scp: copyTo: missing source path")
+		return errors.New("scp: copyTo: missing source path")
 	}
 
 	if len(targetPath) == 0 {
-		return fmt.Errorf("scp: copyTo: missing target path")
+		return errors.New("scp: copyTo: missing target path")
 	}
 
 	sshCmd, err := makeSCPCmdStr(prog, args)
@@ -122,15 +123,15 @@ func CopyTo(args SSHArgs, agent Agent, sourcePath, targetPath string) error {
 
 func makeSCPCmdStr(progName string, args SSHArgs) (string, error) {
 	if args.User == "" {
-		return "", fmt.Errorf("scp: user is required")
+		return "", errors.New("scp: user is required")
 	}
 	if args.Host == "" {
-		return "", fmt.Errorf("scp: host is required")
+		return "", errors.New("scp: host is required")
 	}
 
 	if args.ProxyJump != nil {
 		if args.ProxyJump.User == "" || args.ProxyJump.Host == "" {
-			return "", fmt.Errorf("scp: jump user and host are required")
+			return "", errors.New("scp: jump user and host are required")
 		}
 	}
 

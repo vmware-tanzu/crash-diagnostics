@@ -5,9 +5,9 @@ package starlark
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/vmware-tanzu/crash-diagnostics/k8s"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
@@ -31,12 +31,12 @@ func KubeGetFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple
 		"containers?", &containers,
 		"kube_config?", &kubeConfig,
 	); err != nil {
-		return starlark.None, errors.Wrap(err, "failed to read args")
+		return starlark.None, fmt.Errorf("failed to read args: %w", err)
 	}
 
 	ctx, ok := thread.Local(identifiers.scriptCtx).(context.Context)
 	if !ok || ctx == nil {
-		return starlark.None, fmt.Errorf("script context not found")
+		return starlark.None, errors.New("script context not found")
 	}
 
 	if kubeConfig == nil {
@@ -44,13 +44,13 @@ func KubeGetFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple
 	}
 	path, err := getKubeConfigPathFromStruct(kubeConfig)
 	if err != nil {
-		return starlark.None, errors.Wrap(err, "failed to get kubeconfig")
+		return starlark.None, fmt.Errorf("failed to get kubeconfig: %w", err)
 	}
 	clusterCtxName := getKubeConfigContextNameFromStruct(kubeConfig)
 
 	client, err := k8s.New(path, clusterCtxName)
 	if err != nil {
-		return starlark.None, errors.Wrap(err, "could not initialize search client")
+		return starlark.None, fmt.Errorf("could not initialize search client: %w", err)
 	}
 
 	searchParams := k8s.SearchParams{
@@ -68,7 +68,7 @@ func KubeGetFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple
 		for _, searchResult := range searchResults {
 			srValue := searchResult.ToStarlarkValue()
 			if err := objects.Append(srValue); err != nil {
-				searchErr = errors.Wrap(err, "could not collect kube_get() results")
+				searchErr = fmt.Errorf("could not collect kube_get() results: %w", err)
 				break
 			}
 		}

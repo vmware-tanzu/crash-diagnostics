@@ -6,7 +6,6 @@ package provider
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/vmware-tanzu/crash-diagnostics/k8s"
 )
 
@@ -22,7 +21,7 @@ func KubeConfig(mgmtKubeConfigPath, workloadClusterName, workloadClusterNamespac
 	if len(workloadClusterName) != 0 {
 		kubeConfigPath, err = k8s.FetchWorkloadConfig(workloadClusterName, workloadClusterNamespace, mgmtKubeConfigPath)
 		if err != nil {
-			err = errors.Wrap(err, fmt.Sprintf("could not fetch kubeconfig for workload cluster %s", workloadClusterName))
+			err = fmt.Errorf("could not fetch kubeconfig for workload cluster %s: %w", workloadClusterName, err)
 		}
 	}
 	return kubeConfigPath, err
