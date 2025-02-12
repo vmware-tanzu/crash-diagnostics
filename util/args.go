@@ -10,7 +10,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -28,7 +27,7 @@ func ReadArgsFile(path string, args map[string]string) error {
 
 	file, err := os.Open(path)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("args file not found: %s", path))
+		return fmt.Errorf("args file not found: %s: %w", path, err)
 	}
 	defer file.Close()
 

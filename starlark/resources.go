@@ -4,6 +4,7 @@
 package starlark
 
 import (
+	"errors"
 	"fmt"
 
 	"go.starlark.net/starlark"
@@ -52,14 +53,14 @@ func resourcesFunc(thread *starlark.Thread, b *starlark.Builtin, args starlark.T
 // info needed to execute commands.
 func enum(provider *starlarkstruct.Struct) (*starlark.List, error) {
 	if provider == nil {
-		return nil, fmt.Errorf("missing provider")
+		return nil, errors.New("missing provider")
 	}
 
 	var resources []starlark.Value
 
 	kindVal, err := provider.Attr("kind")
 	if err != nil {
-		return nil, fmt.Errorf("provider missing field kind")
+		return nil, errors.New("provider missing field kind")
 	}
 
 	kind := trimQuotes(kindVal.String())

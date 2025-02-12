@@ -4,13 +4,13 @@
 package starlark
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 	"go.starlark.net/starlark"
@@ -187,7 +187,7 @@ func execCaptureSSH(host, cmdStr, rootDir, fileName, desc string, agent ssh.Agen
 
 func captureOutput(source io.Reader, filePath, desc string, append bool) error {
 	if source == nil {
-		return fmt.Errorf("source reader is nill")
+		return errors.New("source reader is nill")
 	}
 
 	flag := os.O_CREATE | os.O_WRONLY

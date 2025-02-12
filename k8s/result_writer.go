@@ -2,12 +2,12 @@ package k8s
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/printers"
@@ -36,11 +36,11 @@ func NewResultWriter(workdir, what, outputFormat, outputMode string, restApi res
 	} else if outputFormat == "yaml" {
 		printer = &printers.YAMLPrinter{}
 	} else {
-		return nil, errors.Errorf("unsupported output format: %s", outputFormat)
+		return nil, fmt.Errorf("unsupported output format: %s", outputFormat)
 	}
 
 	if outputMode != "" && outputMode != "single_file" && outputMode != "multiple_files" {
-		return nil, errors.Errorf("unsupported output mode: %s", outputMode)
+		return nil, fmt.Errorf("unsupported output mode: %s", outputMode)
 	}
 	singleFile := outputMode == "single_file" || outputMode == ""
 	return &ResultWriter{
@@ -58,7 +58,7 @@ func (w *ResultWriter) GetResultDir() string {
 
 func (w *ResultWriter) Write(ctx context.Context, searchResults []SearchResult) error {
 	if len(searchResults) == 0 {
-		return fmt.Errorf("cannot write empty (or nil) search result")
+		return errors.New("cannot write empty (or nil) search result")
 	}
 
 	// each result represents a list of searched item

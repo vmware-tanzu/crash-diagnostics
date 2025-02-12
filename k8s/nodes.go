@@ -5,8 +5,8 @@ package k8s
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/pkg/errors"
 	coreV1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -14,12 +14,12 @@ import (
 func GetNodeAddresses(ctx context.Context, kubeconfigPath string, names, labels []string) ([]string, error) {
 	client, err := New(kubeconfigPath)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not initialize search client")
+		return nil, fmt.Errorf("could not initialize search client: %w", err)
 	}
 
 	nodes, err := getNodes(ctx, client, names, labels)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not fetch nodes")
+		return nil, fmt.Errorf("could not fetch nodes: %w", err)
 	}
 
 	var nodeIps []string

@@ -4,6 +4,7 @@
 package testing
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -147,7 +148,7 @@ spec:
 	for {
 		select {
 		case <-timeout:
-			return fmt.Errorf("timed out waiting for pod to be in Terminating state")
+			return errors.New("timed out waiting for pod to be in Terminating state")
 		case <-ticker.C:
 			p = k.e.RunProc(fmt.Sprintf(`kubectl --context kind-%s get pod stuck-pod -o jsonpath='{.status.phase}'`, k.name))
 			if p.Err() != nil {

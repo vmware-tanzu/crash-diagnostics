@@ -4,7 +4,9 @@
 package starlark
 
 import (
-	"github.com/pkg/errors"
+	"errors"
+	"fmt"
+
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
@@ -27,7 +29,7 @@ func SetDefaultsFunc(thread *starlark.Thread, _ *starlark.Builtin, args starlark
 		case "struct":
 			constStr, err := GetConstructor(val)
 			if err != nil {
-				return starlark.None, errors.Wrap(err, UnknownDefaultErrStr)
+				return starlark.None, fmt.Errorf("%s: %w", UnknownDefaultErrStr, err)
 			}
 			if constStr == identifiers.kubeCfg {
 				thread.SetLocal(identifiers.kubeCfg, val)
@@ -42,7 +44,7 @@ func SetDefaultsFunc(thread *starlark.Thread, _ *starlark.Builtin, args starlark
 				resourceVal := list.Index(0)
 				constStr, err := GetConstructor(resourceVal)
 				if err != nil || constStr != identifiers.hostResource {
-					return starlark.None, errors.Wrap(err, UnknownDefaultErrStr)
+					return starlark.None, fmt.Errorf("%s: %w", UnknownDefaultErrStr, err)
 				}
 				thread.SetLocal(identifiers.resources, list)
 			}

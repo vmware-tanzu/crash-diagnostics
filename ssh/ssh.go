@@ -5,6 +5,7 @@ package ssh
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -52,7 +53,7 @@ func sshRunProc(args SSHArgs, agent Agent, cmd string) (io.Reader, error) {
 	e := gexe.New()
 	prog := e.Prog().Avail("ssh")
 	if len(prog) == 0 {
-		return nil, fmt.Errorf("ssh program not found")
+		return nil, errors.New("ssh program not found")
 	}
 
 	sshCmd, err := makeSSHCmdStr(prog, args)
@@ -87,7 +88,7 @@ func sshRunProc(args SSHArgs, agent Agent, cmd string) (io.Reader, error) {
 	}
 
 	if proc == nil {
-		return nil, fmt.Errorf("ssh.run: did get process result")
+		return nil, errors.New("ssh.run: did get process result")
 	}
 
 	return proc.Out(), nil
@@ -95,15 +96,15 @@ func sshRunProc(args SSHArgs, agent Agent, cmd string) (io.Reader, error) {
 
 func makeSSHCmdStr(progName string, args SSHArgs) (string, error) {
 	if args.User == "" {
-		return "", fmt.Errorf("SSH: user is required")
+		return "", errors.New("SSH: user is required")
 	}
 	if args.Host == "" {
-		return "", fmt.Errorf("SSH: host is required")
+		return "", errors.New("SSH: host is required")
 	}
 
 	if args.ProxyJump != nil {
 		if args.ProxyJump.User == "" || args.ProxyJump.Host == "" {
-			return "", fmt.Errorf("SSH: jump user and host are required")
+			return "", errors.New("SSH: jump user and host are required")
 		}
 	}
 

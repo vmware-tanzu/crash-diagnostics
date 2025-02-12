@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -33,7 +32,7 @@ func (c ContainerLogsImpl) Fetch(ctx context.Context, restApi rest.Interface) (i
 	req := restApi.Get().Namespace(c.namespace).Name(c.podName).Resource("pods").SubResource("log").VersionedParams(opts, scheme.ParameterCodec)
 	stream, err := req.Stream(ctx)
 	if err != nil {
-		err = errors.Wrapf(err, "failed to create container log stream for container with name %s", c.container.Name)
+		err = fmt.Errorf("failed to create container log stream for container with name %s: %w", c.container.Name, err)
 	}
 	return stream, err
 }

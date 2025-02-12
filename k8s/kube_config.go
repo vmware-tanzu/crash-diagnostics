@@ -9,7 +9,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/vladimirvivien/gexe"
 )
 
@@ -24,14 +23,14 @@ func FetchWorkloadConfig(clusterName, clusterNamespace, mgmtKubeConfigPath strin
 
 	f, err := os.CreateTemp(os.TempDir(), fmt.Sprintf("%s-workload-config", clusterName))
 	if err != nil {
-		return filePath, errors.Wrap(err, "Cannot create temporary file")
+		return filePath, fmt.Errorf("Cannot create temporary file: %w", err)
 	}
 	filePath = f.Name()
 	defer f.Close()
 
 	base64Dec := base64.NewDecoder(base64.StdEncoding, p.Out())
 	if _, err := io.Copy(f, base64Dec); err != nil {
-		return filePath, errors.Wrap(err, "error decoding workload kubeconfig")
+		return filePath, fmt.Errorf("error decoding workload kubeconfig: %w", err)
 	}
 	return filePath, nil
 }

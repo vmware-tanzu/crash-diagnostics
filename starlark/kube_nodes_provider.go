@@ -5,9 +5,9 @@ package starlark
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/vmware-tanzu/crash-diagnostics/k8s"
 
 	"go.starlark.net/starlark"
@@ -28,12 +28,12 @@ func KubeNodesProviderFn(thread *starlark.Thread, _ *starlark.Builtin, args star
 		"kube_config?", &kubeConfig,
 		"ssh_config?", &sshConfig,
 	); err != nil {
-		return starlark.None, errors.Wrap(err, "failed to read args")
+		return starlark.None, fmt.Errorf("failed to read args: %w", err)
 	}
 
 	ctx, ok := thread.Local(identifiers.scriptCtx).(context.Context)
 	if !ok || ctx == nil {
-		return starlark.None, fmt.Errorf("script context not found")
+		return starlark.None, errors.New("script context not found")
 	}
 
 	if kubeConfig == nil {
@@ -41,7 +41,7 @@ func KubeNodesProviderFn(thread *starlark.Thread, _ *starlark.Builtin, args star
 	}
 	path, err := getKubeConfigPathFromStruct(kubeConfig)
 	if err != nil {
-		return starlark.None, errors.Wrap(err, "failed to kubeconfig")
+		return starlark.None, fmt.Errorf("failed to kubeconfig: %w", err)
 	}
 
 	if sshConfig == nil {
@@ -60,7 +60,7 @@ func newKubeNodesProvider(ctx context.Context, kubeconfig string, sshConfig *sta
 	}
 	nodeAddresses, err := k8s.GetNodeAddresses(ctx, kubeconfig, searchParams.Names, searchParams.Labels)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not fetch node addresses")
+		return nil, fmt.Errorf("could not fetch node addresses: %w", err)
 	}
 
 	// dictionary for node provider struct

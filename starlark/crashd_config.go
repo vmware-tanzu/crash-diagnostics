@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/vmware-tanzu/crash-diagnostics/ssh"
 	"github.com/vmware-tanzu/crash-diagnostics/util"
@@ -71,7 +70,7 @@ func crashdConfigFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.
 	if useSSHAgent {
 		agent, err := ssh.StartAgent()
 		if err != nil {
-			return starlark.None, errors.Wrap(err, "failed to start ssh agent")
+			return starlark.None, fmt.Errorf("failed to start ssh agent: %w", err)
 		}
 
 		// sets the ssh_agent variable in the current Starlark thread
