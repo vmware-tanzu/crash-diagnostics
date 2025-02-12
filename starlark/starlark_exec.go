@@ -141,6 +141,7 @@ func newPredeclareds(restrictedMode []bool) starlark.StringDict {
 		identifiers.kubeNodesProvider: starlark.NewBuiltin(identifiers.kubeNodesProvider, KubeNodesProviderFn),
 		identifiers.capvProvider:      starlark.NewBuiltin(identifiers.capvProvider, CapvProviderFn),
 		identifiers.capaProvider:      starlark.NewBuiltin(identifiers.capaProvider, CapaProviderFn),
+		identifiers.kcpProvider:       starlark.NewBuiltin(identifiers.kcpProvider, KcpProviderFn),
 		identifiers.setDefaults:       starlark.NewBuiltin(identifiers.setDefaults, SetDefaultsFunc),
 		identifiers.log:               starlark.NewBuiltin(identifiers.log, logFunc),
 	}
