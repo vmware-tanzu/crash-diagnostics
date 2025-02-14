@@ -55,6 +55,7 @@ var (
 		kubeNodesProvider string
 		capvProvider      string
 		capaProvider      string
+		kubePortForwardConfig      string
 
 		sshAgent string
 	}{
@@ -87,14 +88,14 @@ var (
 		log:              "log",
 		logPath:          "logPath",
 
-		kubeCapture:       "kube_capture",
-		kubeGet:           "kube_get",
-		kubeExec:          "kube_exec",
-		kubeNodesProvider: "kube_nodes_provider",
-		capvProvider:      "capv_provider",
-		capaProvider:      "capa_provider",
-
-		sshAgent: "crashd_ssh_agent",
+		kubeCapture:           "kube_capture",
+		kubeGet:               "kube_get",
+		kubeExec:              "kube_exec",
+		kubeNodesProvider:     "kube_nodes_provider",
+		capvProvider:          "capv_provider",
+		capaProvider:          "capa_provider",
+		kubePortForwardConfig: "kube_port_forward_config",
+		sshAgent:              "crashd_ssh_agent",
 	}
 
 	defaults = struct {

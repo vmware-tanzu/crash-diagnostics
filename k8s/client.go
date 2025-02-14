@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -19,10 +21,13 @@ import (
 	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
+	kubernetesclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/portforward"
+	"k8s.io/client-go/transport/spdy"
 )
 
 const (
@@ -32,10 +37,19 @@ const (
 // Client prepares and exposes a dynamic, discovery, and Rest clients
 type Client struct {
 	Client      dynamic.Interface
+	Typed       kubernetesclient.Interface
 	Disco       discovery.DiscoveryInterface
 	CoreRest    rest.Interface
 	Mapper      meta.RESTMapper
 	JsonPrinter printers.JSONPrinter
+	RestConfig  rest.Config
+}
+
+func NewFromRestConfig(restConfig *rest.Config) (*Client, error) {
+	dynCfg := rest.CopyConfig(restConfig)
+	discoCfg := rest.CopyConfig(restConfig)
+	restCfg := rest.CopyConfig(restConfig)
+	return newClient(dynCfg, discoCfg, restCfg)
 }
 
 // New returns a *Client built with the kubecontext file path
@@ -52,15 +66,29 @@ func New(kubeconfig string, clusterContextOptions ...string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	discoCfg, err := makeRESTConfig(kubeconfig, clusterCtxName)
+	if err != nil {
+		return nil, err
+	}
+
+	restCfg, err := makeRESTConfig(kubeconfig, clusterCtxName)
+	if err != nil {
+		return nil, err
+	}
+	return newClient(dynCfg, discoCfg, restCfg)
+}
+
+func newClient(dynCfg, discoCfg, restCfg *rest.Config) (*Client, error) {
 	client, err := dynamic.NewForConfig(dynCfg)
 	if err != nil {
 		return nil, err
 	}
 
-	discoCfg, err := makeRESTConfig(kubeconfig, clusterCtxName)
+	typedClient, err := kubernetesclient.NewForConfig(dynCfg)
 	if err != nil {
 		return nil, err
 	}
+
 	disco, err := discovery.NewDiscoveryClientForConfig(discoCfg)
 	if err != nil {
 		return nil, err
@@ -72,17 +100,13 @@ func New(kubeconfig string, clusterContextOptions ...string) (*Client, error) {
 	}
 	mapper := restmapper.NewDiscoveryRESTMapper(resources)
 
-	restCfg, err := makeRESTConfig(kubeconfig, clusterCtxName)
-	if err != nil {
-		return nil, err
-	}
 	setCoreDefaultConfig(restCfg)
 	restc, err := rest.RESTClientFor(restCfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Client{Client: client, Disco: disco, CoreRest: restc, Mapper: mapper}, nil
+	return &Client{Client: client, Typed: typedClient, Disco: disco, CoreRest: restc, Mapper: mapper, RestConfig: *restCfg}, nil
 }
 
 // makeRESTConfig creates a new *rest.Config with a k8s context name if one is provided.
@@ -104,6 +128,29 @@ func makeRESTConfig(fileName, contextName string) (*rest.Config, error) {
 		&clientcmd.ClientConfigLoadingRules{ExplicitPath: fileName},
 		&clientcmd.ConfigOverrides{},
 	).ClientConfig()
+}
+
+func NewPortForwarder(kubeconfigPath, portForwardNS, portForwardPodName string, localPort, targetPort int) (*portforward.PortForwarder, error) {
+	restConfig, err := makeRESTConfig(kubeconfigPath, "")
+	if err != nil {
+		return nil, err
+	}
+	portForwardPath := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward",
+		portForwardNS, portForwardPodName)
+	hostIP := strings.TrimPrefix(restConfig.Host, "https://")
+
+	transport, upgrader, err := spdy.RoundTripperFor(restConfig)
+	if err != nil {
+		return nil, err
+	}
+	stopCh, readyCh := make(chan struct{}), make(chan struct{})
+
+	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, http.MethodPost, &url.URL{Scheme: "https", Path: portForwardPath, Host: hostIP})
+	fw, err := portforward.New(dialer, []string{fmt.Sprintf("%d:%d", localPort, targetPort)}, stopCh, readyCh, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	return fw, nil
 }
 
 func (k8sc *Client) Search(ctx context.Context, params SearchParams) ([]SearchResult, error) {
