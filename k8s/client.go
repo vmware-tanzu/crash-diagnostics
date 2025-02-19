@@ -19,6 +19,7 @@ import (
 	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
+	kubernetesclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
@@ -29,13 +30,22 @@ const (
 	LegacyGroupName = "core"
 )
 
-// Client prepares and exposes a dynamic, discovery, and Rest clients
+// Client prepares and exposes a core, dynamic, discovery, and Rest clients
 type Client struct {
 	Client      dynamic.Interface
+	Typed       kubernetesclient.Interface
 	Disco       discovery.DiscoveryInterface
 	CoreRest    rest.Interface
 	Mapper      meta.RESTMapper
 	JsonPrinter printers.JSONPrinter
+	RestConfig  rest.Config
+}
+
+func NewFromRestConfig(restConfig *rest.Config) (*Client, error) {
+	dynCfg := rest.CopyConfig(restConfig)
+	discoCfg := rest.CopyConfig(restConfig)
+	restCfg := rest.CopyConfig(restConfig)
+	return newClient(dynCfg, discoCfg, restCfg)
 }
 
 // New returns a *Client built with the kubecontext file path
@@ -52,12 +62,25 @@ func New(kubeconfig string, clusterContextOptions ...string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	discoCfg, err := makeRESTConfig(kubeconfig, clusterCtxName)
+	if err != nil {
+		return nil, err
+	}
+
+	restCfg, err := makeRESTConfig(kubeconfig, clusterCtxName)
+	if err != nil {
+		return nil, err
+	}
+	return newClient(dynCfg, discoCfg, restCfg)
+}
+
+func newClient(dynCfg, discoCfg, restCfg *rest.Config) (*Client, error) {
 	client, err := dynamic.NewForConfig(dynCfg)
 	if err != nil {
 		return nil, err
 	}
 
-	discoCfg, err := makeRESTConfig(kubeconfig, clusterCtxName)
+	typedClient, err := kubernetesclient.NewForConfig(dynCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -72,17 +95,13 @@ func New(kubeconfig string, clusterContextOptions ...string) (*Client, error) {
 	}
 	mapper := restmapper.NewDiscoveryRESTMapper(resources)
 
-	restCfg, err := makeRESTConfig(kubeconfig, clusterCtxName)
-	if err != nil {
-		return nil, err
-	}
 	setCoreDefaultConfig(restCfg)
 	restc, err := rest.RESTClientFor(restCfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Client{Client: client, Disco: disco, CoreRest: restc, Mapper: mapper}, nil
+	return &Client{Client: client, Typed: typedClient, Disco: disco, CoreRest: restc, Mapper: mapper, RestConfig: *restCfg}, nil
 }
 
 // makeRESTConfig creates a new *rest.Config with a k8s context name if one is provided.
