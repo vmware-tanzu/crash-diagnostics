@@ -24,6 +24,7 @@ var (
 
 		crashdCfg string
 		kubeCfg   string
+		tunnelCfg string
 
 		sshCfg         string
 		port           string
@@ -55,6 +56,7 @@ var (
 		kubeNodesProvider string
 		capvProvider      string
 		capaProvider      string
+		kcpProvider       string
 
 		sshAgent string
 	}{
@@ -63,6 +65,7 @@ var (
 		crashdCfg: "crashd_config",
 		kubeCfg:   "kube_config",
 		sshCfg:    "ssh_config",
+		tunnelCfg: "tunnel_config",
 
 		port:           "port",
 		username:       "username",
@@ -93,6 +96,7 @@ var (
 		kubeNodesProvider: "kube_nodes_provider",
 		capvProvider:      "capv_provider",
 		capaProvider:      "capa_provider",
+		kcpProvider:       "kcp_provider",
 
 		sshAgent: "crashd_ssh_agent",
 	}
