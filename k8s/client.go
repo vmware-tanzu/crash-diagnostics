@@ -34,7 +34,7 @@ const (
 	LegacyGroupName = "core"
 )
 
-// Client prepares and exposes a dynamic, discovery, and Rest clients
+// Client prepares and exposes a core, dynamic, discovery, and Rest clients
 type Client struct {
 	Client      dynamic.Interface
 	Typed       kubernetesclient.Interface
@@ -130,7 +130,7 @@ func makeRESTConfig(fileName, contextName string) (*rest.Config, error) {
 	).ClientConfig()
 }
 
-func NewPortForwarder(kubeconfigPath, portForwardNS, portForwardPodName string, localPort, targetPort int) (*portforward.PortForwarder, error) {
+func NewPortForwarder(kubeconfigPath, portForwardNS, portForwardPodName string, localPort, targetPort int, stopCh <-chan struct{}, readyCh chan struct{}) (*portforward.PortForwarder, error) {
 	restConfig, err := makeRESTConfig(kubeconfigPath, "")
 	if err != nil {
 		return nil, err
@@ -143,7 +143,6 @@ func NewPortForwarder(kubeconfigPath, portForwardNS, portForwardPodName string, 
 	if err != nil {
 		return nil, err
 	}
-	stopCh, readyCh := make(chan struct{}), make(chan struct{})
 
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, http.MethodPost, &url.URL{Scheme: "https", Path: portForwardPath, Host: hostIP})
 	fw, err := portforward.New(dialer, []string{fmt.Sprintf("%d:%d", localPort, targetPort)}, stopCh, readyCh, nil, nil)

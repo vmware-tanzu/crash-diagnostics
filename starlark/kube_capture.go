@@ -63,68 +63,71 @@ func KubeCaptureFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.T
 	}
 	path, err := getKubeConfigPathFromStruct(kubeConfig)
 	if err != nil {
-		return starlark.None, fmt.Errorf("failed to kubeconfig: %w", err)
+		return starlark.None, fmt.Errorf("failed to get kubeconfig: %w", err)
 	}
-	var targetClient *k8s.Client
-	_, err = kubeConfig.Attr("extra_kubeconfig")
-	usePortforward := err == nil
+
+	var client *k8s.Client
+
 	clusterCtxName := getKubeConfigContextNameFromStruct(kubeConfig)
 
-	if usePortforward {
-		if targetClient, err = newTargetKubeconfig(kubeConfig, clusterCtxName); err != nil {
+	if tunnelConfig == nil {
+		if client, err = k8s.New(path, clusterCtxName); err != nil {
+			return starlark.None, fmt.Errorf("could not initialize search client: %w", err)
+		}
+	} else {
+		logrus.Info("using portforward")
+		if client, err = newTargetKubeconfig(kubeConfig, clusterCtxName); err != nil {
 			return starlark.None, err
 		}
-	}
 
-	path, err = getKubeConfigPathFromStruct(kubeConfig)
-	if err != nil {
-		return starlark.None, fmt.Errorf("failed to kubeconfig: %w", err)
-	}
-
-	portforwardStr, err := tunnelConfig.Attr("namespace")
-	if err != nil {
-		return nil, fmt.Errorf("could not get set the roundtripper: %w", err)
-	}
-
-	portForwardNS := portforwardStr.(starlark.String)
-
-	podNameStr, err := tunnelConfig.Attr("pod_name")
-	if err != nil {
-		return nil, fmt.Errorf("could not get set the roundtripper: %w", err)
-	}
-
-	portForwardPodName := podNameStr.(starlark.String)
-
-	localPortInt, err := tunnelConfig.Attr("local_port")
-	if err != nil {
-		return nil, fmt.Errorf("could not get set the roundtripper: %w", err)
-	}
-
-	localPort := localPortInt.(starlark.Int)
-
-	targetPortInt, err := tunnelConfig.Attr("target_port")
-	if err != nil {
-		return nil, fmt.Errorf("could not get set the roundtripper: %w", err)
-	}
-	targetPort := targetPortInt.(starlark.Int)
-
-	fw, err := k8s.NewPortForwarder(path, string(portForwardNS), string(portForwardPodName), int(localPort.BigInt().Int64()), int(targetPort.BigInt().Int64()))
-	if err != nil {
-		return starlark.None, err
-	}
-
-	defer fw.Close()
-	go func() error {
-		if err := fw.ForwardPorts(); err != nil {
-			return err
+		portforwardStr, err := tunnelConfig.Attr("namespace")
+		if err != nil {
+			return nil, fmt.Errorf("could not get set the roundtripper: %w", err)
 		}
-		return nil
-	}()
+
+		portForwardNS := portforwardStr.(starlark.String)
+
+		podNameStr, err := tunnelConfig.Attr("pod_name")
+		if err != nil {
+			return nil, fmt.Errorf("could not get set the roundtripper: %w", err)
+		}
+
+		portForwardPodName := podNameStr.(starlark.String)
+
+		localPortInt, err := tunnelConfig.Attr("local_port")
+		if err != nil {
+			return nil, fmt.Errorf("could not get set the roundtripper: %w", err)
+		}
+
+		localPort := localPortInt.(starlark.Int)
+
+		targetPortInt, err := tunnelConfig.Attr("target_port")
+		if err != nil {
+			return nil, fmt.Errorf("could not get set the roundtripper: %w", err)
+		}
+		targetPort := targetPortInt.(starlark.Int)
+
+		stopCh, readyCh := make(chan struct{}), make(chan struct{})
+
+		fw, err := k8s.NewPortForwarder(path, string(portForwardNS), string(portForwardPodName), int(localPort.BigInt().Int64()), int(targetPort.BigInt().Int64()), stopCh, readyCh)
+		if err != nil {
+			return starlark.None, err
+		}
+
+		defer fw.Close()
+		go func() {
+			if err := fw.ForwardPorts(); err != nil {
+				logrus.Error("error in forwarding ports ", err)
+			}
+		}()
+
+		<-readyCh
+	}
 
 	data := thread.Local(identifiers.crashdCfg)
 	cfg, _ := data.(*starlarkstruct.Struct)
 	workDirVal, _ := cfg.Attr("workdir")
-	resultDir, err := write(ctx, trimQuotes(workDirVal.String()), what, strings.ToLower(outputFormat), strings.ToLower(outputMode), targetClient, k8s.SearchParams{
+	resultDir, err := write(ctx, trimQuotes(workDirVal.String()), what, strings.ToLower(outputFormat), strings.ToLower(outputMode), client, k8s.SearchParams{
 		Groups:     toSlice(groups),
 		Categories: toSlice(categories),
 		Kinds:      toSlice(kinds),
@@ -178,12 +181,12 @@ func write(ctx context.Context, workdir, what, outputFormat, outputMode string, 
 }
 
 func newTargetKubeconfig(kubeconfig *starlarkstruct.Struct, clusterCtxName string) (*k8s.Client, error) {
-	kcpConfig, err := kubeconfig.Attr("extra_kubeconfig")
+	kcpConfig, err := kubeconfig.Attr("kcp_kubeconfig")
 	if err != nil {
 		return nil, err
 	}
 	kcpConfigStr := kcpConfig.(starlark.String)
-	kcpApiConfig, err := clientcmd.Load([]byte(kcpConfigStr.String()))
+	kcpApiConfig, err := clientcmd.Load([]byte(kcpConfigStr.GoString()))
 	if err != nil {
 		return nil, fmt.Errorf("could not load the kubeconfig: %w", err)
 	}

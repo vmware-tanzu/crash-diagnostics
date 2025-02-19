@@ -33,12 +33,32 @@ func KubeConfigFn(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, 
 		return starlark.None, errors.New("need either path or capi_provider")
 	}
 
+	var extraKubeConfigStr starlark.String
+	var isKCPProvider bool
+
 	if len(path) == 0 {
 		val := provider.Constructor()
+
 		if constructor, ok := val.(starlark.String); ok {
 			constStr := constructor.GoString()
-			if constStr != identifiers.capvProvider && constStr != identifiers.capaProvider {
+			if constStr != identifiers.capvProvider &&
+				constStr != identifiers.capaProvider &&
+				constStr != identifiers.kcpProvider {
 				return starlark.None, errors.New("unknown capi provider")
+			}
+
+			if constStr == identifiers.kcpProvider {
+				kcp_kubeconfig, err := provider.Attr("kcp_kubeconfig")
+				if err != nil {
+					return starlark.None, fmt.Errorf("not able to find kcp_kubeconfig for kcp_provider")
+				}
+
+				extraKubeConfigStr, ok = kcp_kubeconfig.(starlark.String)
+				if !ok {
+					return starlark.None, errors.New("could not fetch kubeconfig")
+				}
+
+				isKCPProvider = true
 			}
 		}
 
@@ -51,6 +71,7 @@ func KubeConfigFn(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, 
 			return starlark.None, errors.New("could not fetch kubeconfig")
 		}
 		path = pathStr.GoString()
+
 	}
 
 	path, err := util.ExpandPath(path)
@@ -58,12 +79,16 @@ func KubeConfigFn(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, 
 		return starlark.None, err
 	}
 
-	structVal := starlarkstruct.FromStringDict(starlark.String(identifiers.kubeCfg), starlark.StringDict{
+	stringDictVal := starlark.StringDict{
 		"cluster_context": starlark.String(clusterCtxName),
 		"path":            starlark.String(path),
-	})
+	}
 
-	return structVal, nil
+	if isKCPProvider {
+		stringDictVal["kcp_kubeconfig"] = extraKubeConfigStr
+	}
+
+	return starlarkstruct.FromStringDict(starlark.String(identifiers.kubeCfg), stringDictVal), nil
 }
 
 // addDefaultKubeConf initializes a Starlark Dict with default

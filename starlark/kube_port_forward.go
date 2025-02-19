@@ -10,7 +10,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/vmware-tanzu/crash-diagnostics/k8s"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -19,19 +18,20 @@ import (
 	"go.starlark.net/starlarkstruct"
 )
 
-// KubeNodesProviderFn is a built-in starlark function that collects compute resources from a k8s cluster
-// Starlark format: kube_port_forward_config([namespace="foo", serviceName="bar", target_port=6643)
+// KubePortForwardrFn is a built-in starlark function that collects compute resources from a k8s cluster
+// Starlark format: kube_port_forward_config(service="bar", target_port=664, [namespace="foo"])
 func KubePortForwardrFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 
-	var namespace, serviceName, targetPort *starlark.String
+	var namespace, service string
+	var targetPort int
 
 	if err := starlark.UnpackArgs(
-		identifiers.kubeNodesProvider, args, kwargs,
+		identifiers.kubePortForwardConfig, args, kwargs,
 		"namespace?", &namespace,
-		"serviceName?", &serviceName,
+		"service", &service,
 		"target_port", &targetPort,
 	); err != nil {
-		return starlark.None, errors.Wrap(err, "failed to read args")
+		return starlark.None, fmt.Errorf("failed to read args: %w", err)
 	}
 
 	ctx, ok := thread.Local(identifiers.scriptCtx).(context.Context)
@@ -42,23 +42,23 @@ func KubePortForwardrFn(thread *starlark.Thread, _ *starlark.Builtin, args starl
 	kubeConfig := thread.Local(identifiers.kubeCfg).(*starlarkstruct.Struct)
 	kubeConfigPath, err := getKubeConfigPathFromStruct(kubeConfig)
 	if err != nil {
-		return starlark.None, errors.Wrap(err, "failed to kubeconfig")
+		return starlark.None, fmt.Errorf("failed to kubeconfig: %w", err)
 	}
 
 	client, err := k8s.New(kubeConfigPath)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not initialize search client")
+		return nil, fmt.Errorf("could not initialize search client: %w", err)
 	}
-	service, err := client.Typed.CoreV1().Services(namespace.String()).Get(ctx, serviceName.String(), v1.GetOptions{})
+	svc, err := client.Typed.CoreV1().Services(namespace).Get(ctx, service, v1.GetOptions{})
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get service")
+		return nil, fmt.Errorf("could not get service: %w", err)
 	}
 
-	selector := labels.SelectorFromSet(service.Spec.Selector)
+	selector := labels.SelectorFromSet(svc.Spec.Selector)
 
-	pods, err := client.Typed.CoreV1().Pods(service.Namespace).List(ctx, v1.ListOptions{LabelSelector: selector.String()})
+	pods, err := client.Typed.CoreV1().Pods(svc.Namespace).List(ctx, v1.ListOptions{LabelSelector: selector.String()})
 	if err != nil || len(pods.Items) == 0 {
-		return nil, errors.Wrap(err, "could not list pods")
+		return nil, fmt.Errorf("could not list pods: %w", err)
 	}
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -66,7 +66,8 @@ func KubePortForwardrFn(thread *starlark.Thread, _ *starlark.Builtin, args starl
 	var found bool
 
 	for !found {
-		randomPort = r.Intn(10000) + 1000
+		// get a random port between 49152-65535
+		randomPort = r.Intn(16383) + 49152
 		address := fmt.Sprintf(":%d", randomPort)
 		listener, err := net.Listen("tcp", address)
 		if err != nil {
@@ -77,9 +78,9 @@ func KubePortForwardrFn(thread *starlark.Thread, _ *starlark.Builtin, args starl
 	}
 
 	tunnelConfigDict := starlark.StringDict{
-		"namespace":   starlark.String(identifiers.kubePortForwardConfig),
+		"namespace":   starlark.String(namespace),
 		"pod_name":    starlark.String(pods.Items[0].Name),
-		"target_port": targetPort,
+		"target_port": starlark.MakeInt(targetPort),
 		"local_port":  starlark.MakeInt(randomPort),
 	}
 
