@@ -149,7 +149,14 @@ This configuration function declares and stores configuration needed to connect 
 | `capi_provider` | A Cluster-API provider (see providers below) to obtain Kubernetes configurations | No |
 
 #### Output
-`kube_config()` returns a struct with the following fields.
+`kube_config()` returns a struct with the following fields:
+
+| Field             | Description                                              |
+| ----------------- | -------------------------------------------------------- |
+| `cluster_context` | The name of a context to use when accessing the cluster. |
+| `path`            | Path to the local Kubernetes config file                 |
+| `kcp_kubeconfig`            | Stringified KCP Admin Kubeconfig to be used for accessing the KCP workspaces (if a `kcp_)                 |
+
 
 #### Example
 ```python
@@ -222,6 +229,35 @@ ssh=ssh_config(
 ```
 
 **NOTE**: For passphrase protected keys, add the key to the default ssh-agent prior to running the diagnostics script, to ensure non-interactive execution of the script.
+
+### `kube_port_forward_config()`
+This function finds a random open port in the ephemeral port range.
+
+#### Parameters
+| Param         | Description                           | Required               |
+| ------------- | ------------------------------------- | ---------------------- |
+| `service`     | Service to target the tunnel towards  | Yes                    |
+| `target_port` | Target port for the tunnel            | Yes                    |
+| `namespace`   | Namespace in which service is located | No, default: `default` |
+
+#### Output
+`ssh_config()` returns a struct with the following fields.
+
+| Field         | Description                            |
+| ------------- | -------------------------------------- |
+| `local_port`  | Allocated local port for the tunnel    |
+| `pod_name`    | Pod to which the tunnel is targeted to |
+| `target_port` | Target port for the tunnel             |
+| `namespace`   | Namespace in which service is located  |
+
+#### Example
+```python
+tunnel_config=kube_port_forward_config(
+    namespace="default",
+    service="kcp-apiserver",
+    target_port=6443
+)
+```
 
 ## Provider Functions
 A provider function implements the code to cofigure and to enumerate compute resources for a given infrastructure. The result of the provider functions are used by the `resources` function to generate/enumerate the compute resources needed.
@@ -393,8 +429,58 @@ kube_nodes_provider(
 )
 ```
 
+### `kcp_provider()`
+
+This function configures the KCP Provider.  This provider can enumerate workspaces in a KCP apiserver and generate a kubeconfig with contexts for all workspaces to enumerate over.
+
+#### Parameters
+| Param                        | Description                                                                               | Required |
+| ---------------------------- | ----------------------------------------------------------------------------------------- | -------- |
+| `kcp_admin_secret_name`      | Name of the the KCP Admin Kubeconfig Secret                                               | Yes      |
+| `kcp_admin_secret_namespace` | Namespace where the KCP Admin Kubeconfig Secret is located                                | Yes      |
+| `kcp_cert_secret_name`       | Name of secret which store the certificate data for the cert used in the Admin Kubeconfig | Yes      |
+| `tunnel_config`              | Port Forward tunnel configuration returned by `kube_port_forward_config`                  | No       |
+| `kube_config`                | A struct with Kubernetes configuration of the host cluster                                | No       |
+
+#### Output
+`kcp_provider()` returns a struct with the following fields.
+
+| Field            | Description                                                                  |
+| ---------------- | ---------------------------------------------------------------------------- |
+| `kind`           | The name of the provider (`kcp_provider`)                                    |
+| `kube_config`    | A struct with Kubernetes configuration                                       |
+| `kcp_kubeconfig` | Stringified KCP Admin Kubeconfig to be used for accessing the KCP workspaces |
+| `contexts`       | List of all contexts in the `kcp_kubeconfig`                                 |
+
+#### Example
+```python
+
+
+tunnel_config=kube_port_forward_config(
+    namespace="default",
+    service="kcp-apiserver",
+    target_port=6443
+)
+
+kube=kube_config(path=args.kube_conf)
+
+capa_provider(
+    workload_cluster="my-wc-cluster",
+    namespace="workloads"
+    ssh_config=ssh,
+    kube_config=kube
+)
+kcp_provider_result = kcp_provider(
+    kcp_admin_secret_name="kcp-admin-kubeconfig",
+    kcp_admin_secret_namespace="default",
+    kcp_cert_secret_name="kcp-admin-cert",
+    tunnel_config=tunnel_config,
+    kube_config=kube
+)
+```
+
 ## Resource Enumeration
-Crashd uses the notion of a compute resource to which the running script can connect and possibly execute commands (see Command Functions). 
+Crashd uses the notion of a compute resource to which the running script can connect and possibly execute commands (see Command Functions).
 
 ### `resrouces()`
 The Crashd script uses the `resources` function along with a provider (see providers above) to properly enumerate compute resources. Each provider implements its own logic which determines how resources are enumerated.
@@ -645,19 +731,20 @@ These are functions used to execute API requests against a running Kubernetes cl
 The `kube_capture` function retrieves Kubernetes API objects and container logs.  The captured information is stored in local files with directory structure similar to that of `kubectl cluster-info dump`.
 
 #### Parameters
-| Param           | Description                                                                                  | Required                        |
-|-----------------|----------------------------------------------------------------------------------------------|---------------------------------|
-| `what`          | Specifies what to get inclusing `objects` or `logs`                                          | Yes                             |
-| `output_format` | The output format of the captured k8s objects. Supported formats are json & yaml             | No, uses json if omitted        |
-| `output_mode`   | The output mode of the captured k8s objects. Supported modes are single_file & multiple_files| No, uses single_file if omitted |
-| `groups`        | A list of API groups from which to retrieve API objects.  The core group is named `core`     | No                              |
-| `kinds`         | A list of object kinds to select                                                             | No                              |
-| `namespaces`    | A list of namespaces from which to select objects                                            | No                              |
-| `versions`      | A list of API versions used to select objects                                                | No                              |
-| `names`         | A list used to filter retrieved object by names                                              | No                              |
-| `labels`        | A list of label selector expressions used to filter objects                                  | No                              |
-| `containers`    | A list of container names used to filter when selecting pod objects                          | No                              |
-| `kube_config`   | The Kubernetes configuration used for this call                                              | No, uses default if omitted     |
+| Param           | Description                                                                                   | Required                                                     |
+| --------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `what`          | Specifies what to get inclusing `objects` or `logs`                                           | Yes                                                          |
+| `output_format` | The output format of the captured k8s objects. Supported formats are json & yaml              | No, uses json if omitted                                     |
+| `output_mode`   | The output mode of the captured k8s objects. Supported modes are single_file & multiple_files | No, uses single_file if omitted                              |
+| `groups`        | A list of API groups from which to retrieve API objects.  The core group is named `core`      | No                                                           |
+| `kinds`         | A list of object kinds to select                                                              | No                                                           |
+| `namespaces`    | A list of namespaces from which to select objects                                             | No                                                           |
+| `versions`      | A list of API versions used to select objects                                                 | No                                                           |
+| `names`         | A list used to filter retrieved object by names                                               | No                                                           |
+| `labels`        | A list of label selector expressions used to filter objects                                   | No                                                           |
+| `containers`    | A list of container names used to filter when selecting pod objects                           | No                                                           |
+| `kube_config`   | The Kubernetes configuration used for this call                                               | No, uses default if omitted                                  |
+| `tunnel_config` | Tunnel configuration to start a tunnel to the service                                         | No, assumes the control plane is reachable without tunneling |
 
 #### Output
 Function `kube_capture` returns a struct with the following fields.

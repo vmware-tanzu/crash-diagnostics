@@ -13,15 +13,17 @@ import (
 	"github.com/vmware-tanzu/crash-diagnostics/k8s"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 // KubeCaptureFn is the Starlark built-in for the fetching kubernetes objects
 // and returns the result as a Starlark value containing the file path and error message, if any
-// Starlark format: kube_capture(what="logs" [, groups="core", namespaces=["default"], kube_config=kube_config()])
+// Starlark format: kube_capture(what="logs" [, groups="core", namespaces=["default"], kube_config=kube_config(), tunnel_config=tunnel_config])
 func KubeCaptureFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 
 	var groups, categories, kinds, namespaces, versions, names, labels, containers *starlark.List
 	var kubeConfig *starlarkstruct.Struct
+	var tunnelConfig *starlarkstruct.Struct
 	var what string
 	var outputFormat string
 	var outputMode string
@@ -41,8 +43,14 @@ func KubeCaptureFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.T
 		"labels?", &labels,
 		"containers?", &containers,
 		"kube_config?", &kubeConfig,
+		"tunnel_config?", &tunnelConfig,
 	); err != nil {
 		return starlark.None, fmt.Errorf("failed to read args: %w", err)
+	}
+
+	writeLogs := what == "logs" || what == "all"
+	if writeLogs && tunnelConfig != nil {
+		return starlark.None, fmt.Errorf("tunnel_config unsupported for 'logs' and 'all' operations")
 	}
 
 	ctx, ok := thread.Local(identifiers.scriptCtx).(context.Context)
@@ -55,13 +63,65 @@ func KubeCaptureFn(thread *starlark.Thread, _ *starlark.Builtin, args starlark.T
 	}
 	path, err := getKubeConfigPathFromStruct(kubeConfig)
 	if err != nil {
-		return starlark.None, fmt.Errorf("failed to kubeconfig: %w", err)
+		return starlark.None, fmt.Errorf("failed to get kubeconfig: %w", err)
 	}
+
+	var client *k8s.Client
+
 	clusterCtxName := getKubeConfigContextNameFromStruct(kubeConfig)
 
-	client, err := k8s.New(path, clusterCtxName)
-	if err != nil {
-		return starlark.None, fmt.Errorf("could not initialize search client: %w", err)
+	if tunnelConfig == nil {
+		if client, err = k8s.New(path, clusterCtxName); err != nil {
+			return starlark.None, fmt.Errorf("could not initialize search client: %w", err)
+		}
+	} else {
+		logrus.Info("using portforward")
+		if client, err = newTargetKubeconfig(kubeConfig, clusterCtxName); err != nil {
+			return starlark.None, err
+		}
+
+		portforwardStr, err := tunnelConfig.Attr("namespace")
+		if err != nil {
+			return nil, fmt.Errorf("could not get set the roundtripper: %w", err)
+		}
+
+		portForwardNS := portforwardStr.(starlark.String)
+
+		podNameStr, err := tunnelConfig.Attr("pod_name")
+		if err != nil {
+			return nil, fmt.Errorf("could not get set the roundtripper: %w", err)
+		}
+
+		portForwardPodName := podNameStr.(starlark.String)
+
+		localPortInt, err := tunnelConfig.Attr("local_port")
+		if err != nil {
+			return nil, fmt.Errorf("could not get set the roundtripper: %w", err)
+		}
+
+		localPort := localPortInt.(starlark.Int)
+
+		targetPortInt, err := tunnelConfig.Attr("target_port")
+		if err != nil {
+			return nil, fmt.Errorf("could not get set the roundtripper: %w", err)
+		}
+		targetPort := targetPortInt.(starlark.Int)
+
+		stopCh, readyCh := make(chan struct{}), make(chan struct{})
+
+		fw, err := k8s.NewPortForwarder(path, string(portForwardNS), string(portForwardPodName), int(localPort.BigInt().Int64()), int(targetPort.BigInt().Int64()), stopCh, readyCh)
+		if err != nil {
+			return starlark.None, err
+		}
+
+		defer fw.Close()
+		go func() {
+			if err := fw.ForwardPorts(); err != nil {
+				logrus.Error("error in forwarding ports ", err)
+			}
+		}()
+
+		<-readyCh
 	}
 
 	data := thread.Local(identifiers.crashdCfg)
@@ -118,4 +178,25 @@ func write(ctx context.Context, workdir, what, outputFormat, outputMode string, 
 		return "", fmt.Errorf("failed to write search results: %w", err)
 	}
 	return resultWriter.GetResultDir(), nil
+}
+
+func newTargetKubeconfig(kubeconfig *starlarkstruct.Struct, clusterCtxName string) (*k8s.Client, error) {
+	kcpConfig, err := kubeconfig.Attr("kcp_kubeconfig")
+	if err != nil {
+		return nil, err
+	}
+	kcpConfigStr := kcpConfig.(starlark.String)
+	kcpApiConfig, err := clientcmd.Load([]byte(kcpConfigStr.GoString()))
+	if err != nil {
+		return nil, fmt.Errorf("could not load the kubeconfig: %w", err)
+	}
+	restConfig, err := clientcmd.NewNonInteractiveClientConfig(*kcpApiConfig, clusterCtxName, &clientcmd.ConfigOverrides{}, nil).ClientConfig()
+	if err != nil {
+		return nil, fmt.Errorf("could build restConfig from kubeconfig: %w", err)
+	}
+	kcpClient, err := k8s.NewFromRestConfig(restConfig)
+	if err != nil {
+		return nil, fmt.Errorf("could not initialize search client: %w", err)
+	}
+	return kcpClient, nil
 }

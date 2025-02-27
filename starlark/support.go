@@ -24,6 +24,7 @@ var (
 
 		crashdCfg string
 		kubeCfg   string
+		tunnelCfg string
 
 		sshCfg         string
 		port           string
@@ -49,12 +50,14 @@ var (
 		log              string
 		logPath          string
 
-		kubeCapture       string
-		kubeGet           string
-		kubeExec          string
-		kubeNodesProvider string
-		capvProvider      string
-		capaProvider      string
+		kubeCapture           string
+		kubeGet               string
+		kubeExec              string
+		kubeNodesProvider     string
+		capvProvider          string
+		capaProvider          string
+		kubePortForwardConfig string
+		kcpProvider           string
 
 		sshAgent string
 	}{
@@ -63,6 +66,7 @@ var (
 		crashdCfg: "crashd_config",
 		kubeCfg:   "kube_config",
 		sshCfg:    "ssh_config",
+		tunnelCfg: "tunnel_config",
 
 		port:           "port",
 		username:       "username",
@@ -87,14 +91,15 @@ var (
 		log:              "log",
 		logPath:          "logPath",
 
-		kubeCapture:       "kube_capture",
-		kubeGet:           "kube_get",
-		kubeExec:          "kube_exec",
-		kubeNodesProvider: "kube_nodes_provider",
-		capvProvider:      "capv_provider",
-		capaProvider:      "capa_provider",
-
-		sshAgent: "crashd_ssh_agent",
+		kubeCapture:           "kube_capture",
+		kubeGet:               "kube_get",
+		kubeExec:              "kube_exec",
+		kubeNodesProvider:     "kube_nodes_provider",
+		capvProvider:          "capv_provider",
+		capaProvider:          "capa_provider",
+		kubePortForwardConfig: "kube_port_forward_config",
+		kcpProvider:           "kcp_provider",
+		sshAgent:              "crashd_ssh_agent",
 	}
 
 	defaults = struct {
