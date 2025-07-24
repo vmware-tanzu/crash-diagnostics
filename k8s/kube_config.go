@@ -23,7 +23,7 @@ func FetchWorkloadConfig(clusterName, clusterNamespace, mgmtKubeConfigPath strin
 
 	f, err := os.CreateTemp(os.TempDir(), fmt.Sprintf("%s-workload-config", clusterName))
 	if err != nil {
-		return filePath, fmt.Errorf("Cannot create temporary file: %w", err)
+		return filePath, fmt.Errorf("cannot create temporary file: %w", err)
 	}
 	filePath = f.Name()
 	defer f.Close()
