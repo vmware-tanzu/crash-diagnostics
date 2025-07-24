@@ -31,11 +31,12 @@ func SetDefaultsFunc(thread *starlark.Thread, _ *starlark.Builtin, args starlark
 			if err != nil {
 				return starlark.None, fmt.Errorf("%s: %w", UnknownDefaultErrStr, err)
 			}
-			if constStr == identifiers.kubeCfg {
+			switch constStr {
+			case identifiers.kubeCfg:
 				thread.SetLocal(identifiers.kubeCfg, val)
-			} else if constStr == identifiers.sshCfg {
+			case identifiers.sshCfg:
 				thread.SetLocal(identifiers.sshCfg, val)
-			} else {
+			default:
 				return starlark.None, errors.New(UnknownDefaultErrStr)
 			}
 		case "list":
