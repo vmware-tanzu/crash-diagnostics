@@ -204,7 +204,7 @@ func captureOutput(source io.Reader, filePath, desc string, append bool) error {
 	defer file.Close()
 
 	if len(desc) > 0 {
-		if _, err := file.WriteString(fmt.Sprintf("%s\n", desc)); err != nil {
+		if _, err := fmt.Fprintf(file, "%s\n", desc); err != nil {
 			return err
 		}
 	}

@@ -31,11 +31,12 @@ func NewResultWriter(workdir, what, outputFormat, outputMode string, restApi res
 
 	writeLogs := what == "logs" || what == "all"
 	var printer printers.ResourcePrinter
-	if outputFormat == "" || outputFormat == "json" {
+	switch outputFormat {
+	case "", "json":
 		printer = &printers.JSONPrinter{}
-	} else if outputFormat == "yaml" {
+	case "yaml":
 		printer = &printers.YAMLPrinter{}
-	} else {
+	default:
 		return nil, fmt.Errorf("unsupported output format: %s", outputFormat)
 	}
 
