@@ -4,6 +4,12 @@ go 1.23.0
 
 toolchain go1.23.4
 
+// The kcp mono-repo's kcp/cli go.mod requires kcp/sdk via a local-path replace,
+// which resolves to a phantom pseudo-version (v0.0.0-00010101000000-000000000000)
+// for transitive consumers of crash-diagnostics. Exclude it so MVS selects the
+// real v0.27.1. See https://github.com/vmware-tanzu/crash-diagnostics/issues/283
+exclude github.com/kcp-dev/kcp/sdk v0.0.0-00010101000000-000000000000
+
 require (
 	github.com/kcp-dev/kcp/cli v0.27.1
 	github.com/kcp-dev/kcp/sdk v0.27.1
